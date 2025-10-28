@@ -7,4 +7,6 @@
 #SBATCH --mem-per-cpu=128G   # memory per CPU core
 #SBATCH --output=slurm_logs/%j.out
 
+source env/bin/activate
+
 python src/main.py fit
