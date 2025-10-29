@@ -1,6 +1,7 @@
 from jsonargparse import auto_parser
-from typing import Literal
+from typing import List, Literal
 
+from callbacks.callback import Callback
 from datasets.placeholder_dataset import PlaceholderDataset
 from models.placeholder_model import PlaceholderModel
 from trainer import Trainer
@@ -8,16 +9,16 @@ from trainer import Trainer
 Subcommand = Literal['fit'] | Literal['test']
 
 
-def main(subcommand: Subcommand):
+def main(subcommand: Subcommand, callbacks: List[Callback] = []):
     match subcommand:
         case 'fit':
-            fit()
+            fit(callbacks)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
 
-def fit():
-    trainer = Trainer()
+def fit(callbacks: List[Callback]):
+    trainer = Trainer(callbacks)
 
     with trainer.fabric.init_module():
         model = PlaceholderModel()
@@ -32,4 +33,6 @@ if __name__ == '__main__':
     if hasattr(cfg, 'config'):
         del cfg.config  # pyright: ignore
 
-    main(**cfg)
+    init = parser.instantiate_classes(cfg)
+
+    main(**init)
