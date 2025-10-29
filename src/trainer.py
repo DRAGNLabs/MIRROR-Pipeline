@@ -1,4 +1,6 @@
 from lightning import Fabric
+from torch.utils.data import DataLoader
+import datetime
 
 from datasets.mirror_dataset import MirrorDataset
 from models.mirror_model import MirrorModel
@@ -9,4 +11,15 @@ class Trainer:
         self.fabric = Fabric()
 
     def fit(self, model: MirrorModel, dataset: MirrorDataset):
-        pass
+        training_run_id = datetime.datetime.now().isoformat()
+
+        model, optimizer = self.fabric.setup(model, model.configure_optimizers())
+
+        dataloader = DataLoader(dataset)
+        dataloader = self.fabric.setup_dataloaders(dataloader)
+
+        for tokens, attention_mask in dataloader:
+            optimizer.zero_grad()
+            loss = model.training_step(tokens, attention_mask)
+            self.fabric.backward(loss)
+            optimizer.step()
