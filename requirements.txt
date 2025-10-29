@@ -6,6 +6,7 @@ filelock==3.20.0
 frozenlist==1.8.0
 fsspec==2025.9.0
 idna==3.11
+jaxtyping==0.3.3
 Jinja2==3.1.6
 jsonargparse==4.42.0
 lightning==2.5.5
@@ -41,4 +42,5 @@ torchmetrics==1.8.2
 tqdm==4.67.1
 triton==3.5.0
 typing_extensions==4.15.0
+wadler_lindig==0.1.7
 yarl==1.22.0
