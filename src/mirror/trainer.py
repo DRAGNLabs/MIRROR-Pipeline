@@ -3,9 +3,9 @@ from torch.utils.data import DataLoader
 from typing import List
 import datetime
 
-from callbacks.callback import Callback
-from datasets.mirror_dataset import MirrorDataset
-from models.mirror_model import MirrorModel
+from mirror.callbacks.callback import Callback
+from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.models.mirror_model import MirrorModel
 
 
 class Trainer:

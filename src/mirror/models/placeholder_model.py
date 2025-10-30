@@ -1,7 +1,8 @@
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from models.mirror_model import MirrorModel
+
+from mirror.models.mirror_model import MirrorModel
 
 
 class PlaceholderModel(MirrorModel):

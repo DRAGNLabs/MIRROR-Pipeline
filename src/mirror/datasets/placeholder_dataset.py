@@ -1,5 +1,5 @@
 import torch
-from datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.mirror_dataset import MirrorDataset
 
 
 class PlaceholderDataset(MirrorDataset):

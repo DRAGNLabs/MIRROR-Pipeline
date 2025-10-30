@@ -2,7 +2,7 @@ from torch.utils.data import IterableDataset
 from abc import abstractmethod
 from typing import Iterator, Tuple
 
-from mirror_types import TokenTensor, AttentionMask
+from mirror.types import TokenTensor, AttentionMask
 
 
 class MirrorDataset(IterableDataset):

@@ -1,4 +1,4 @@
-from callbacks.callback import Callback
+from mirror.callbacks.callback import Callback
 
 
 class PrintStepCallback(Callback):

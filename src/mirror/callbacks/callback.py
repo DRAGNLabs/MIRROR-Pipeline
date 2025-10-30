@@ -1,7 +1,7 @@
 from lightning import Fabric
 
-from models.mirror_model import MirrorModel
-from mirror_types import TokenBatch, AttentionMaskBatch, Loss
+from mirror.models.mirror_model import MirrorModel
+from mirror.types import TokenBatch, AttentionMaskBatch, Loss
 
 
 class Callback:

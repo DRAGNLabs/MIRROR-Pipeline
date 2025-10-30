@@ -2,7 +2,7 @@ from torch.optim import Optimizer
 import torch.nn as nn
 from abc import ABC, abstractmethod
 
-from mirror_types import TokenBatch, AttentionMaskBatch, Loss
+from mirror.types import TokenBatch, AttentionMaskBatch, Loss
 
 
 class MirrorModel(ABC, nn.Module):
