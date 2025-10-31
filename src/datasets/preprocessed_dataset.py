@@ -1,0 +1,21 @@
+from typing import Tuple
+import torch
+from torch.utils.data import Dataset
+
+from datasets.mirror_dataset import AttentionMask, MirrorDataset, TokenTensor
+from tokenizers.mirror_tokenizer import MirrorTokenizer
+
+
+class PreprocessedDataset(Dataset):
+    def __init__(self, raw_dataset: MirrorDataset, tokenizer: MirrorTokenizer):
+        super().__init__()
+        self.raw_dataset = raw_dataset
+        self.tokenizer = tokenizer
+
+    def __len__(self):
+        return len(self.raw_dataset)
+
+    def __getitem__(self, index) -> Tuple[TokenTensor, AttentionMask]:
+        # TODO: use cached preprocessed data
+        item = self.tokenizer.tokenize(self.raw_dataset[index])
+        return item, torch.ones(item.shape[0], device='cuda')

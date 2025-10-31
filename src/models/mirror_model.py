@@ -4,12 +4,18 @@ import torch.nn as nn
 from abc import ABC, abstractmethod
 from jaxtyping import Int, Float
 
-TokenBatch = Int[Tensor, "b t"]
+from tokenizers.mirror_tokenizer import MirrorTokenizer, TokenBatch
+
 AttentionMaskBatch = Int[Tensor, "b t"]
 Loss = Float[Tensor, ""]
 
 
 class MirrorModel(ABC, nn.Module):
+    @property
+    @abstractmethod
+    def tokenizer(self) -> MirrorTokenizer:
+        pass
+
     @abstractmethod
     def training_step(
             self,
