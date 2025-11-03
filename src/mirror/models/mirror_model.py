@@ -3,9 +3,15 @@ import torch.nn as nn
 from abc import ABC, abstractmethod
 
 from mirror.types import TokenBatch, AttentionMaskBatch, Loss
+from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
 
 
 class MirrorModel(ABC, nn.Module):
+    @property
+    @abstractmethod
+    def tokenizer(self) -> MirrorTokenizer:
+        pass
+
     @abstractmethod
     def training_step(
             self,
