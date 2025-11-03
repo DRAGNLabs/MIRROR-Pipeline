@@ -5,7 +5,7 @@ from jaxtyping import Int
 import torch
 from torch import Tensor
 
-from datasets.mirror_dataset import TokenTensor
+from mirror.types import TokenTensor
 
 TokenBatch = Int[Tensor, "b t"]
 

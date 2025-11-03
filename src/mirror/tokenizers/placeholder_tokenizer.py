@@ -1,6 +1,6 @@
 import torch
 
-from tokenizers.mirror_tokenizer import MirrorTokenizer
+from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
 
 
 class PlaceholderTokenizer(MirrorTokenizer):
