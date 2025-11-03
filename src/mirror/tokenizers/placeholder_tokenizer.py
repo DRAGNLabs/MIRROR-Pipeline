@@ -10,7 +10,6 @@ class PlaceholderTokenizer(MirrorTokenizer):
         return "placeholder"
 
     def encode(self, text):
-        print(text)
         return torch.tensor([1, 2, 3, 4], device=device)
 
     def decode(self, tokens):

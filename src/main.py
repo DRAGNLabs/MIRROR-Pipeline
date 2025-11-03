@@ -27,7 +27,6 @@ def fit(data: MirrorDataset, callbacks: List[Callback]):
     with trainer.fabric.init_module():
         model = PlaceholderModel()
 
-    print('fitting')
     trainer.fit(model, data)
 
 
