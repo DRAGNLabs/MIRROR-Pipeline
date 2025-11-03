@@ -9,4 +9,4 @@
 
 source env/bin/activate
 
-python src/main.py fit
+python src/main.py fit --data.class_path mirror.datasets.wikitext_dataset.WikitextDataset --data.head 10
