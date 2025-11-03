@@ -1,10 +1,10 @@
 from jsonargparse import auto_parser
 from typing import List, Literal
 
-from callbacks.callback import Callback
-from datasets.placeholder_dataset import PlaceholderDataset
-from models.placeholder_model import PlaceholderModel
-from trainer import Trainer
+from mirror.callbacks.callback import Callback
+from mirror.datasets.placeholder_dataset import PlaceholderDataset
+from mirror.models.placeholder_model import PlaceholderModel
+from mirror.trainer import Trainer
 
 Subcommand = Literal['fit'] | Literal['test']
 

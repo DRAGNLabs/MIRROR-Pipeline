@@ -3,7 +3,7 @@ from typing import Sequence
 
 import torch
 
-from mirror_types import TokenTensor, TokenBatch
+from mirror.types import TokenTensor, TokenBatch
 
 
 class MirrorTokenizer(ABC):

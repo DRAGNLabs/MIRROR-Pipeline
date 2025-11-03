@@ -1,8 +1,9 @@
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from models.mirror_model import MirrorModel
-from tokenizers.placeholder_tokenizer import PlaceholderTokenizer
+
+from mirror.models.mirror_model import MirrorModel
+from mirror.tokenizers.placeholder_tokenizer import PlaceholderTokenizer
 
 
 class PlaceholderModel(MirrorModel):
