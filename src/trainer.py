@@ -5,6 +5,7 @@ import datetime
 
 from callbacks.callback import Callback
 from datasets.mirror_dataset import MirrorDataset
+from datasets.preprocessed_dataset import PreprocessedDataset
 from models.mirror_model import MirrorModel
 
 
@@ -20,7 +21,8 @@ class Trainer:
 
         model, optimizer = self.fabric.setup(model, model.configure_optimizers())
 
-        dataloader = DataLoader(dataset)
+        preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
+        dataloader = DataLoader(preprocessed_dataset)
         dataloader = self.fabric.setup_dataloaders(dataloader)
 
         for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
