@@ -1,13 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Sequence
 
-from jaxtyping import Int
 import torch
-from torch import Tensor
 
-from mirror.types import TokenTensor
-
-TokenBatch = Int[Tensor, "b t"]
+from mirror.types import TokenTensor, TokenBatch
 
 
 class MirrorTokenizer(ABC):

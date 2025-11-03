@@ -1,6 +1,6 @@
+from typing import Sized
 from torch.utils.data import Dataset
 from abc import abstractmethod
-from typing import Sized
 
 
 class MirrorDataset(Dataset, Sized):

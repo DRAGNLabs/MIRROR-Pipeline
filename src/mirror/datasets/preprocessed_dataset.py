@@ -3,8 +3,8 @@ import torch
 from torch.utils.data import Dataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
 from mirror.types import AttentionMask, TokenTensor
+from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
 from mirror.util import device
 
 
