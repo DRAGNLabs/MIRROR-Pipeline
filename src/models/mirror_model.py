@@ -1,13 +1,9 @@
-from torch import Tensor
 from torch.optim import Optimizer
 import torch.nn as nn
 from abc import ABC, abstractmethod
-from jaxtyping import Int, Float
 
-from tokenizers.mirror_tokenizer import MirrorTokenizer, TokenBatch
-
-AttentionMaskBatch = Int[Tensor, "b t"]
-Loss = Float[Tensor, ""]
+from mirror_types import TokenBatch, AttentionMaskBatch, Loss
+from tokenizers.mirror_tokenizer import MirrorTokenizer
 
 
 class MirrorModel(ABC, nn.Module):

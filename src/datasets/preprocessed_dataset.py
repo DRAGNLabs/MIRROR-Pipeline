@@ -2,7 +2,8 @@ from typing import Tuple
 import torch
 from torch.utils.data import Dataset
 
-from datasets.mirror_dataset import AttentionMask, MirrorDataset, TokenTensor
+from datasets.mirror_dataset import MirrorDataset
+from mirror_types import AttentionMask, TokenTensor
 from tokenizers.mirror_tokenizer import MirrorTokenizer
 
 
