@@ -20,6 +20,10 @@ def load_hf_from_cache_or_download(
     if it is called again with use_cache=True, it will used the cached data from the
     first run. Note that if you have changed your process method, you'll need to set
     use_cache=False to run the new processing.
+
+    Also note that the cached data will be used *any* time the path/name pair is passed.
+    This means if your process function should not rely on information that might change
+    independently of the path/name (such as split).
     """
     dataset_path = datasets_path / hf_dataset_path / hf_dataset_name \
         if hf_dataset_name else datasets_path / hf_dataset_path
