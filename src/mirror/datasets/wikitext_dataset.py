@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Literal, Sequence
 
 from datasets import Dataset, DatasetDict
 
@@ -11,16 +11,17 @@ hf_dataset_name = 'wikitext-2-raw-v1'
 
 class WikitextDataset(MirrorDataset):
     def __init__(
-            self,
-            head: int
+        self,
+        head: int,
+        split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
     ):
         super().__init__()
         ds = load_hf_from_cache_or_download(
             hf_dataset_path,
             hf_dataset_name,
-            self._process,  # pyright: ignore
+            self._process,
         )
-        self.examples: Sequence[str] = ds['text']  # pyright: ignore
+        self.examples: Sequence[str] = ds[split]['text']  # pyright: ignore
         if head:
             self.examples = self.examples[:head]
 
@@ -28,9 +29,8 @@ class WikitextDataset(MirrorDataset):
     def dataset_id(self) -> str:
         return f'{hf_dataset_path}/{hf_dataset_name}'
 
-    def _process(self, ds: DatasetDict) -> Dataset:
-        split = ds['train']
-        return split.filter(lambda row: len(row['text']) > 0)
+    def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
+        return ds.filter(lambda row: len(row['text']) > 0)
 
     def __getitem__(self, index: int):
         return self.examples[index]

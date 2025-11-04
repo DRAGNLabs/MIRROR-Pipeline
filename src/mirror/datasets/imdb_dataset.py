@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Literal, Sequence
 
 from datasets import Dataset, DatasetDict
 
@@ -12,22 +12,17 @@ class ImdbDataset(MirrorDataset):
     def __init__(
         self,
         head: int,
+        split: Literal['train'] | Literal['test'] | Literal['unsupervised'] = 'train',
     ):
         super().__init__()
-        ds = load_hf_from_cache_or_download(
-            hf_dataset_path,
-            process=self._process,  # pyright: ignore
-        )
-        self.examples: Sequence[str] = ds['text']  # pyright: ignore
+        ds = load_hf_from_cache_or_download(hf_dataset_path)
+        self.examples: Sequence[str] = ds[split]['text']  # pyright: ignore
         if head:
             self.examples = self.examples[:head]
 
     @property
     def dataset_id(self) -> str:
         return hf_dataset_path
-
-    def _process(self, ds: DatasetDict) -> Dataset:
-        return ds['train']
 
     def __getitem__(self, index: int):
         return self.examples[index]
