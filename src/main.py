@@ -2,6 +2,7 @@ from jsonargparse import auto_parser
 from typing import List, Literal
 
 from mirror.callbacks.callback import Callback
+import mirror.datasets
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.placeholder_model import PlaceholderModel
 from mirror.trainer import Trainer
