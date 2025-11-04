@@ -12,9 +12,14 @@ hf_dataset_name = 'wikitext-2-raw-v1'
 class WikitextDataset(MirrorDataset):
     def __init__(
         self,
-        head: int,
+        head: int | None = None,
         split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
     ):
+        """
+        Args:
+            head: how many examples to include. None includes the whole split.
+            split: which dataset split to use.
+        """
         super().__init__()
         ds = load_hf_from_cache_or_download(
             hf_dataset_path,
