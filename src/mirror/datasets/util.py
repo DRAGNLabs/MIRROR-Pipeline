@@ -1,4 +1,5 @@
 import os
+import shutil
 from typing import Callable
 
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
@@ -12,14 +13,14 @@ def load_hf_from_cache_or_download(
         hf_dataset_path: str,
         hf_dataset_name: str | None = None,
         process: Callable[[Dataset | DatasetDict], Dataset | DatasetDict] | None = None,
-        use_cache: bool = True
+        reset_cache: bool = False,
 ) -> Dataset | DatasetDict:
     """
     The first time this is called with a particular path/name pair, it will download
     the dataset from huggingface and apply the process function to it. Thereafter,
-    if it is called again with use_cache=True, it will used the cached data from the
+    if it is called again with reset_cache=False, it will used the cached data from the
     first run. Note that if you have changed your process method, you'll need to set
-    use_cache=False to run the new processing.
+    reset_cache=True to run the new processing.
 
     Also note that the cached data will be used *any* time the path/name pair is passed.
     This means if your process function should not rely on information that might change
@@ -27,7 +28,11 @@ def load_hf_from_cache_or_download(
     """
     dataset_path = datasets_path / hf_dataset_path / hf_dataset_name \
         if hf_dataset_name else datasets_path / hf_dataset_path
-    is_cached = use_cache and os.path.exists(dataset_path)
+
+    if reset_cache:
+        shutil.rmtree(dataset_path)
+
+    is_cached = os.path.exists(dataset_path)
 
     if is_cached:
         ds = load_from_disk(dataset_path)
