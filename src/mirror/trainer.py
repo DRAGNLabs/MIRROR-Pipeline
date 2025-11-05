@@ -5,6 +5,7 @@ import datetime
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
+from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
@@ -19,10 +20,15 @@ class Trainer:
         callbacks = [*default_callbacks, *callbacks]
         self.fabric = Fabric(callbacks=callbacks)
 
-    def fit(self, model: MirrorModel, dataset: MirrorDataset):
+    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(model, model.configure_optimizers())
+
+        if checkpoint:
+            state = self.fabric.load(checkpoint.path)
+            model.load_state_dict(state['model'])
+            optimizer.load_state_dict(state['optimizer'])
 
         preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
         dataloader = DataLoader(preprocessed_dataset)
