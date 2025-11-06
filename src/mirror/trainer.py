@@ -7,6 +7,7 @@ from mirror.callbacks.callback import Callback
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
+from mirror.util import is_login_node
 
 
 class Trainer:
@@ -19,11 +20,15 @@ class Trainer:
     def fit(self, model: MirrorModel, dataset: MirrorDataset):
         training_run_id = datetime.datetime.now().isoformat()
 
-        model, optimizer = self.fabric.setup(model, model.configure_optimizers())
+        model, optimizer = self.fabric.setup(
+            model,
+            model.configure_optimizers(),
+            move_to_device=not is_login_node()
+        )
 
         preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
         dataloader = DataLoader(preprocessed_dataset)
-        dataloader = self.fabric.setup_dataloaders(dataloader)
+        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
 
         for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
             optimizer.zero_grad()

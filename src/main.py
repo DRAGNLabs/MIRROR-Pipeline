@@ -2,29 +2,33 @@ from jsonargparse import auto_parser
 from typing import List, Literal
 
 from mirror.callbacks.callback import Callback
-from mirror.datasets.placeholder_dataset import PlaceholderDataset
+import mirror.datasets
+from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.placeholder_model import PlaceholderModel
 from mirror.trainer import Trainer
 
 Subcommand = Literal['fit'] | Literal['test']
 
 
-def main(subcommand: Subcommand, callbacks: List[Callback] = []):
+def main(
+        subcommand: Subcommand,
+        data: MirrorDataset,
+        callbacks: List[Callback] = []
+):
     match subcommand:
         case 'fit':
-            fit(callbacks)
+            fit(data, callbacks)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
 
-def fit(callbacks: List[Callback]):
+def fit(data: MirrorDataset, callbacks: List[Callback]):
     trainer = Trainer(callbacks)
 
     with trainer.fabric.init_module():
         model = PlaceholderModel()
 
-    dataset = PlaceholderDataset()
-    trainer.fit(model, dataset)
+    trainer.fit(model, data)
 
 
 if __name__ == '__main__':

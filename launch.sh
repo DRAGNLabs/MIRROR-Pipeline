@@ -9,4 +9,4 @@
 
 source env/bin/activate
 
-python src/main.py fit
+python src/main.py fit --data.class_path WikitextDataset --data.head 10
