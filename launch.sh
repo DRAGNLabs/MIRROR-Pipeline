@@ -9,4 +9,4 @@
 
 source env/bin/activate
 
-python src/main.py fit --callbacks='[{"class_path": "mirror.callbacks.checkpoint_callback.CheckpointCallback", "init_args": {"every_n_train_steps": 3}}]'
+python src/main.py fit
