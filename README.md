@@ -6,5 +6,5 @@
 4. Install requirements `pip install -r requirements.txt`
 5. (Optional) deactivate the venv `deactivate`
 6. Run using `launch.sh`. Modify `launch.sh` as needed. Later we will have a better way to launch.
-  1. Example using callbacks: `python src/main.py fit --callbacks=[callbacks.print_step_callback.PrintStepCallback]`
+  1. Example using callbacks: `python src/main.py fit --callbacks='[{"class_path": "mirror.callbacks.checkpoint_callback.CheckpointCallback", "init_args": {"every_n_train_steps": 3}}]'`
 
