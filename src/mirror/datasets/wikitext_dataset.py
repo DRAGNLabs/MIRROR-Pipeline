@@ -1,0 +1,44 @@
+from typing import Literal, Sequence
+
+from datasets import Dataset, DatasetDict
+
+from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.util import load_hf_from_cache_or_download
+
+hf_dataset_path = 'Salesforce/wikitext'
+hf_dataset_name = 'wikitext-2-raw-v1'
+
+
+class WikitextDataset(MirrorDataset):
+    def __init__(
+        self,
+        head: int | None = None,
+        split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
+    ):
+        """
+        Args:
+            head: how many examples to include. None includes the whole split.
+            split: which dataset split to use.
+        """
+        super().__init__()
+        ds = load_hf_from_cache_or_download(
+            hf_dataset_path,
+            hf_dataset_name,
+            self._process,
+        )
+        self.examples: Sequence[str] = ds[split]['text']  # pyright: ignore
+        if head:
+            self.examples = self.examples[:head]
+
+    @property
+    def dataset_id(self) -> str:
+        return f'{hf_dataset_path}/{hf_dataset_name}'
+
+    def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
+        return ds.filter(lambda row: len(row['text']) > 0)
+
+    def __getitem__(self, index: int):
+        return self.examples[index]
+
+    def __len__(self):
+        return len(self.examples)

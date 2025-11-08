@@ -4,6 +4,8 @@ from typing import List, Literal
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.placeholder_dataset import PlaceholderDataset
+import mirror.datasets
+from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.placeholder_model import PlaceholderModel
 from mirror.trainer import Trainer
 

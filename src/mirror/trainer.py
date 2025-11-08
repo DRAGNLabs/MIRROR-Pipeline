@@ -9,6 +9,7 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
+from mirror.util import is_login_node
 
 
 class Trainer:
@@ -28,7 +29,11 @@ class Trainer:
     def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None):
         training_run_id = datetime.datetime.now().isoformat()
 
-        model, optimizer = self.fabric.setup(model, model.configure_optimizers())
+        model, optimizer = self.fabric.setup(
+            model,
+            model.configure_optimizers(),
+            move_to_device=not is_login_node()
+        )
 
         if checkpoint:
             state = self.fabric.load(checkpoint.path)
@@ -37,7 +42,7 @@ class Trainer:
 
         preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
         dataloader = DataLoader(preprocessed_dataset)
-        dataloader = self.fabric.setup_dataloaders(dataloader)
+        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, training_run_id=training_run_id)
 
