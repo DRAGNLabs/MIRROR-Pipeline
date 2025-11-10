@@ -2,6 +2,8 @@ from jsonargparse import auto_parser
 from typing import List, Literal
 
 from mirror.callbacks.callback import Callback
+from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.datasets.placeholder_dataset import PlaceholderDataset
 import mirror.datasets
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.placeholder_model import PlaceholderModel
@@ -11,24 +13,25 @@ Subcommand = Literal['fit'] | Literal['test']
 
 
 def main(
-        subcommand: Subcommand,
-        data: MirrorDataset,
-        callbacks: List[Callback] = []
+    subcommand: Subcommand,
+    callbacks: List[Callback] = [],
+    checkpoint: CheckpointIdentifier | None = None,
 ):
     match subcommand:
         case 'fit':
-            fit(data, callbacks)
+            fit(callbacks, checkpoint)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
 
-def fit(data: MirrorDataset, callbacks: List[Callback]):
+def fit(callbacks: List[Callback], checkpoint: CheckpointIdentifier | None):
     trainer = Trainer(callbacks)
 
     with trainer.fabric.init_module():
         model = PlaceholderModel()
 
-    trainer.fit(model, data)
+    dataset = PlaceholderDataset()
+    trainer.fit(model, dataset, checkpoint)
 
 
 if __name__ == '__main__':
