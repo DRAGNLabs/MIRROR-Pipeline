@@ -48,9 +48,13 @@ class Trainer:
         )
 
         if checkpoint:
-            state = self.fabric.load(checkpoint.path)
-            model.load_state_dict(state['model'])
-            optimizer.load_state_dict(state['optimizer'])
+            # models and optimizers are treated specially: they are populated via their load_state_dict
+            # methods internally to fabric.load. Anything else in the state dict is just set in place.
+            state = {
+                'model': model,
+                'optimizer': optimizer,
+            }
+            self.fabric.load(checkpoint.path, state)
 
         preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
         dataloader = DataLoader(preprocessed_dataset)
