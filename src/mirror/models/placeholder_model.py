@@ -10,7 +10,7 @@ from mirror.util import device
 class PlaceholderModel(MirrorModel):
     def __init__(self) -> None:
         super().__init__()
-        self.parameter = nn.Parameter(torch.tensor(0.0, device=device))
+        self.parameter = nn.Parameter(torch.tensor([0.0], device=device))
 
     _tokenizer = PlaceholderTokenizer()
 
