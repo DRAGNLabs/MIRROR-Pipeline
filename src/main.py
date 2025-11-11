@@ -11,6 +11,8 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.placeholder_model import PlaceholderModel
 from mirror.trainer import Trainer
 
+# These are required so that their items can be found easily by jsonargparse without
+# having to give the full classpath
 import lightning.fabric.strategies
 import mirror.datasets
 
