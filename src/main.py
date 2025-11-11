@@ -18,12 +18,14 @@ def main(
     subcommand: Subcommand,
     data: MirrorDataset,
     strategy: Strategy = FSDPStrategy(),
+    devices: int = 1,
+    num_nodes: int = 1,
     callbacks: List[Callback] = [],
     checkpoint: CheckpointIdentifier | None = None,
 ):
     match subcommand:
         case 'fit':
-            fit(data, strategy, callbacks, checkpoint)
+            fit(data, strategy, devices, num_nodes, callbacks, checkpoint)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
@@ -31,10 +33,12 @@ def main(
 def fit(
     dataset: MirrorDataset,
     strategy: Strategy,
+    devices: int,
+    num_nodes: int,
     callbacks: List[Callback],
     checkpoint: CheckpointIdentifier | None
 ):
-    trainer = Trainer(strategy, callbacks)
+    trainer = Trainer(strategy, devices, num_nodes, callbacks)
 
     trainer.launch()
 

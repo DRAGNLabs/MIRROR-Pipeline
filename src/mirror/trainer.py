@@ -5,7 +5,6 @@ import datetime
 
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
-from torch.distributed import get_rank
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
@@ -17,7 +16,13 @@ from mirror.util import is_login_node
 
 
 class Trainer:
-    def __init__(self, strategy: Strategy = FSDPStrategy(), callbacks: List[Callback] = []) -> None:
+    def __init__(
+            self,
+            strategy: Strategy = FSDPStrategy(),
+            devices: int = 1,
+            num_nodes: int = 1,
+            callbacks: List[Callback] = []
+    ) -> None:
         default_callbacks: List[Callback] = [
             CheckpointCallback()
         ]
@@ -28,7 +33,7 @@ class Trainer:
         singleton_cbs = {cb.__class__:cb for cb in [*default_singleton_cbs, *input_singleton_cbs]}.values()
 
         callbacks = [*singleton_cbs, *default_non_singleton_cbs, *input_non_singleton_cbs]
-        self.fabric = Fabric(strategy=strategy, callbacks=callbacks)
+        self.fabric = Fabric(strategy=strategy, devices=devices, num_nodes=num_nodes, callbacks=callbacks)
 
     def launch(self):
         self.fabric.launch()
@@ -54,7 +59,6 @@ class Trainer:
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, training_run_id=training_run_id)
 
         for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
-            print(f'blah{batch_idx, get_rank()}')
             optimizer.zero_grad()
             loss = model.training_step(tokens, attention_mask)
             self.fabric.backward(loss)
