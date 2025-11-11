@@ -3,7 +3,6 @@ from typing import List, Literal
 
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.datasets.placeholder_dataset import PlaceholderDataset
 import mirror.datasets
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.placeholder_model import PlaceholderModel
@@ -14,23 +13,23 @@ Subcommand = Literal['fit'] | Literal['test']
 
 def main(
     subcommand: Subcommand,
+    data: MirrorDataset,
     callbacks: List[Callback] = [],
     checkpoint: CheckpointIdentifier | None = None,
 ):
     match subcommand:
         case 'fit':
-            fit(callbacks, checkpoint)
+            fit(data, callbacks, checkpoint)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
 
-def fit(callbacks: List[Callback], checkpoint: CheckpointIdentifier | None):
+def fit(dataset: MirrorDataset, callbacks: List[Callback], checkpoint: CheckpointIdentifier | None):
     trainer = Trainer(callbacks)
 
     with trainer.fabric.init_module():
         model = PlaceholderModel()
 
-    dataset = PlaceholderDataset()
     trainer.fit(model, dataset, checkpoint)
 
 
