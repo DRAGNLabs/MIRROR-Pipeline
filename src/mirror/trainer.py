@@ -3,6 +3,9 @@ from torch.utils.data import DataLoader
 from typing import List
 import datetime
 
+from lightning.fabric.strategies.strategy import Strategy
+from lightning.fabric.strategies.fsdp import FSDPStrategy
+
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
@@ -13,7 +16,13 @@ from mirror.util import is_login_node
 
 
 class Trainer:
-    def __init__(self, callbacks: List[Callback] = []) -> None:
+    def __init__(
+            self,
+            strategy: Strategy = FSDPStrategy(),
+            devices: int = 1,
+            num_nodes: int = 1,
+            callbacks: List[Callback] = []
+    ) -> None:
         default_callbacks: List[Callback] = [
             CheckpointCallback()
         ]
@@ -24,7 +33,10 @@ class Trainer:
         singleton_cbs = {cb.__class__:cb for cb in [*default_singleton_cbs, *input_singleton_cbs]}.values()
 
         callbacks = [*singleton_cbs, *default_non_singleton_cbs, *input_non_singleton_cbs]
-        self.fabric = Fabric(callbacks=callbacks)
+        self.fabric = Fabric(strategy=strategy, devices=devices, num_nodes=num_nodes, callbacks=callbacks)
+
+    def launch(self):
+        self.fabric.launch()
 
     def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None):
         training_run_id = datetime.datetime.now().isoformat()
@@ -36,9 +48,13 @@ class Trainer:
         )
 
         if checkpoint:
-            state = self.fabric.load(checkpoint.path)
-            model.load_state_dict(state['model'])
-            optimizer.load_state_dict(state['optimizer'])
+            # models and optimizers are treated specially: they are populated via their load_state_dict
+            # methods internally to fabric.load. Anything else in the state dict is just set in place.
+            state = {
+                'model': model,
+                'optimizer': optimizer,
+            }
+            self.fabric.load(checkpoint.path, state)
 
         preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
         dataloader = DataLoader(preprocessed_dataset)
