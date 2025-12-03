@@ -23,7 +23,8 @@ Subcommand = Literal['fit'] | Literal['test']
 
 def main(
     subcommand: Subcommand,
-    data: MirrorDataset,
+    data: str = "WikitextDataset",
+    head: int = 10,
     time: str = '1:00:00',
     ntasks_per_node: int = 1,
     nodes: int = 1,
