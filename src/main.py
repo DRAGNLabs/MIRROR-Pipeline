@@ -61,4 +61,4 @@ if __name__ == '__main__':
     init = parser.instantiate_classes(cfg)
 
     slurm_job = template.render(**init)
-    main(slurm_job, **init)
+    main(**init)
