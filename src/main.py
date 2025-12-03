@@ -21,9 +21,22 @@ import subprocess
 
 Subcommand = Literal['fit'] | Literal['test']
 
+if __name__ == '__main__':
+    env = Environment(loader = FileSystemLoader('templates'))
+    template = env.get_template('slurm.jinja')
+
+    parser = auto_parser(main)
+    cfg = parser.parse_args()
+    if hasattr(cfg, 'config'):
+        del cfg.config  # pyright: ignore
+
+    init = parser.instantiate_classes(cfg)
+
+    slurm_job = template.render(**init)
+    main(slurm_job, **init)
+
 
 def main(
-    slurm_job: str,
     subcommand: Subcommand,
     data: MirrorDataset,
     time: str = '1:00:00',
@@ -49,18 +62,3 @@ def main(
     except subprocess.CalledProcessError as e:
         print(f"Error submitting SLURM job: {e}")
         print(f"Stderr: {e.stderr}")
-
-
-if __name__ == '__main__':
-    env = Environment(loader = FileSystemLoader('templates'))
-    template = env.get_template('slurm.jinja')
-
-    parser = auto_parser(main)
-    cfg = parser.parse_args()
-    if hasattr(cfg, 'config'):
-        del cfg.config  # pyright: ignore
-
-    init = parser.instantiate_classes(cfg)
-
-    slurm_job = template.render(**init)
-    main(slurm_job, **init)
