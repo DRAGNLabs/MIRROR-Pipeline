@@ -20,7 +20,7 @@ Subcommand = Literal['fit'] | Literal['test']
 
 def run(
   subcommand: Subcommand,
-  dataset: MirrorDataset,
+  data: MirrorDataset,
   strategy: Strategy = FSDPStrategy(),
   devices: int = 1,
   num_nodes: int = 1,
