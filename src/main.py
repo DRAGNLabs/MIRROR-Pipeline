@@ -40,7 +40,7 @@ def main(
     try:
         result = subprocess.run(
             ["sbatch"],
-            input=slurm_job.encode('utf-8'), # Encode the string to bytes
+            input=slurm_job,
             capture_output=True,
             text=True,
             check=True
