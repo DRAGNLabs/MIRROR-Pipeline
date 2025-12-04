@@ -51,7 +51,7 @@ def main(
 
 
 if __name__ == '__main__':
-    env = Environment(loader = FileSystemLoader('templates'))
+    env = Environment(loader = FileSystemLoader('src/templates'))
     template = env.get_template('slurm.jinja')
 
     parser = auto_parser(main)
