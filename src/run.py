@@ -1,3 +1,4 @@
+from jsonargparse import auto_parser
 from typing import List, Literal
 import warnings
 
