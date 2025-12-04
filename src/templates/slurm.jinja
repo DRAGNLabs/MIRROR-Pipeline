@@ -1,0 +1,11 @@
+#!/bin/bash
+#SBATCH --time={{ time }}             # Wall clock limit (HH:MM:SS)
+#SBATCH --ntasks-per-node={{ ntasks_per_node }}    # Number of processor cores, i.e., tasks
+#SBATCH --nodes={{ nodes }}               # Number of nodes
+#SBATCH --gres=gpu:{{ gpus_per_node }}             # Number of GPUs per node
+#SBATCH --mem-per-cpu={{ mem_per_cpu }}   # Memory per CPU core
+#SBATCH --output=slurm_logs/%j.out        # Slurm output file
+
+source env/bin/activate
+
+srun python src/run.py fit --data.class_path {{data}} --data.head {{head}}

@@ -16,50 +16,44 @@ from mirror.trainer import Trainer
 import lightning.fabric.strategies
 import mirror.datasets
 
-Subcommand = Literal['fit'] | Literal['test']
+from jinja2 import Environment, FileSystemLoader
+import subprocess
 
+Subcommand = Literal['fit'] | Literal['test']
 
 def main(
     subcommand: Subcommand,
-    data: MirrorDataset,
+    data: str = "WikitextDataset",
+    head: int = 10,
+    time: str = '1:00:00',
+    ntasks_per_node: int = 1,
+    nodes: int = 1,
+    gpus_per_node: int = 1,
+    mem_per_cpu: str = '128g',
     strategy: Strategy = FSDPStrategy(),
     devices: int = 1,
     num_nodes: int = 1,
     callbacks: List[Callback] = [],
     checkpoint: CheckpointIdentifier | None = None,
+    
 ):
-    # These warnings happen internal to Fabric, so there's not much we can do about them.
-    warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
-    warnings.filterwarnings('ignore', category=FutureWarning, message='.*`load_state_dict` is deprecated and will be removed in future versions\\. Please use `load` instead.*')
-    warnings.filterwarnings('ignore', category=UserWarning, message='.*Please use the new API settings to control TF32 behavior.*')
-    warnings.filterwarnings('ignore', category=UserWarning, message='.*`_get_pg_default_device` will be deprecated, it only stays for backward-compatibility reason.*')
-
-    match subcommand:
-        case 'fit':
-            fit(data, strategy, devices, num_nodes, callbacks, checkpoint)
-        case _:
-            print(f'unimplemented subcommand: {subcommand}')
-
-
-def fit(
-    dataset: MirrorDataset,
-    strategy: Strategy,
-    devices: int,
-    num_nodes: int,
-    callbacks: List[Callback],
-    checkpoint: CheckpointIdentifier | None
-):
-    trainer = Trainer(strategy, devices, num_nodes, callbacks)
-
-    trainer.launch()
-
-    with trainer.fabric.init_module():
-        model = PlaceholderModel()
-
-    trainer.fit(model, dataset, checkpoint)
+    try:
+        result = subprocess.run(
+            ["sbatch"],
+            input=slurm_job,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Error submitting SLURM job: {e}")
+        print(f"Stderr: {e.stderr}")
 
 
 if __name__ == '__main__':
+    env = Environment(loader = FileSystemLoader('src/templates'))
+    template = env.get_template('slurm.jinja')
+
     parser = auto_parser(main)
     cfg = parser.parse_args()
     if hasattr(cfg, 'config'):
@@ -67,4 +61,5 @@ if __name__ == '__main__':
 
     init = parser.instantiate_classes(cfg)
 
+    slurm_job = template.render(**init)
     main(**init)
