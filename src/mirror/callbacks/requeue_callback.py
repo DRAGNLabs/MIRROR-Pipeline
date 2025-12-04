@@ -1,4 +1,7 @@
+import os
+import re
 import signal
+from subprocess import call
 import time
 from types import FrameType
 
@@ -6,6 +9,7 @@ from lightning import Fabric
 from torch.optim import Optimizer
 
 from mirror.callbacks.callback import Callback
+from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
@@ -46,9 +50,48 @@ class RequeueCallback(Callback):
             batch_idx: int
     ):
         self._warn_if_iteration_too_long(fabric)
-        if self.requeue_signal_recieved:
-            print('doing requeue work', flush=True)
+        if self.requeue_signal_recieved and fabric.is_global_zero:
+            self._save_checkpoint(fabric, model, optimizer, training_run_id)
+            self._requeue(fabric)
             exit()
+
+    def _save_checkpoint(self, fabric: Fabric, model: MirrorModel, optimizer: Optimizer, training_run_id: str):
+        rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')
+        checkpoint_id = CheckpointIdentifier(
+            training_run_id,
+            checkpoint_name='requeue',
+        )
+
+        fabric.save(checkpoint_id.path, {
+            'model': model,
+            'optimizer': optimizer,
+        })
+
+    def _requeue(self, fabric: Fabric):
+        rank_zero_log(fabric, f'requeueing job')
+
+        array_job_id = os.getenv('SLURM_ARRAY_JOB_ID')
+        if array_job_id is not None:
+            array_task_id = os.environ['SLURM_ARRAY_TASK_ID']
+            job_id = f'{array_job_id}_{array_task_id}'
+        else:
+            job_id = os.environ['SLURM_JOB_ID']
+
+        assert re.match('[0-9_-]+', job_id)
+
+        cmd = ['scontrol', 'requeue', job_id]
+        try:
+            result = call(cmd)
+        except FileNotFoundError:
+            # This can occur if a subprocess call to `scontrol` is run outside a shell context
+            # Re-attempt call (now with shell context). If any error is raised, propagate to user.
+            # When running a shell command, it should be passed as a single string.
+            result = call(" ".join(cmd), shell=True)
+
+        if result == 0:
+            rank_zero_log(fabric, f'requeued job {job_id}')
+        else:
+            rank_zero_log(fabric, f'requeueing job {job_id} failed with error code {result}')
 
     def _warn_if_iteration_too_long(self, fabric: Fabric):
         if not fabric.is_global_zero:
