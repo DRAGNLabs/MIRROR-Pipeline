@@ -59,7 +59,7 @@ def fit(
     
 
 if __name__ == '__main__':
-    parser = auto_parser(main)
+    parser = auto_parser(run)
     cfg = parser.parse_args()
     if hasattr(cfg, 'config'): del cfg.config #pyright: ignore
 
