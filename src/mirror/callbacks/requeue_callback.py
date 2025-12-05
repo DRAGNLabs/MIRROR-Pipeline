@@ -134,7 +134,7 @@ class RequeueCallback(Callback):
         current_time = time.time()
         if self.last_train_batch_end_time is not None:
             training_step_duration = current_time - self.last_train_batch_end_time
-            if self.last_train_batch_end_time and training_step_duration > self.grace_period_seconds:
+            if training_step_duration > self.grace_period_seconds:
                 self.num_iterations_too_long += 1
 
             if is_power_of_ten(self.num_iterations_too_long):
