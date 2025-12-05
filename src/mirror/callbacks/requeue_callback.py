@@ -61,10 +61,11 @@ class RequeueCallback(Callback):
             batch_idx: int
     ):
         self._warn_if_iteration_too_long(fabric)
-        if self.requeue_signal_recieved and fabric.is_global_zero:
+        if self.requeue_signal_recieved:
             self._save_checkpoint(fabric, model, optimizer, training_run_id)
-            self._create_requeue_handoff(training_run_id)
-            self._requeue(fabric)
+            if fabric.is_global_zero:
+                self._create_requeue_handoff(training_run_id)
+                self._requeue(fabric)
             exit()
 
     def _load_requeue_checkpoint_if_present(self, fabric: Fabric, model: MirrorModel, optimizer: Optimizer):
