@@ -6,6 +6,9 @@
 #SBATCH --gpus-per-node=1
 #SBATCH --mem-per-cpu=128G   # memory per CPU core
 #SBATCH --output=slurm_logs/%j.out
+#SBATCH --open-mode=append
+#SBATCH --signal=SIGHUP@90
+#SBATCH --requeue
 
 source env/bin/activate
 
