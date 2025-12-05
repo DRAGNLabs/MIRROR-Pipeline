@@ -1,9 +1,10 @@
+import json
 import os
-import re
 import signal
 from subprocess import call
 import time
 from types import FrameType
+from typing import Dict, Literal
 
 from lightning import Fabric
 from torch.optim import Optimizer
@@ -13,8 +14,16 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
+from mirror.slurm_util import get_job_id
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch
-from mirror.util import is_power_of_ten
+from mirror.util import is_power_of_ten, mirror_data_path
+
+
+def requeue_handoff_path():
+    slurm_job_id = get_job_id()
+    return mirror_data_path / 'requeue_handoffs' / f'handoff-{slurm_job_id}.json'
+
+RequeueHandoff = Dict[Literal['previous_training_run_id'], str]
 
 
 class RequeueCallback(Callback):
@@ -38,6 +47,8 @@ class RequeueCallback(Callback):
         rank_zero_log(fabric, f'setting up requeue handler on signal {self.requeue_signal}')
         signal.signal(self.requeue_signal, self._make_requeue_handler(fabric))
 
+        self._load_requeue_checkpoint_if_present(fabric, model, optimizer)
+
     def on_train_batch_end(
             self,
             fabric: Fabric,
@@ -52,33 +63,56 @@ class RequeueCallback(Callback):
         self._warn_if_iteration_too_long(fabric)
         if self.requeue_signal_recieved and fabric.is_global_zero:
             self._save_checkpoint(fabric, model, optimizer, training_run_id)
+            self._create_requeue_handoff(training_run_id)
             self._requeue(fabric)
             exit()
 
+    def _load_requeue_checkpoint_if_present(self, fabric: Fabric, model: MirrorModel, optimizer: Optimizer):
+        path = requeue_handoff_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
+        try:
+            with open(path, 'r') as f:
+                rank_zero_log(fabric, 'loading requeue checkpoint')
+                handoff_json = f.read()
+                handoff: RequeueHandoff = json.loads(handoff_json)
+
+                checkpoint_id = self._requeue_checkpoint_id(handoff['previous_training_run_id'])
+                fabric.load(checkpoint_id.path, {
+                    'model': model,
+                    'optimizer': optimizer,
+                })
+        except FileNotFoundError:
+            rank_zero_log(fabric, 'no requeue checkpoint')
+            pass
+
+    def _requeue_checkpoint_id(self, training_run_id: str):
+        return CheckpointIdentifier(training_run_id, checkpoint_name='requeue')
+
+
     def _save_checkpoint(self, fabric: Fabric, model: MirrorModel, optimizer: Optimizer, training_run_id: str):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')
-        checkpoint_id = CheckpointIdentifier(
-            training_run_id,
-            checkpoint_name='requeue',
-        )
-
+        checkpoint_id = self._requeue_checkpoint_id(training_run_id)
         fabric.save(checkpoint_id.path, {
             'model': model,
             'optimizer': optimizer,
         })
 
+    def _create_requeue_handoff(self, training_run_id: str):
+        path = requeue_handoff_path()
+        handoff: RequeueHandoff = {
+            'previous_training_run_id': training_run_id
+        }
+        handoff_json = json.dumps(handoff)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'w') as f:
+            f.write(handoff_json)
+
+
     def _requeue(self, fabric: Fabric):
         rank_zero_log(fabric, f'requeueing job')
 
-        array_job_id = os.getenv('SLURM_ARRAY_JOB_ID')
-        if array_job_id is not None:
-            array_task_id = os.environ['SLURM_ARRAY_TASK_ID']
-            job_id = f'{array_job_id}_{array_task_id}'
-        else:
-            job_id = os.environ['SLURM_JOB_ID']
-
-        assert re.match('[0-9_-]+', job_id)
-
+        job_id = get_job_id()
         cmd = ['scontrol', 'requeue', job_id]
         try:
             result = call(cmd)
