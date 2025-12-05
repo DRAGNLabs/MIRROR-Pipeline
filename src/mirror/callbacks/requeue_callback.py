@@ -84,7 +84,6 @@ class RequeueCallback(Callback):
                     'optimizer': optimizer,
                 })
         except FileNotFoundError:
-            rank_zero_log(fabric, 'no requeue checkpoint')
             pass
 
     def _requeue_checkpoint_id(self, training_run_id: str):
