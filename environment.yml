@@ -3,3 +3,11 @@ channels:
   - conda-forge
 dependencies:
   - python=3.12.11
+  - pip
+  - pip:
+    - aiohttp==3.13.1
+    - datasets==4.3.0
+    - jaxtyping==0.3.3
+    - jsonargparse==4.42.0
+    - --extra-index-url https://download.pytorch.org/whl/cu126
+    - lightning==2.5.5
