@@ -1,0 +1,5 @@
+name: ignore-name # intended to be installed as a local environment without a name
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12.11

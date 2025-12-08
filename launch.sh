@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash --login
 
 #SBATCH --time=01:00:00   # walltime
 #SBATCH --ntasks-per-node=1   # number of processor cores (i.e. tasks)
@@ -7,6 +7,6 @@
 #SBATCH --mem-per-cpu=128G   # memory per CPU core
 #SBATCH --output=slurm_logs/%j.out
 
-source env/bin/activate
+mamba activate ./.env
 
 srun python src/main.py fit --data.class_path WikitextDataset --data.head 10
