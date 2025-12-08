@@ -8,6 +8,7 @@ from lightning.fabric.strategies.fsdp import FSDPStrategy
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
+from mirror.callbacks.requeue_callback import RequeueCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
@@ -24,7 +25,8 @@ class Trainer:
             callbacks: List[Callback] = []
     ) -> None:
         default_callbacks: List[Callback] = [
-            CheckpointCallback()
+            CheckpointCallback(),
+            RequeueCallback(),
         ]
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
