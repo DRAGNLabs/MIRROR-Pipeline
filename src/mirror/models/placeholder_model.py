@@ -23,5 +23,3 @@ class PlaceholderModel(MirrorModel):
 
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())
-
-    
