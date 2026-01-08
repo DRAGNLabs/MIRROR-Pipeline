@@ -2,6 +2,7 @@ from lightning import Fabric
 from torch.utils.data import DataLoader
 from typing import List
 import datetime
+import math
 
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
@@ -13,7 +14,7 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.util import is_login_node
+from mirror.util import is_login_node, pad_to_longest
 
 
 class Trainer:
@@ -22,7 +23,7 @@ class Trainer:
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback] = []
+            callbacks: List[Callback] = [], 
     ) -> None:
         default_callbacks: List[Callback] = [
             CheckpointCallback(),
@@ -40,7 +41,7 @@ class Trainer:
     def launch(self):
         self.fabric.launch()
 
-    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None):
+    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, batch_size=1):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(
@@ -58,23 +59,54 @@ class Trainer:
             }
             self.fabric.load(checkpoint.path, state)
 
+        def collate(batch):
+            return pad_to_longest(batch, pad_token=model.tokenizer.pad_token_id)
+
         preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
-        dataloader = DataLoader(preprocessed_dataset)
+        dataloader = DataLoader(preprocessed_dataset, batch_size=batch_size, collate_fn=collate, drop_last=True)
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
 
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, training_run_id=training_run_id)
+        # Sanity checks
+        num_examples = len(preprocessed_dataset)
+        expected_steps = math.ceil(num_examples / batch_size)
+        print(f"Num Examples: ", num_examples)
+        print(f"Expected Steps: ", expected_steps)
+
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
+            training_run_id=training_run_id)
+
+        step_count = 0
 
         for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
+            step_count += 1
+
+            # Check on first few batches
+            if batch_idx < 3:
+                # Check tokens.shape
+                print("tokens.shape: ", tokens.shape, "\nattention_mask.shape:", attention_mask.shape)
+                
+                # Check padding correctness
+                pad_positions = attention_mask == 0
+                if pad_positions.any():
+                    assert (tokens[pad_positions] == pad_id).all(), "Mask says PAD but tokens aren't pad_id"
+
             optimizer.zero_grad()
             loss = model.training_step(tokens, attention_mask)
             self.fabric.backward(loss)
             optimizer.step()
 
-            self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss, tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
+            self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss, 
+                tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
 
-        self.fabric.call('on_fit_end', fabric=self.fabric, model=model, optimizer=optimizer, training_run_id=training_run_id)
+        print(f"Actual Steps: ", step_count)
+
+        self.fabric.call('on_fit_end', fabric=self.fabric, model=model, optimizer=optimizer, 
+            training_run_id=training_run_id)
+
 
 def separate_singletons(callbacks: List[Callback]):
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
     return singletons, non_singletons
+
+

@@ -11,8 +11,8 @@ class PlaceholderModel(MirrorModel):
     def __init__(self) -> None:
         super().__init__()
         self.parameter = nn.Parameter(torch.tensor([0.0], device=device))
-
-    _tokenizer = PlaceholderTokenizer()
+        self.pad_token_id = -1 
+        self._tokenizer = PlaceholderTokenizer()
 
     @property
     def tokenizer(self):
@@ -23,3 +23,5 @@ class PlaceholderModel(MirrorModel):
 
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())
+
+    
