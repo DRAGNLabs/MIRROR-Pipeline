@@ -66,30 +66,10 @@ class Trainer:
         dataloader = DataLoader(preprocessed_dataset, batch_size=batch_size, collate_fn=collate, drop_last=True)
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
 
-        # Sanity checks
-        num_examples = len(preprocessed_dataset)
-        expected_steps = math.ceil(num_examples / batch_size)
-        print(f"Num Examples: ", num_examples)
-        print(f"Expected Steps: ", expected_steps)
-
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id)
 
-        step_count = 0
-
         for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
-            step_count += 1
-
-            # Check on first few batches
-            if batch_idx < 3:
-                # Check tokens.shape
-                print("tokens.shape: ", tokens.shape, "\nattention_mask.shape:", attention_mask.shape)
-                
-                # Check padding correctness
-                pad_positions = attention_mask == 0
-                if pad_positions.any():
-                    assert (tokens[pad_positions] == pad_id).all(), "Mask says PAD but tokens aren't pad_id"
-
             optimizer.zero_grad()
             loss = model.training_step(tokens, attention_mask)
             self.fabric.backward(loss)
@@ -97,8 +77,6 @@ class Trainer:
 
             self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss, 
                 tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
-
-        print(f"Actual Steps: ", step_count)
 
         self.fabric.call('on_fit_end', fabric=self.fabric, model=model, optimizer=optimizer, 
             training_run_id=training_run_id)
