@@ -41,7 +41,7 @@ class Trainer:
     def launch(self):
         self.fabric.launch()
 
-    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, batch_size=2):
+    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, batch_size=1):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(
