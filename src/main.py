@@ -27,7 +27,7 @@ def main(
     num_nodes: int = 1,
     callbacks: List[Callback] = [],
     checkpoint: CheckpointIdentifier | None = None,
-    batch_size: int = 1,
+    batch_size: int = 2,
 ):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
