@@ -20,4 +20,4 @@ class PreprocessedDataset(Dataset):
     def __getitem__(self, index) -> Tuple[TokenTensor, AttentionMask]:
         # TODO: use cached preprocessed data
         item = self.tokenizer.encode(self.raw_dataset[index])
-        return item, torch.ones(item.shape[0], device=device)
+        return item
