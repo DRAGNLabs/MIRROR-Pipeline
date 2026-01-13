@@ -8,6 +8,7 @@ from lightning.fabric.strategies.fsdp import FSDPStrategy
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
+from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.callbacks.requeue_callback import RequeueCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier

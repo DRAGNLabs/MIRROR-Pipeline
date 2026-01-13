@@ -8,6 +8,7 @@ class ConfigSnapshotCallback(Callback):
 
     def on_fit_start(self, *, fabric, model, optimizer, dataset, training_run_id: str, run_config_yaml: str):
         # Only run on rank 0
+        
         if hasattr(fabric, "is_global_zero") and not fabric.is_global_zero:
             return
 
