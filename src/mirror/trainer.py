@@ -9,6 +9,7 @@ from lightning.fabric.strategies.fsdp import FSDPStrategy
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
 from mirror.callbacks.requeue_callback import RequeueCallback
+from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
@@ -27,6 +28,7 @@ class Trainer:
         default_callbacks: List[Callback] = [
             CheckpointCallback(),
             RequeueCallback(),
+            ConfigSnapshotCallback(),
         ]
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
@@ -40,7 +42,8 @@ class Trainer:
     def launch(self):
         self.fabric.launch()
 
-    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None):
+    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, 
+            batch_size: int = 1, run_config_yaml: str = ""):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(
@@ -62,7 +65,8 @@ class Trainer:
         dataloader = DataLoader(preprocessed_dataset)
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
 
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, training_run_id=training_run_id)
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
+            training_run_id=training_run_id, run_config_yaml=run_config_yaml)
 
         for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
             optimizer.zero_grad()

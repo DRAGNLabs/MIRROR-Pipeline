@@ -17,8 +17,8 @@ class CheckpointCallback(Callback):
             fabric: Fabric,
             model: MirrorModel,
             optimizer: Optimizer,
-            dataset: MirrorDataset,
             training_run_id: str,
+            **kwargs
     ):
         self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'start'))
 
@@ -30,11 +30,9 @@ class CheckpointCallback(Callback):
             fabric: Fabric,
             model: MirrorModel,
             optimizer: Optimizer,
-            loss: Loss,
-            tokens: TokenBatch,
-            attention_mask: AttentionMaskBatch,
             training_run_id: str,
             batch_idx: int,
+            **kwargs,
     ):
         if self.every_n_train_steps and batch_idx % self.every_n_train_steps == 0:
             self._save_checkpoint(

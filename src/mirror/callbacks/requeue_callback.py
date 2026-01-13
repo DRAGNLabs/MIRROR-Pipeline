@@ -41,8 +41,7 @@ class RequeueCallback(Callback):
             fabric: Fabric,
             model: MirrorModel,
             optimizer: Optimizer,
-            dataset: MirrorDataset,
-            training_run_id: str
+            **kwargs,
     ):
         rank_zero_log(fabric, f'setting up requeue handler on signal {self.requeue_signal}')
         signal.signal(self.requeue_signal, self._make_requeue_handler(fabric))
@@ -54,11 +53,8 @@ class RequeueCallback(Callback):
             fabric: Fabric,
             model: MirrorModel,
             optimizer: Optimizer,
-            loss: Loss,
-            tokens: TokenBatch,
-            attention_mask: AttentionMaskBatch,
             training_run_id: str,
-            batch_idx: int
+            **kwargs,
     ):
         self._warn_if_iteration_too_long(fabric)
         if self.requeue_signal_recieved:
