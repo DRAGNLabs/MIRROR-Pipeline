@@ -11,7 +11,6 @@ class PlaceholderModel(MirrorModel):
     def __init__(self) -> None:
         super().__init__()
         self.parameter = nn.Parameter(torch.tensor([0.0], device=device))
-        self.pad_token_id = -1 
         self._tokenizer = PlaceholderTokenizer()
 
     @property
