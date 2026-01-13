@@ -17,7 +17,7 @@ class PreprocessedDataset(Dataset):
     def __len__(self):
         return len(self.raw_dataset)
 
-    def __getitem__(self, index) -> Tuple[TokenTensor, AttentionMask]:
+    def __getitem__(self, index) -> TokenTensor:
         # TODO: use cached preprocessed data
         item = self.tokenizer.encode(self.raw_dataset[index])
         return item

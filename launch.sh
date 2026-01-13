@@ -12,4 +12,4 @@
 
 mamba activate ./.env
 
-srun python src/main.py --config config.yml
+srun python src/main.py fit --data.class_path WikitextDataset --data.head 10
