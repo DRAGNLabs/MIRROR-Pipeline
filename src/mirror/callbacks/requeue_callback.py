@@ -15,7 +15,7 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.slurm_util import get_job_id
-from mirror.types import AttentionMaskBatch, Loss, TokenBatch
+from mirror.types import AttentionMaskBatch, TokenBatch
 from mirror.util import is_power_of_ten, mirror_data_path
 
 
@@ -42,7 +42,8 @@ class RequeueCallback(Callback):
             model: MirrorModel,
             optimizer: Optimizer,
             dataset: MirrorDataset,
-            training_run_id: str
+            training_run_id: str,
+            n_batches: int,
     ):
         rank_zero_log(fabric, f'setting up requeue handler on signal {self.requeue_signal}')
         signal.signal(self.requeue_signal, self._make_requeue_handler(fabric))
@@ -54,7 +55,7 @@ class RequeueCallback(Callback):
             fabric: Fabric,
             model: MirrorModel,
             optimizer: Optimizer,
-            loss: Loss,
+            loss: float,
             tokens: TokenBatch,
             attention_mask: AttentionMaskBatch,
             training_run_id: str,
