@@ -9,6 +9,7 @@ from lightning.fabric.strategies.fsdp import FSDPStrategy
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
+from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.requeue_callback import RequeueCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
@@ -28,6 +29,7 @@ class Trainer:
         default_callbacks: List[Callback] = [
             CheckpointCallback(),
             RequeueCallback(),
+            ProgressCallback(),
         ]
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
@@ -67,15 +69,16 @@ class Trainer:
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
-            training_run_id=training_run_id)
+            training_run_id=training_run_id, n_batches=len(dataloader))
 
         for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
             optimizer.zero_grad()
             loss = model.training_step(tokens, attention_mask)
+            loss_value = loss.item()
             self.fabric.backward(loss)
             optimizer.step()
 
-            self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss, 
+            self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss_value, 
                 tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
 
         self.fabric.call('on_fit_end', fabric=self.fabric, model=model, optimizer=optimizer, 
