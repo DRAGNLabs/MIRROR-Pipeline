@@ -64,7 +64,7 @@ class Trainer:
         dataloader = DataLoader(preprocessed_dataset)
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
 
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, training_run_id=training_run_id, n_batches=len(dataloader),)
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, training_run_id=training_run_id, n_batches=len(dataloader))
 
         for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
             optimizer.zero_grad()
