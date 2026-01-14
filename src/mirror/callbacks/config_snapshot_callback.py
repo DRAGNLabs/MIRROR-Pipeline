@@ -1,19 +1,29 @@
 from pathlib import Path
 import subprocess, json, datetime, socket, os
 from mirror.callbacks.callback import Callback
-from mirror.util import mirror_data_path
+from mirror.util import training_runs_path
+from mirror.models.mirror_model import MirrorModel
+from mirror.datasets.mirror_dataset import MirrorDataset
+from lightning import Fabric
+from torch.optim import Optimizer
 
 class ConfigSnapshotCallback(Callback):
     is_singleton = True
 
-    def on_fit_start(self, *, fabric, model, optimizer, dataset, training_run_id: str, run_config_yaml: str):
+    def on_fit_start(
+            self,
+            *,
+            fabric: Fabric, 
+            training_run_id: str, 
+            run_config_yaml: str,
+            **kwargs,
+        ):
         # Only run on rank 0
-        
-        if hasattr(fabric, "is_global_zero") and not fabric.is_global_zero:
+        if not fabric.is_global_zero:
             return
 
         safe_id = training_run_id.replace(":", "-")
-        run_dir = Path(mirror_data_path) / "training_runs" / safe_id
+        run_dir = training_runs_path / safe_id
         run_dir.mkdir(parents=True, exist_ok=True)
 
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()

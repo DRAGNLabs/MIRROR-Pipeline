@@ -75,7 +75,8 @@ class Trainer:
             self.fabric.backward(loss)
             optimizer.step()
 
-            self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss, tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
+            self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss,
+                tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
 
         self.fabric.call('on_fit_end', fabric=self.fabric, model=model, optimizer=optimizer, training_run_id=training_run_id)
 
