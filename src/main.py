@@ -60,7 +60,7 @@ def fit(
     with trainer.fabric.init_module():
         model = PlaceholderModel()
 
-    trainer.fit(model, dataset, checkpoint, batch_size, epochs)
+    trainer.fit(model, dataset, checkpoint, epochs, batch_size)
 
 
 if __name__ == '__main__':
