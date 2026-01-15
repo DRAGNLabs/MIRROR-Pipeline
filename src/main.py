@@ -9,6 +9,8 @@ from pathlib import Path
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
+
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
@@ -72,41 +74,41 @@ def fit(
     trainer.fit(model, dataset, checkpoint)
 
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int) -> str:
+    # Prevent recursion: job run should not submit again
+    args = [a for a in sys.argv[1:] if not a.startswith("--slurm.submit")]
+    args.append("--slurm.submit=false")
+
     repo_root = Path(__file__).resolve().parents[1]
-    (repo_root / "slurm_logs").mkdir(exist_ok=True)
+    templates_dir = repo_root / "src" / "mirror" / "templates"
 
-    sbatch_lines = [
-        "#!/bin/bash --login",
-        f"#SBATCH --time={slurm.time}",
-        f"#SBATCH --ntasks-per-node={slurm.ntasks_per_node}",
-        f"#SBATCH --nodes={num_nodes}",
-        f"#SBATCH --gpus-per-node={slurm.gpus_per_node}",
-        f"#SBATCH --mem-per-cpu={slurm.mem_per_cpu}",
-        f"#SBATCH --output={slurm.output}",
-        f"#SBATCH --open-mode={slurm.open_mode}",
-        f"#SBATCH --signal={slurm.signal}",
-    ]
+    env = Environment(
+        loader=FileSystemLoader(str(templates_dir)),
+        undefined=StrictUndefined,
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+    template = env.get_template("slurm.jinja")
 
-    if slurm.requeue:
-        sbatch_lines.append("SBATCH --requeue")
+    context = {
+        "time": slurm.time,
+        "ntasks_per_node": slurm.ntasks_per_node,
+        "nodes": num_nodes,
+        "gpus_per_node": slurm.gpus_per_node,
+        "mem_per_cpu": slurm.mem_per_cpu,
+        "output": slurm.output,
+        "open_mode": slurm.open_mode,
+        "signal": slurm.signal,
+        "requeue": slurm.requeue,
+        "chdir": str(repo_root),
+        "activate_cmd": "mamba activate ./.env",
+        "run_cmd": f"srun python src/main.py {shlex.join(python_args)}",
+    }
 
-    sbatch_lines += [
-        f"#SBATCH --chdir={repo_root}",
-        "",
-        "set -euo pipefail",
-        "mamba activate ./.env",
-        "",
-        f"srun python src/main.py {shlex.join(python_args)}",
-        "",
-    ]
-
-    script = "\n".join(sbatch_lines)
-
-    res = subprocess.run(["sbatch"], input=script, text=True, capture_output=True, check=True)
-
-    job_id = res.stdout.strip().split()[-1]
-    return job_id
+    script = template.render(**context)
     
+    res = subprocess.run(["sbatch"], input=script, text=True, capture_output=True, check=True)
+    return res.stdout.strip().split()[-1]
+
 if __name__ == '__main__':
     parser = auto_parser(main)
     cfg = parser.parse_args()
