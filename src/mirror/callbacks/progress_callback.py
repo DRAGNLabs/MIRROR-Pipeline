@@ -1,23 +1,19 @@
 from lightning import Fabric
+import torch
+from tqdm import tqdm
 from torch.optim import Optimizer
-
+from mirror.callbacks.callback import Callback
+from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.types import TokenBatch, AttentionMaskBatch
 
+class ProgressCallback(Callback):
+    def __init__(self, bar_refresh_interval = 5) -> None:
+        super().__init__(is_singleton=True)
+        self.progress_bar = None
+        self.bar_refresh_interval = bar_refresh_interval
 
-class Callback:
-    """
-    The names of the methods here are based on those of Lightning's 
-    Callback class: https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.Callback.html#lightning.pytorch.callbacks.Callback
-    """
-
-    def __init__(self, is_singleton = False) -> None:
-        """
-        Args:
-            is_singleton: whether or not there should only be one of this callback at a time
-        """
-        self.is_singleton = is_singleton
 
     def on_fit_start(
             self,
@@ -26,13 +22,10 @@ class Callback:
             optimizer: Optimizer,
             dataset: MirrorDataset,
             training_run_id: str,
-            run_config_yaml: str,
             n_batches: int,
     ):
-        pass
-
-    def on_fit_end(self, fabric: Fabric, model: MirrorModel, optimizer: Optimizer, training_run_id: str):
-        pass
+        if (torch.distributed.get_rank() == 0):
+            self.progress_bar = tqdm(total=n_batches, desc="Training", mininterval=self.bar_refresh_interval)
 
     def on_train_batch_end(
             self,
@@ -45,4 +38,6 @@ class Callback:
             training_run_id: str,
             batch_idx: int,
     ):
-        pass
+        if (torch.distributed.get_rank() == 0):
+            self.progress_bar.set_postfix(Loss=f"{loss:.3f}")
+            self.progress_bar.update(1)

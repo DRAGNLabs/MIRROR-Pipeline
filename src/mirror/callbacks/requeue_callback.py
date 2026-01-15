@@ -15,7 +15,7 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.slurm_util import get_job_id
-from mirror.types import AttentionMaskBatch, Loss, TokenBatch
+from mirror.types import AttentionMaskBatch, TokenBatch
 from mirror.util import is_power_of_ten, mirror_data_path
 
 

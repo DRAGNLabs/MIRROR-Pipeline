@@ -5,7 +5,7 @@ from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.types import Loss, TokenBatch, AttentionMaskBatch
+from mirror.types import TokenBatch, AttentionMaskBatch
 
 class CheckpointCallback(Callback):
     def __init__(self, every_n_train_steps: float | None = None) -> None:
