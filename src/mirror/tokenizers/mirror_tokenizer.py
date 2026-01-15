@@ -25,3 +25,7 @@ class MirrorTokenizer(ABC):
 
     def decode_batch(self, token_batch: TokenBatch) -> Sequence[str]:
         return [self.decode(tokens) for tokens in token_batch]
+
+    @property
+    def pad_token_id(self) -> int:
+        pass
