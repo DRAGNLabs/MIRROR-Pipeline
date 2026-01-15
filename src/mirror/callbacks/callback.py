@@ -27,6 +27,7 @@ class Callback:
             dataset: MirrorDataset,
             training_run_id: str,
             n_batches: int,
+            epochs: int,
     ):
         pass
 

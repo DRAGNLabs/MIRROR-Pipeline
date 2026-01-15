@@ -20,6 +20,7 @@ class CheckpointCallback(Callback):
             dataset: MirrorDataset,
             training_run_id: str,
             n_batches: int,
+            epochs: int,
     ):
         self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'start'))
 

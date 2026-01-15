@@ -23,9 +23,10 @@ class ProgressCallback(Callback):
             dataset: MirrorDataset,
             training_run_id: str,
             n_batches: int,
+            epochs: int,
     ):
         if (torch.distributed.get_rank() == 0):
-            self.progress_bar = tqdm(total=n_batches, desc="Training", mininterval=self.bar_refresh_interval)
+            self.progress_bar = tqdm(total=(epochs * n_batches), desc="Training", mininterval=self.bar_refresh_interval)
 
     def on_train_batch_end(
             self,

@@ -44,6 +44,7 @@ class RequeueCallback(Callback):
             dataset: MirrorDataset,
             training_run_id: str,
             n_batches: int,
+            epochs: int,
     ):
         rank_zero_log(fabric, f'setting up requeue handler on signal {self.requeue_signal}')
         signal.signal(self.requeue_signal, self._make_requeue_handler(fabric))

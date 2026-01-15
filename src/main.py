@@ -27,6 +27,7 @@ def main(
     num_nodes: int = 1,
     callbacks: List[Callback] = [],
     checkpoint: CheckpointIdentifier | None = None,
+    epochs: int = 1,
 ):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
@@ -36,7 +37,7 @@ def main(
 
     match subcommand:
         case 'fit':
-            fit(data, strategy, devices, num_nodes, callbacks, checkpoint)
+            fit(data, strategy, devices, num_nodes, callbacks, checkpoint, epochs)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
@@ -47,7 +48,8 @@ def fit(
     devices: int,
     num_nodes: int,
     callbacks: List[Callback],
-    checkpoint: CheckpointIdentifier | None
+    checkpoint: CheckpointIdentifier | None,
+    epochs: int,
 ):
     trainer = Trainer(strategy, devices, num_nodes, callbacks)
 
@@ -56,7 +58,7 @@ def fit(
     with trainer.fabric.init_module():
         model = PlaceholderModel()
 
-    trainer.fit(model, dataset, checkpoint)
+    trainer.fit(model, dataset, checkpoint, epochs)
 
 
 if __name__ == '__main__':
