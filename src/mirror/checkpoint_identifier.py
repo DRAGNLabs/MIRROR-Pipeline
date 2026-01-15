@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from mirror.util import training_runs_path
+from mirror.util import safe_training_run_path
 
 @dataclass
 class CheckpointIdentifier:
@@ -12,6 +12,6 @@ class CheckpointIdentifier:
 
     @property
     def path(self):
-        return training_runs_path / self.training_run_id / \
+        return safe_training_run_path(self.training_run_id) / \
             'checkpoints' / f'{self.checkpoint_name}.ckpt'
 

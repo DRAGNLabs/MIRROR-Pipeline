@@ -8,14 +8,12 @@ mirror_data_path = Path(
     f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data'
 )
 
-training_runs_path = Path(
-    f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data/training_runs'
-)
-
-
 def is_login_node() -> bool:
     return 'login' in socket.gethostname()
 
+def safe_training_run_path(training_run_id: str) -> Path:
+    safe_id = training_run_id.replace(":", "-")
+    return Path(f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data/training_runs') / safe_id
 
 device = 'cpu' if is_login_node() else 'cuda'
 

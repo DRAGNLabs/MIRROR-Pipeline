@@ -1,7 +1,7 @@
 from pathlib import Path
 import subprocess, json, datetime, socket, os
 from mirror.callbacks.callback import Callback
-from mirror.util import training_runs_path
+from mirror.util import safe_training_run_path
 from mirror.models.mirror_model import MirrorModel
 from mirror.datasets.mirror_dataset import MirrorDataset
 from lightning import Fabric
@@ -22,8 +22,7 @@ class ConfigSnapshotCallback(Callback):
         if not fabric.is_global_zero:
             return
 
-        safe_id = training_run_id.replace(":", "-")
-        run_dir = training_runs_path / safe_id
+        run_dir = safe_training_run_path(training_run_id)
         run_dir.mkdir(parents=True, exist_ok=True)
 
         commit = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
