@@ -25,7 +25,7 @@ class Trainer:
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback] = [], 
+            callbacks: List[Callback] = [],
     ) -> None:
         default_callbacks: List[Callback] = [
             CheckpointCallback(),
@@ -45,8 +45,7 @@ class Trainer:
     def launch(self):
         self.fabric.launch()
 
-    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, 
-            batch_size: int = 1, run_config_yaml: str = ""):
+    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, epochs: int = 1, batch_size: int = 1, run_config_yaml: str = ""):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(
@@ -72,17 +71,18 @@ class Trainer:
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
-            training_run_id=training_run_id, n_batches=len(dataloader), run_config_yaml=run_config_yaml)
+            training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
 
-        for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
-            optimizer.zero_grad()
-            loss = model.training_step(tokens, attention_mask)
-            loss_value = loss.item()
-            self.fabric.backward(loss)
-            optimizer.step()
+        for i in range(epochs):
+            for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
+                optimizer.zero_grad()
+                loss = model.training_step(tokens, attention_mask)
+                loss_value = loss.item()
+                self.fabric.backward(loss)
+                optimizer.step()
 
-            self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss_value, 
-                tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
+                self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss_value, 
+                    tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
 
         self.fabric.call('on_fit_end', fabric=self.fabric, model=model, optimizer=optimizer, 
             training_run_id=training_run_id)

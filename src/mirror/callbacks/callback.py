@@ -28,6 +28,7 @@ class Callback:
             training_run_id: str,
             run_config_yaml: str,
             n_batches: int,
+            epochs: int,
     ):
         pass
 

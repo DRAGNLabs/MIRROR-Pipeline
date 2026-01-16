@@ -18,7 +18,7 @@ class CheckpointCallback(Callback):
             model: MirrorModel,
             optimizer: Optimizer,
             training_run_id: str,
-            **kwargs
+            **kwargs,
     ):
         self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'start'))
 
