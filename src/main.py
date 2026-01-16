@@ -19,6 +19,8 @@ from mirror.trainer import Trainer
 from mirror.util import is_login_node
 from mirror.slurm_util import SlurmConfig
 
+from dataclasses import asdict
+
 # These are required so that their items can be found easily by jsonargparse without
 # having to give the full classpath
 import lightning.fabric.strategies
@@ -43,9 +45,14 @@ def main(
     warnings.filterwarnings('ignore', category=UserWarning, message='.*Please use the new API settings to control TF32 behavior.*')
     warnings.filterwarnings('ignore', category=UserWarning, message='.*`_get_pg_default_device` will be deprecated, it only stays for backward-compatibility reason.*')
 
+    if slurm.submit and is_login_node():
+        job_id = _submit_slurm_job(python_args=sys.argv[1:], slurm=slurm, num_nodes=num_nodes)
+        print(f"Submitted batch job {job_id}")
+        return
+    
     match subcommand:
         case 'fit':
-            fit(data, strategy, devices, num_nodes, callbacks, checkpoint, slurm)
+            fit(data, strategy, devices, num_nodes, callbacks, checkpoint)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
@@ -56,14 +63,8 @@ def fit(
     devices: int,
     num_nodes: int,
     callbacks: List[Callback],
-    checkpoint: CheckpointIdentifier | None, 
-    slurm: SlurmConfig,
+    checkpoint: CheckpointIdentifier | None,
 ):
-    if slurm.submit and is_login_node():
-        job_id = _submit_slurm_job(python_args=sys.argv[1:], slurm=slurm, num_nodes=num_nodes)
-        print(f"Submitted batch job {job_id}")
-        return
-    
     trainer = Trainer(strategy, devices, num_nodes, callbacks)
 
     trainer.launch()
@@ -89,16 +90,11 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
     )
     template = env.get_template("slurm.jinja")
 
+    slurm_ctx = asdict(slurm)
+    slurm_ctx["nodes"] = num_nodes
+
     context = {
-        "time": slurm.time,
-        "ntasks_per_node": slurm.ntasks_per_node,
-        "nodes": num_nodes,
-        "gpus_per_node": slurm.gpus_per_node,
-        "mem_per_cpu": slurm.mem_per_cpu,
-        "output": slurm.output,
-        "open_mode": slurm.open_mode,
-        "signal": slurm.signal,
-        "requeue": slurm.requeue,
+        **slurm_ctx,
         "chdir": str(repo_root),
         "activate_cmd": "mamba activate ./.env",
         "run_cmd": f"srun python src/main.py {shlex.join(python_args)}",
