@@ -4,9 +4,11 @@ import warnings
 
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
+from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.placeholder_model import PlaceholderModel
 from mirror.trainer import Trainer
@@ -28,12 +30,17 @@ def main(
     callbacks: List[Callback] = [],
     checkpoint: CheckpointIdentifier | None = None,
     batch_size: int = 1,
+    device: Literal['cpu', 'cuda'] | None = None,
 ):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*`load_state_dict` is deprecated and will be removed in future versions\\. Please use `load` instead.*')
     warnings.filterwarnings('ignore', category=UserWarning, message='.*Please use the new API settings to control TF32 behavior.*')
     warnings.filterwarnings('ignore', category=UserWarning, message='.*`_get_pg_default_device` will be deprecated, it only stays for backward-compatibility reason.*')
+
+    config = init_config(device)
+    if config['device'] == 'cpu' and isinstance(strategy, FSDPStrategy):
+        strategy = SingleDeviceStrategy(device="cpu")
 
     match subcommand:
         case 'fit':

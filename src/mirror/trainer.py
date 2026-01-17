@@ -15,7 +15,8 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.util import is_login_node, pad_to_longest
+from mirror.config import get_config
+from mirror.util import pad_to_longest
 
 
 class Trainer:
@@ -26,11 +27,14 @@ class Trainer:
             num_nodes: int = 1,
             callbacks: List[Callback] = [], 
     ) -> None:
+        config = get_config()
+        self.config = config
         default_callbacks: List[Callback] = [
             CheckpointCallback(),
-            RequeueCallback(),
             ProgressCallback(),
         ]
+        if config['on_slurm']:
+            default_callbacks.append(RequeueCallback())
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
         input_singleton_cbs, input_non_singleton_cbs = separate_singletons(callbacks)
@@ -38,7 +42,13 @@ class Trainer:
         singleton_cbs = {cb.__class__:cb for cb in [*default_singleton_cbs, *input_singleton_cbs]}.values()
 
         callbacks = [*singleton_cbs, *default_non_singleton_cbs, *input_non_singleton_cbs]
-        self.fabric = Fabric(strategy=strategy, devices=devices, num_nodes=num_nodes, callbacks=callbacks)
+        self.fabric = Fabric(
+            strategy=strategy,
+            devices=devices,
+            num_nodes=num_nodes,
+            callbacks=callbacks,
+            accelerator=config['device'],
+        )
 
     def launch(self):
         self.fabric.launch()
@@ -49,7 +59,7 @@ class Trainer:
         model, optimizer = self.fabric.setup(
             model,
             model.configure_optimizers(),
-            move_to_device=not is_login_node()
+            move_to_device=self.config['device'] == 'cuda'
         )
 
         if checkpoint:
@@ -66,7 +76,7 @@ class Trainer:
 
         preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
         dataloader = DataLoader(preprocessed_dataset, batch_size=batch_size, collate_fn=collate, drop_last=False)
-        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
+        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id, n_batches=len(dataloader))
@@ -89,5 +99,3 @@ def separate_singletons(callbacks: List[Callback]):
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
     return singletons, non_singletons
-
-

@@ -24,7 +24,7 @@ class ProgressCallback(Callback):
             training_run_id: str,
             n_batches: int,
     ):
-        if (torch.distributed.get_rank() == 0):
+        if fabric.is_global_zero:
             self.progress_bar = tqdm(total=n_batches, desc="Training", mininterval=self.bar_refresh_interval)
 
     def on_train_batch_end(
@@ -38,6 +38,6 @@ class ProgressCallback(Callback):
             training_run_id: str,
             batch_idx: int,
     ):
-        if (torch.distributed.get_rank() == 0):
+        if fabric.is_global_zero and self.progress_bar is not None:
             self.progress_bar.set_postfix(Loss=f"{loss:.3f}")
             self.progress_bar.update(1)

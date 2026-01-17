@@ -1,8 +1,9 @@
 import math
 import os
 from pathlib import Path
-import socket
-import torch 
+import torch
+
+from mirror.config import get_config
 from mirror.types import TokenTensor
 
 mirror_data_path = Path(
@@ -11,20 +12,23 @@ mirror_data_path = Path(
 
 
 def is_login_node() -> bool:
-    return 'login' in socket.gethostname()
+    return get_config()['is_login_node']
 
 
-device = 'cpu' if is_login_node() else 'cuda'
+def get_device() -> str:
+    return get_config()['device']
 
 
 def assert_can_download(item_name_to_download: str):
-    if not is_login_node():
+    config = get_config()
+    if config['on_slurm'] and not config['is_login_node']:
         raise Exception(f'Cannot download {item_name_to_download}. Try again on a login node.')
 
 def is_power_of_ten(n: int):
     return n > 0 and math.log10(n).is_integer()
 
 def pad_to_longest(batch: list[TokenTensor], pad_token: int):
+    device = get_device()
     lens = torch.tensor([b.numel() for b in batch], device=device, dtype=torch.long)
     max_len = lens.max().item()
     batch_size = len(batch)
