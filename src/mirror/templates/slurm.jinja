@@ -1,7 +1,7 @@
 #!/bin/bash --login
 #SBATCH --time={{ time }}
-#SBATCH --ntasks-per-node={{ ntasks_per_node }}
 #SBATCH --nodes={{ nodes }}
+#SBATCH --ntasks-per-node={{ ntasks_per_node }}
 #SBATCH --gpus-per-node={{ gpus_per_node }}
 #SBATCH --mem-per-cpu={{ mem_per_cpu }}
 #SBATCH --output={{ output }}
@@ -9,8 +9,6 @@
 #SBATCH --signal={{ signal }}
 {% if requeue %}#SBATCH --requeue{% endif %}
 #SBATCH --chdir={{ chdir }}
-
-set -euo pipefail
 
 {{ activate_cmd }}
 
