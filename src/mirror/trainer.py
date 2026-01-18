@@ -17,7 +17,7 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.config import get_config
+from mirror.config import RuntimeEnvironment, get_config
 from mirror.util import pad_to_longest
 
 
@@ -34,12 +34,11 @@ class Trainer:
         self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        self.callbacks = callbacks
         default_callbacks: List[Callback] = [
             CheckpointCallback(),
             ProgressCallback(),
         ]
-        if config['on_slurm']:
+        if config['environment'] != RuntimeEnvironment.LOCAL:
             default_callbacks.append(RequeueCallback())
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)

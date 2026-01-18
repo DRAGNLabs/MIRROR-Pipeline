@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import torch
 
-from mirror.config import get_config
+from mirror.config import RuntimeEnvironment, get_config
 from mirror.types import TokenTensor
 
 mirror_data_path = Path(
@@ -12,7 +12,7 @@ mirror_data_path = Path(
 
 
 def is_login_node() -> bool:
-    return get_config()['is_login_node']
+    return get_config()['environment'] == RuntimeEnvironment.SLURM_LOGIN
 
 
 def get_device() -> str:
@@ -21,7 +21,7 @@ def get_device() -> str:
 
 def assert_can_download(item_name_to_download: str):
     config = get_config()
-    if config['on_slurm'] and not config['is_login_node']:
+    if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
         raise Exception(f'Cannot download {item_name_to_download}. Try again on a login node.')
 
 def is_power_of_ten(n: int):

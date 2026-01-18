@@ -1,5 +1,6 @@
 import os
 import socket
+from enum import Enum
 from typing import Literal, TypedDict
 
 import torch
@@ -7,10 +8,15 @@ import torch
 DeviceType = Literal['cpu', 'cuda']
 
 
+class RuntimeEnvironment(str, Enum):
+    LOCAL = 'local'
+    SLURM_LOGIN = 'slurm-login'
+    SLURM_COMPUTE = 'slurm-compute'
+
+
 class RuntimeConfig(TypedDict):
     device: DeviceType
-    on_slurm: bool
-    is_login_node: bool
+    environment: RuntimeEnvironment
 
 
 _CONFIG: RuntimeConfig | None = None
@@ -18,10 +24,15 @@ _CONFIG: RuntimeConfig | None = None
 
 def init_config(device: DeviceType | None = None) -> RuntimeConfig:
     global _CONFIG
-    on_slurm = os.getenv('SLURM_JOB_ID') is not None or os.getenv('SLURM_ARRAY_JOB_ID') is not None
-    is_login = on_slurm and 'login' in socket.gethostname()
+    
+    if 'login' in socket.gethostname():
+        environment = RuntimeEnvironment.SLURM_LOGIN
+    elif os.getenv('SLURM_JOB_ID') is not None or os.getenv('SLURM_ARRAY_JOB_ID') is not None:
+        environment = RuntimeEnvironment.SLURM_COMPUTE
+    else:
+        environment = RuntimeEnvironment.LOCAL
     if device is None:
-        if on_slurm and not is_login and torch.cuda.is_available():
+        if environment == RuntimeEnvironment.SLURM_COMPUTE and torch.cuda.is_available():
             device = 'cuda'
         else:
             device = 'cpu'
@@ -30,7 +41,7 @@ def init_config(device: DeviceType | None = None) -> RuntimeConfig:
             "Device 'cuda' was requested but CUDA is not available. "
             "Use --device cpu, or run on a CUDA-capable system."
         )
-    _CONFIG = {'device': device, 'on_slurm': on_slurm, 'is_login_node': is_login}
+    _CONFIG = {'device': device, 'environment': environment}
     return _CONFIG
 
 
