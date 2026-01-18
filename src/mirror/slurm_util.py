@@ -19,8 +19,6 @@ def get_job_id():
 class SlurmConfig:
     submit: bool = True
     time: str = "01:00:00"
-    tasks: int = 1
-    nodes: Optional[int] = None
     ntasks_per_node: Optional[int] = None
     gpus_per_node: Optional[int] = None
     mem_per_cpu: str = "128G"

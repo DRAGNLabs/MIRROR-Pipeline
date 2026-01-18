@@ -46,7 +46,7 @@ def main(
     warnings.filterwarnings('ignore', category=UserWarning, message='.*`_get_pg_default_device` will be deprecated, it only stays for backward-compatibility reason.*')
 
     if slurm.submit and is_login_node():
-        job_id = _submit_slurm_job(python_args=sys.argv[1:], slurm=slurm, num_nodes=num_nodes)
+        job_id = _submit_slurm_job(python_args=sys.argv[1:], slurm=slurm, num_nodes=num_nodes, devices=devices)
         print(f"Submitted batch job {job_id}")
         return
     
@@ -74,9 +74,9 @@ def fit(
 
     trainer.fit(model, dataset, checkpoint)
 
-def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int) -> str:
+def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
     # Prevent recursion: job run should not submit again
-    args = [a for a in sys.argv[1:] if not a.startswith("--slurm.submit")]
+    args = [a for a in python_args if not a.startswith("--slurm.submit")]
     args.append("--slurm.submit=false")
 
     repo_root = Path(__file__).resolve().parents[1]
@@ -92,14 +92,13 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
 
     slurm_ctx = asdict(slurm)
 
-    if slurm_ctx["nodes"] is None:
-        slurm_ctx["nodes"] = num_nodes
+    slurm_ctx["nodes"] = num_nodes
 
     if slurm_ctx["ntasks_per_node"] is None:
-        slurm_ctx["ntasks_per_node"] = slurm_ctx["tasks"]
+        slurm_ctx["ntasks_per_node"] = devices
         
     if slurm_ctx["gpus_per_node"] is None:
-        slurm_ctx["gpus_per_node"] = slurm_ctx["tasks"]
+        slurm_ctx["gpus_per_node"] = devices
 
     context = {
         **slurm_ctx,
