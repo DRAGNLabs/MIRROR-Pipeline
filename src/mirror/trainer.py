@@ -3,9 +3,11 @@ from torch.utils.data import DataLoader
 from typing import List
 import datetime
 import math
+import torch
 
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
+from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
@@ -29,6 +31,10 @@ class Trainer:
     ) -> None:
         config = get_config()
         self.config = config
+        self.strategy = strategy
+        self.devices = devices
+        self.num_nodes = num_nodes
+        self.callbacks = callbacks
         default_callbacks: List[Callback] = [
             CheckpointCallback(),
             ProgressCallback(),
@@ -42,16 +48,23 @@ class Trainer:
         singleton_cbs = {cb.__class__:cb for cb in [*default_singleton_cbs, *input_singleton_cbs]}.values()
 
         callbacks = [*singleton_cbs, *default_non_singleton_cbs, *input_non_singleton_cbs]
-        self.fabric = Fabric(
-            strategy=strategy,
-            devices=devices,
-            num_nodes=num_nodes,
-            callbacks=callbacks,
-            accelerator=config['device'],
-        )
+        self.callbacks = callbacks
+        self.fabric = self._make_fabric(strategy, config['device'])
 
     def launch(self):
-        self.fabric.launch()
+        try:
+            self.fabric.launch()
+        except torch.AcceleratorError as exc:
+            if self.config['device'] == 'cuda':
+                print("WARNING: CUDA unavailable or busy, running on CPU instead.")
+                self.config['device'] = 'cpu'
+                strategy = self.strategy
+                if isinstance(strategy, FSDPStrategy):
+                    strategy = SingleDeviceStrategy(device="cpu")
+                self.fabric = self._make_fabric(strategy, 'cpu')
+                self.fabric.launch()
+                return
+            raise
 
     def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, batch_size=1):
         training_run_id = datetime.datetime.now().isoformat()
@@ -93,6 +106,15 @@ class Trainer:
 
         self.fabric.call('on_fit_end', fabric=self.fabric, model=model, optimizer=optimizer, 
             training_run_id=training_run_id)
+
+    def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
+        return Fabric(
+            strategy=strategy,
+            devices=self.devices,
+            num_nodes=self.num_nodes,
+            callbacks=self.callbacks,
+            accelerator=accelerator,
+        )
 
 
 def separate_singletons(callbacks: List[Callback]):
