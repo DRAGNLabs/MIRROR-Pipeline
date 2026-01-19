@@ -28,6 +28,9 @@ import mirror.datasets
 
 Subcommand = Literal['fit'] | Literal['test']
 
+# This is only ever assigned by the parser dump 
+# Could change to pass as parameter to main when parser is updated/changed
+run_config_yaml = ""
 
 def main(
     subcommand: Subcommand,
@@ -38,6 +41,8 @@ def main(
     callbacks: List[Callback] = [],
     checkpoint: CheckpointIdentifier | None = None,
     slurm: SlurmConfig = SlurmConfig(),
+    epochs: int = 1,
+    batch_size: int = 1,
 ):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
@@ -52,7 +57,7 @@ def main(
     
     match subcommand:
         case 'fit':
-            fit(data, strategy, devices, num_nodes, callbacks, checkpoint)
+            fit(data, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
@@ -64,6 +69,8 @@ def fit(
     num_nodes: int,
     callbacks: List[Callback],
     checkpoint: CheckpointIdentifier | None,
+    epochs: int,
+    batch_size: int,
 ):
     trainer = Trainer(strategy, devices, num_nodes, callbacks)
 
@@ -72,7 +79,7 @@ def fit(
     with trainer.fabric.init_module():
         model = PlaceholderModel()
 
-    trainer.fit(model, dataset, checkpoint)
+    trainer.fit(model, dataset, checkpoint, epochs, batch_size, run_config_yaml=run_config_yaml)
 
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
     # Prevent recursion: job run should not submit again
@@ -116,6 +123,7 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
 if __name__ == '__main__':
     parser = auto_parser(main)
     cfg = parser.parse_args()
+    run_config_yaml = parser.dump(cfg)
     if hasattr(cfg, 'config'):
         del cfg.config  # pyright: ignore
 

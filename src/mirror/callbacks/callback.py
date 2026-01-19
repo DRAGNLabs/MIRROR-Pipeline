@@ -3,7 +3,7 @@ from torch.optim import Optimizer
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.types import TokenBatch, AttentionMaskBatch, Loss
+from mirror.types import TokenBatch, AttentionMaskBatch
 
 
 class Callback:
@@ -26,6 +26,9 @@ class Callback:
             optimizer: Optimizer,
             dataset: MirrorDataset,
             training_run_id: str,
+            run_config_yaml: str,
+            n_batches: int,
+            epochs: int,
     ):
         pass
 
@@ -37,7 +40,7 @@ class Callback:
             fabric: Fabric,
             model: MirrorModel,
             optimizer: Optimizer,
-            loss: Loss,
+            loss: float,
             tokens: TokenBatch,
             attention_mask: AttentionMaskBatch,
             training_run_id: str,

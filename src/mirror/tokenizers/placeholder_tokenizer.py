@@ -14,3 +14,7 @@ class PlaceholderTokenizer(MirrorTokenizer):
 
     def decode(self, tokens):
         return "this is an example text"
+
+    @property
+    def pad_token_id(self):
+        return -1
