@@ -14,6 +14,7 @@ class CheckpointCallback(Callback):
 
     def on_fit_start(
             self,
+            *,
             fabric: Fabric,
             model: MirrorModel,
             optimizer: Optimizer,
@@ -22,11 +23,19 @@ class CheckpointCallback(Callback):
     ):
         self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'start'))
 
-    def on_fit_end(self, fabric: Fabric, model: MirrorModel, optimizer: Optimizer, training_run_id: str):
+    def on_fit_end(
+            self, 
+            *, 
+            fabric: Fabric, 
+            model: MirrorModel, 
+            optimizer: Optimizer, 
+            training_run_id: str
+    ):
         self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'end'))
 
     def on_train_batch_end(
             self,
+            *,
             fabric: Fabric,
             model: MirrorModel,
             optimizer: Optimizer,

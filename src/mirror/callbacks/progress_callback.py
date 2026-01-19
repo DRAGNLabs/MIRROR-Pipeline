@@ -17,6 +17,7 @@ class ProgressCallback(Callback):
 
     def on_fit_start(
             self,
+            *,
             n_batches: int,
             epochs: int,
             **kwargs,
@@ -26,6 +27,7 @@ class ProgressCallback(Callback):
 
     def on_train_batch_end(
             self,
+            *,
             loss: float,
             **kwargs,
     ):
