@@ -76,7 +76,8 @@ class Trainer:
         for i in range(epochs):
             for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
                 optimizer.zero_grad()
-                loss = model.training_step(tokens, attention_mask)
+                step = model.training_step(tokens=tokens, attention_mask=attention_mask)
+                loss = step.loss
                 loss_value = loss.item()
                 self.fabric.backward(loss)
                 optimizer.step()
