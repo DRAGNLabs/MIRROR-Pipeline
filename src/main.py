@@ -21,6 +21,9 @@ import mirror.datasets
 
 Subcommand = Literal['fit'] | Literal['test']
 
+# This is only ever assigned by the parser dump 
+# Could change to pass as parameter to main when parser is updated/changed
+run_config_yaml = ""
 
 def main(
     subcommand: Subcommand,
@@ -30,6 +33,7 @@ def main(
     num_nodes: int = 1,
     callbacks: List[Callback] = [],
     checkpoint: CheckpointIdentifier | None = None,
+    epochs: int = 1,
     batch_size: int = 1,
     device: Literal['cpu', 'cuda'] | None = None,
 ):
@@ -47,7 +51,7 @@ def main(
 
     match subcommand:
         case 'fit':
-            fit(data, strategy, devices, num_nodes, callbacks, checkpoint, batch_size)
+            fit(data, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
@@ -58,7 +62,8 @@ def fit(
     devices: int,
     num_nodes: int,
     callbacks: List[Callback],
-    checkpoint: CheckpointIdentifier | None, 
+    checkpoint: CheckpointIdentifier | None,
+    epochs: int,
     batch_size: int,
 ):
     trainer = Trainer(strategy, devices, num_nodes, callbacks)
@@ -68,12 +73,13 @@ def fit(
     with trainer.fabric.init_module():
         model = PlaceholderModel()
 
-    trainer.fit(model, dataset, checkpoint, batch_size)
+    trainer.fit(model, dataset, checkpoint, epochs, batch_size, run_config_yaml=run_config_yaml)
 
 
 if __name__ == '__main__':
     parser = auto_parser(main)
     cfg = parser.parse_args()
+    run_config_yaml = parser.dump(cfg)
     if hasattr(cfg, 'config'):
         del cfg.config  # pyright: ignore
 
