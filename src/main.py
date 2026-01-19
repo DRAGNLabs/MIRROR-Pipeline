@@ -92,7 +92,8 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
 
     slurm_ctx = asdict(slurm)
 
-    slurm_ctx["nodes"] = num_nodes
+    if slurm_ctx["nodes"] is None:
+        slurm_ctx["nodes"] = num_nodes
 
     if slurm_ctx["ntasks_per_node"] is None:
         slurm_ctx["ntasks_per_node"] = devices
