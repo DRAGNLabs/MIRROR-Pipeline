@@ -66,7 +66,7 @@ class Trainer:
         def collate(batch):
             return pad_to_longest(batch, pad_token=model.tokenizer.pad_token_id)
 
-        preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
+        preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer.encode)
         dataloader = DataLoader(preprocessed_dataset, batch_size=batch_size, collate_fn=collate, drop_last=False)
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
 
