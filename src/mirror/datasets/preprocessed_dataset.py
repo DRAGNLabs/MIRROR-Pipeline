@@ -5,12 +5,14 @@ import torch
 from torch.utils.data import Dataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-
-RawT = TypeVar("RawExampleT")
-ProcessedT = TypeVar("ProcessedExampleT")
+from mirror.types import RawT, ProcessedT
 
 class PreprocessedDataset(Dataset[ProcessedT], Generic[RawT, ProcessedT]):
-    def __init__(self, raw_dataset: MirrorDataset[RawT], preprocess: Callable[[RawT], ProcessedT]):
+    def __init__(
+            self, 
+            raw_dataset: MirrorDataset[RawT], 
+            preprocess: Callable[[RawT], ProcessedT]
+    ):
         super().__init__()
         self.raw_dataset = raw_dataset
         self.preprocess = preprocess

@@ -12,4 +12,4 @@
 
 mamba activate ./.env
 
-srun python src/main.py fit --data.class_path WikitextDataset --data.head 10 --batch_size 2
+srun python src/main.py fit --data.class_path WikitextDataset --data.head 10

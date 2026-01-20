@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from mirror.models.mirror_model import MirrorModel
 from mirror.tokenizers.placeholder_tokenizer import PlaceholderTokenizer
-from mirror.util import device
+from mirror.util import device, pad_to_longest
 
 
 class PlaceholderModel(MirrorModel):
@@ -17,8 +17,15 @@ class PlaceholderModel(MirrorModel):
     def tokenizer(self):
         return self._tokenizer
 
-    def training_step(self, tokens, attention_mask):
+    def preprocess_example(self, text: str):
+        return self._tokenizer.encode(text)
+    
+    def training_step(self, batch):
+        tokens, attention_mask = batch
         return self.parameter
+    
+    def collate(self, examples):
+        return pad_to_longest(examples, pad_token=self.tokenizer.pad_token_id)
 
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())

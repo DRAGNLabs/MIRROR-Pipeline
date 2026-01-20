@@ -3,7 +3,7 @@ from torch.optim import Optimizer
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.types import TokenBatch, AttentionMaskBatch
+from mirror.types import BatchT
 
 
 class Callback:
@@ -32,7 +32,13 @@ class Callback:
     ):
         pass
 
-    def on_fit_end(self, fabric: Fabric, model: MirrorModel, optimizer: Optimizer, training_run_id: str):
+    def on_fit_end(
+            self, 
+            fabric: Fabric, 
+            model: MirrorModel, 
+            optimizer: Optimizer, 
+            training_run_id: str
+    ):
         pass
 
     def on_train_batch_end(
@@ -41,8 +47,7 @@ class Callback:
             model: MirrorModel,
             optimizer: Optimizer,
             loss: float,
-            tokens: TokenBatch,
-            attention_mask: AttentionMaskBatch,
+            batch: BatchT,
             training_run_id: str,
             batch_idx: int,
     ):
