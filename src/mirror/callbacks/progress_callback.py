@@ -29,6 +29,6 @@ class ProgressCallback(Callback):
             loss: float,
             **kwargs,
     ):
-        if fabric.is_global_zero and self.progress_bar is not None:
+        if Fabric.is_global_zero and self.progress_bar is not None:
             self.progress_bar.set_postfix(Loss=f"{loss:.3f}")
             self.progress_bar.update(1)
