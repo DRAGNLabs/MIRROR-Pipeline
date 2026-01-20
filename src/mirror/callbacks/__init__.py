@@ -1,3 +1,5 @@
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.test_callback import TestCallback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
+from mirror.callbacks.progress_callback import ProgressCallback
+from mirror.callbacks.requeue_callback import RequeueCallback
