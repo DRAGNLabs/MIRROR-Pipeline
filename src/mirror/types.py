@@ -11,9 +11,9 @@ AttentionMaskBatch = Int[Tensor, "b t"]
 Loss = Float[Tensor, ""]
 
 
-ModelOutputT = TypeVar("ModelOutputT")
+ProcessedT = TypeVar("ProcessedT")
 
 @dataclass
-class TrainStepOutput(Generic[ModelOutputT]):
+class TrainStepOutput(Generic[ProcessedT]):
     loss: Tensor
-    output: ModelOutputT
+    output: ProcessedT
