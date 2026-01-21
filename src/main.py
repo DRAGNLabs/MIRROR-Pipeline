@@ -27,6 +27,7 @@ from dataclasses import asdict
 # These are required so that their items can be found easily by jsonargparse without
 # having to give the full classpath
 import lightning.fabric.strategies
+import mirror.callbacks
 import mirror.datasets
 
 Subcommand = Literal['fit'] | Literal['test']
