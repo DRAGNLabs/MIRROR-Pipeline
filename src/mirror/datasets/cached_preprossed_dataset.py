@@ -12,7 +12,7 @@ from mirror.datasets import tokenized_data_path
 
 
 class CachedPreprocessedDataset(Dataset):
-    def __init__(self, raw_dataset: MirrorDataset, tokenizer: MirrorTokenizer):
+    def __init__(self, raw_dataset: MirrorDataset, tokenizer: MappableTokenizer):
         super().__init__()
         self.raw_dataset = raw_dataset
         self.tokenizer_id = tokenizer.tokenization_id # A reference to the specific tokenizer that we are using hopefully
@@ -28,7 +28,11 @@ class CachedPreprocessedDataset(Dataset):
         else:
             os.makedirs(dataset_path, exist_ok=True)
             raw_dataset.map(tokenizer.encode)
-            raw_dataset.save_to_disk(dataset_path = self.dataset_path)
+            
+            # this must be done on a login node
+            raw_dataset.save_to_disk(dataset_path = self.dataset_path) # , max_shard_size = 1GB ) # might be a way to reduce RAM needed when loading this back
+            
+            
             self.data = raw_dataset
 
         # fabric.save_to_disk() or perhaps our dataset object has a save_to_disk method

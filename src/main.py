@@ -53,6 +53,7 @@ def main(
     if slurm.submit and is_login_node():
         job_id = _submit_slurm_job(python_args=sys.argv[1:], slurm=slurm, num_nodes=num_nodes, devices=devices)
         print(f"Submitted batch job {job_id}")
+        print(type(data)) # THIS IS TO SEE WHAT THIS DATA SHIZ IS
         return
     
     match subcommand:

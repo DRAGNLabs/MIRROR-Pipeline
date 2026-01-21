@@ -59,7 +59,8 @@ def tokenized_data_path(dataset_id: str) -> Path:
 def load_tokenized_from_cache(
         hf_dataset_path: str,
         hf_dataset_name: str | None = None,
-        process: Callable[[Dataset | DatasetDict], Dataset | DatasetDict] | None = None,
+        # process: Callable[[Dataset | DatasetDict], Dataset | DatasetDict] | None = None,
+        tokenizer_function: Callable = None,
         reset_cache: bool = False,
 ) -> Dataset | DatasetDict:
     """
@@ -90,8 +91,9 @@ def load_tokenized_from_cache(
             cache_dir=str(datasets_path / hf_dataset_path)
         )
         assert isinstance(ds, Dataset) or isinstance(ds, DatasetDict)
-        if process:
-            ds = process(ds)
+        if tokenizer_function:
+            ds = ds.map(tokenizer_function)
+        
         ds.save_to_disk(dataset_path)
 
     return ds
