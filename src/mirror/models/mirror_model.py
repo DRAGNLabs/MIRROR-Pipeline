@@ -1,13 +1,12 @@
 from torch.optim import Optimizer
 import torch.nn as nn
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
 
-from mirror.types import TokenBatch, AttentionMaskBatch, Loss, RawT, ProcessedT, BatchT
+from mirror.types import TokenBatch, AttentionMaskBatch, Loss
 from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
 
 
-class MirrorModel(ABC, nn.Module, Generic[RawT, ProcessedT, BatchT]):
+class MirrorModel[RawT, ProcessedT, BatchT](ABC, nn.Module):
     @property
     @abstractmethod
     def tokenizer(self) -> MirrorTokenizer:

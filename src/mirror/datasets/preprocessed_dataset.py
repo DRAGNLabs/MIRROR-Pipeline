@@ -1,13 +1,11 @@
 from __future__ import annotations
-from typing import Callable, Generic, TypeVar
-
+from typing import Callable
 import torch
 from torch.utils.data import Dataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.types import RawT, ProcessedT
 
-class PreprocessedDataset(Dataset[ProcessedT], Generic[RawT, ProcessedT]):
+class PreprocessedDataset[RawT, ProcessedT](Dataset[ProcessedT]):
     def __init__(
             self, 
             raw_dataset: MirrorDataset[RawT], 

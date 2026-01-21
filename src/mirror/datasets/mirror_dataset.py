@@ -1,10 +1,9 @@
 from __future__ import annotations
-from typing import Generic, Sized, TypeVar
+from typing import Sized
 from torch.utils.data import Dataset
 from abc import abstractmethod
-from mirror.types import RawT
 
-class MirrorDataset(Dataset[RawT], Sized, Generic[RawT]):
+class MirrorDataset[RawT](Dataset[RawT], Sized):
     @property
     @abstractmethod
     def dataset_id(self) -> str:

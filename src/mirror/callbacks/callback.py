@@ -3,7 +3,6 @@ from torch.optim import Optimizer
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.types import BatchT
 
 
 class Callback:
@@ -41,7 +40,7 @@ class Callback:
     ):
         pass
 
-    def on_train_batch_end(
+    def on_train_batch_end[BatchT](
             self,
             fabric: Fabric,
             model: MirrorModel,

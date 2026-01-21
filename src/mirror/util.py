@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import socket
 import torch 
-from mirror.types import TokenTensor
+from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
 
 mirror_data_path = Path(
     f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data'
@@ -26,7 +26,7 @@ def assert_can_download(item_name_to_download: str):
 def is_power_of_ten(n: int):
     return n > 0 and math.log10(n).is_integer()
 
-def pad_to_longest(batch: list[TokenTensor], pad_token: int):
+def pad_to_longest(batch: list[TokenTensor], pad_token: int) -> tuple[TokenBatch, AttentionMaskBatch]:
     lens = torch.tensor([b.numel() for b in batch], device=device, dtype=torch.long)
     max_len = lens.max().item()
     batch_size = len(batch)

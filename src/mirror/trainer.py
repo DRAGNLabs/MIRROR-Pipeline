@@ -1,8 +1,7 @@
 from lightning import Fabric
 from torch.utils.data import DataLoader
-from typing import List, TypeVar
+from typing import List
 import datetime
-import math
 
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
@@ -16,8 +15,7 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.types import RawT, ProcessedT, BatchT
-from mirror.util import is_login_node, pad_to_longest
+from mirror.util import is_login_node
 
 class Trainer:
     def __init__(
@@ -45,7 +43,7 @@ class Trainer:
     def launch(self):
         self.fabric.launch()
 
-    def fit(
+    def fit[RawT, ProcessedT, BatchT](
             self, 
             model: MirrorModel[RawT, ProcessedT, BatchT], 
             dataset: MirrorDataset[RawT], 
@@ -83,8 +81,10 @@ class Trainer:
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
 
-        for i in range(epochs):
+        for _ in range(epochs):
             for batch_idx, batch in enumerate(dataloader):
+                batch: BatchT = batch
+
                 optimizer.zero_grad()
                 loss = model.training_step(batch)
                 loss_value = loss.item()
@@ -115,5 +115,3 @@ def separate_singletons(callbacks: List[Callback]):
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
     return singletons, non_singletons
-
-
