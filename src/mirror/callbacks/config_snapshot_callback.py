@@ -14,7 +14,7 @@ class ConfigSnapshotCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, Mode
             training_run_id: str, 
             run_config_yaml: str,
             **kwargs,
-        ):
+    ):
         # Only run on rank 0
         if not fabric.is_global_zero:
             return

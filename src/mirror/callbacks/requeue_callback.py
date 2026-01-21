@@ -35,6 +35,7 @@ class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutput
 
     def on_fit_start(
             self,
+            *,
             fabric: Fabric,
             model: MirrorModel[ProcessedT, ModelOutputT],
             optimizer: Optimizer,
@@ -47,6 +48,7 @@ class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutput
 
     def on_train_batch_end(
             self,
+            *,
             fabric: Fabric,
             model: MirrorModel[ProcessedT, ModelOutputT],
             optimizer: Optimizer,
@@ -61,7 +63,12 @@ class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutput
                 self._requeue(fabric)
             exit()
 
-    def _load_requeue_checkpoint_if_present(self, fabric: Fabric, model: MirrorModel[ProcessedT, ModelOutputT], optimizer: Optimizer):
+    def _load_requeue_checkpoint_if_present(
+            self, 
+            fabric: Fabric, 
+            model: MirrorModel[ProcessedT, ModelOutputT], 
+            optimizer: Optimizer
+    ):
         path = requeue_handoff_path()
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -79,11 +86,20 @@ class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutput
         except FileNotFoundError:
             pass
 
-    def _requeue_checkpoint_id(self, training_run_id: str):
+    def _requeue_checkpoint_id(
+            self, 
+            training_run_id: str
+    ):
         return CheckpointIdentifier(training_run_id, checkpoint_name='requeue')
 
 
-    def _save_checkpoint(self, fabric: Fabric, model: MirrorModel[ProcessedT, ModelOutputT], optimizer: Optimizer, training_run_id: str):
+    def _save_checkpoint(
+            self, 
+            fabric: Fabric, 
+            model: MirrorModel[ProcessedT, ModelOutputT], 
+            optimizer: Optimizer, 
+            training_run_id: str
+    ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')
         checkpoint_id = self._requeue_checkpoint_id(training_run_id)
         fabric.save(checkpoint_id.path, {
@@ -91,7 +107,10 @@ class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutput
             'optimizer': optimizer,
         })
 
-    def _create_requeue_handoff(self, training_run_id: str):
+    def _create_requeue_handoff(
+            self,
+            training_run_id: str
+    ):
         path = requeue_handoff_path()
         handoff: RequeueHandoff = {
             'previous_training_run_id': training_run_id
