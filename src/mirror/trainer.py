@@ -16,7 +16,6 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.types import ProcessedT
 from mirror.util import is_login_node, pad_to_longest
 
 class Trainer:
@@ -45,7 +44,7 @@ class Trainer:
     def launch(self):
         self.fabric.launch()
 
-    def fit(self, model: MirrorModel[ProcessedT], dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, epochs: int = 1, batch_size: int = 1, run_config_yaml: str = ""):
+    def fit[ProcessedT, ModelOutputT](self, model: MirrorModel[ProcessedT, ModelOutputT], dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, epochs: int = 1, batch_size: int = 1, run_config_yaml: str = ""):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(
