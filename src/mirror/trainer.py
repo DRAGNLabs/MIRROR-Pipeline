@@ -3,9 +3,11 @@ from torch.utils.data import DataLoader
 from typing import List
 import datetime
 import math
+import torch
 
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
+from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
@@ -16,7 +18,8 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.util import is_login_node, pad_to_longest
+from mirror.config import RuntimeEnvironment, get_config
+from mirror.util import pad_to_longest
 
 class Trainer[ProcessedT, ModelOutputT]:
     def __init__(
@@ -26,12 +29,19 @@ class Trainer[ProcessedT, ModelOutputT]:
             num_nodes: int = 1,
             callbacks: List[Callback[ProcessedT, ModelOutputT]] = [],
     ) -> None:
+        config = get_config()
+        self.config = config
+        self.strategy = strategy
+        self.devices = devices
+        self.num_nodes = num_nodes
         default_callbacks: List[Callback[ProcessedT, ModelOutputT]] = [
             CheckpointCallback(),
             RequeueCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
         ]
+        if config['environment'] != RuntimeEnvironment.LOCAL:
+            default_callbacks.append(RequeueCallback())
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
         input_singleton_cbs, input_non_singleton_cbs = separate_singletons(callbacks)
@@ -39,10 +49,23 @@ class Trainer[ProcessedT, ModelOutputT]:
         singleton_cbs = {cb.__class__:cb for cb in [*default_singleton_cbs, *input_singleton_cbs]}.values()
 
         callbacks = [*singleton_cbs, *default_non_singleton_cbs, *input_non_singleton_cbs]
-        self.fabric = Fabric(strategy=strategy, devices=devices, num_nodes=num_nodes, callbacks=callbacks)
+        self.callbacks = callbacks
+        self.fabric = self._make_fabric(strategy, config['device'])
 
     def launch(self):
-        self.fabric.launch()
+        try:
+            self.fabric.launch()
+        except torch.AcceleratorError as exc:
+            if self.config['device'] == 'cuda':
+                print("WARNING: CUDA unavailable or busy, running on CPU instead.")
+                self.config['device'] = 'cpu'
+                strategy = self.strategy
+                if isinstance(strategy, FSDPStrategy):
+                    strategy = SingleDeviceStrategy(device="cpu")
+                self.fabric = self._make_fabric(strategy, 'cpu')
+                self.fabric.launch()
+                return
+            raise
 
     def fit(self, model: MirrorModel[ProcessedT, ModelOutputT], dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, epochs: int = 1, batch_size: int = 1, run_config_yaml: str = ""):
         training_run_id = datetime.datetime.now().isoformat()
@@ -50,7 +73,7 @@ class Trainer[ProcessedT, ModelOutputT]:
         model, optimizer = self.fabric.setup(
             model,
             model.configure_optimizers(),
-            move_to_device=not is_login_node()
+            move_to_device=self.config['device'] == 'cuda'
         )
 
         if checkpoint:
@@ -67,7 +90,7 @@ class Trainer[ProcessedT, ModelOutputT]:
 
         preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
         dataloader = DataLoader(preprocessed_dataset, batch_size=batch_size, collate_fn=collate, drop_last=False)
-        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
+        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
@@ -86,6 +109,15 @@ class Trainer[ProcessedT, ModelOutputT]:
 
         self.fabric.call('on_fit_end', fabric=self.fabric, model=model, optimizer=optimizer, 
             training_run_id=training_run_id)
+
+    def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
+        return Fabric(
+            strategy=strategy,
+            devices=self.devices,
+            num_nodes=self.num_nodes,
+            callbacks=self.callbacks,
+            accelerator=accelerator,
+        )
 
 
 def separate_singletons[ProcessedT, ModelOutputT](callbacks: List[Callback[ProcessedT, ModelOutputT]]):

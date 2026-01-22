@@ -19,6 +19,7 @@ class Callback[ProcessedT, ModelOutputT]:
 
     def on_fit_start(
             self,
+            *,
             fabric: Fabric,
             model: MirrorModel[ProcessedT, ModelOutputT],
             optimizer: Optimizer,
@@ -30,11 +31,19 @@ class Callback[ProcessedT, ModelOutputT]:
     ):
         pass
 
-    def on_fit_end(self, fabric: Fabric, model: MirrorModel[ProcessedT, ModelOutputT], optimizer: Optimizer, training_run_id: str):
+    def on_fit_end(
+        self, 
+        *, 
+        fabric: Fabric, 
+        model: MirrorModel[ProcessedT, ModelOutputT], 
+        optimizer: Optimizer, 
+        training_run_id: str
+    ):
         pass
 
     def on_train_batch_end(
             self,
+            *,
             fabric: Fabric,
             model: MirrorModel[ProcessedT, ModelOutputT],
             optimizer: Optimizer,
