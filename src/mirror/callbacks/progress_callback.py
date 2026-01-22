@@ -1,4 +1,5 @@
 import torch
+from lightning import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
 

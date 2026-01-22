@@ -18,15 +18,15 @@ from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.util import is_login_node, pad_to_longest
 
-class Trainer:
+class Trainer[ProcessedT, ModelOutputT]:
     def __init__(
             self,
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback] = [],
+            callbacks: List[Callback[ProcessedT, ModelOutputT]] = [],
     ) -> None:
-        default_callbacks: List[Callback] = [
+        default_callbacks: List[Callback[ProcessedT, ModelOutputT]] = [
             CheckpointCallback(),
             RequeueCallback(),
             ConfigSnapshotCallback(),
@@ -44,7 +44,7 @@ class Trainer:
     def launch(self):
         self.fabric.launch()
 
-    def fit[ProcessedT, ModelOutputT](self, model: MirrorModel[ProcessedT, ModelOutputT], dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, epochs: int = 1, batch_size: int = 1, run_config_yaml: str = ""):
+    def fit(self, model: MirrorModel[ProcessedT, ModelOutputT], dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, epochs: int = 1, batch_size: int = 1, run_config_yaml: str = ""):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(
@@ -88,7 +88,7 @@ class Trainer:
             training_run_id=training_run_id)
 
 
-def separate_singletons(callbacks: List[Callback]):
+def separate_singletons[ProcessedT, ModelOutputT](callbacks: List[Callback[ProcessedT, ModelOutputT]]):
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
     return singletons, non_singletons
