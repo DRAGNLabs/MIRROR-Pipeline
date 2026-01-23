@@ -17,7 +17,7 @@ from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.models.placeholder_model import PlaceholderModel
+from mirror.models.mirror_model import MirrorModel
 from mirror.trainer import Trainer
 from mirror.util import is_login_node
 from mirror.slurm_util import SlurmConfig
@@ -39,6 +39,7 @@ run_config_yaml = ""
 def main(
     subcommand: Subcommand,
     data: MirrorDataset,
+    model: MirrorModel,
     strategy: Strategy = FSDPStrategy(),
     devices: int = 1,
     num_nodes: int = 1,
@@ -68,13 +69,14 @@ def main(
     
     match subcommand:
         case 'fit':
-            fit(data, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
+            fit(data, model, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
 
 def fit(
     dataset: MirrorDataset,
+    model: MirrorModel,
     strategy: Strategy,
     devices: int,
     num_nodes: int,
@@ -87,10 +89,7 @@ def fit(
 
     trainer.launch()
 
-    with trainer.fabric.init_module():
-        model = PlaceholderModel()
-
-    trainer.fit(model, dataset, checkpoint, epochs, batch_size, run_config_yaml=run_config_yaml)
+    trainer.fit(dataset, model, checkpoint, epochs, batch_size, run_config_yaml=run_config_yaml)
 
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
     # Prevent recursion: job run should not submit again
@@ -130,6 +129,7 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
     
     res = subprocess.run(["sbatch"], input=script, text=True, capture_output=True, check=True)
     return res.stdout.strip().split()[-1]
+
 
 if __name__ == '__main__':
     parser = auto_parser(main)
