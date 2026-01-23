@@ -5,13 +5,13 @@ import torch.nn as nn
 from mirror.models.mirror_model import MirrorModel
 from mirror.tokenizers.placeholder_tokenizer import PlaceholderTokenizer
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
-from mirror.util import device, pad_to_longest
+from mirror.util import get_device, pad_to_longest
 
 
 class PlaceholderModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
     def __init__(self) -> None:
         super().__init__()
-        self.parameter = nn.Parameter(torch.tensor([0.0], device=device))
+        self.parameter = nn.Parameter(torch.tensor([0.0], device=get_device()))
         self._tokenizer = PlaceholderTokenizer()
 
     @property

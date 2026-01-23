@@ -1,26 +1,28 @@
 import math
 import os
 from pathlib import Path
-import socket
 import torch 
 from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
+from mirror.config import RuntimeEnvironment, get_config
 
 mirror_data_path = Path(
     f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data'
 )
 
 def is_login_node() -> bool:
-    return 'login' in socket.gethostname()
+    return get_config()['environment'] == RuntimeEnvironment.SLURM_LOGIN
 
 def safe_training_run_path(training_run_id: str) -> Path:
     safe_id = training_run_id.replace(":", "-")
     return Path(f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data/training_runs') / safe_id
 
-device = 'cpu' if is_login_node() else 'cuda'
+def get_device() -> str:
+    return get_config()['device']
 
 
 def assert_can_download(item_name_to_download: str):
-    if not is_login_node():
+    config = get_config()
+    if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
         raise Exception(f'Cannot download {item_name_to_download}. Try again on a login node.')
 
 def is_power_of_ten(n: int):

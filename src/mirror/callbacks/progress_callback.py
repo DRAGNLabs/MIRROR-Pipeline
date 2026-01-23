@@ -17,6 +17,7 @@ class ProgressCallback(Callback):
 
     def on_fit_start(
             self,
+            *,
             n_batches: int,
             epochs: int,
             **kwargs,
@@ -26,9 +27,10 @@ class ProgressCallback(Callback):
 
     def on_train_batch_end(
             self,
+            *,
             loss: float,
             **kwargs,
     ):
-        if (torch.distributed.get_rank() == 0):
+        if Fabric.is_global_zero and self.progress_bar is not None:
             self.progress_bar.set_postfix(Loss=f"{loss:.3f}")
             self.progress_bar.update(1)
