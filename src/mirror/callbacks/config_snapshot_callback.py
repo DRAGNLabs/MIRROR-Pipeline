@@ -1,13 +1,10 @@
 from pathlib import Path
 import subprocess, json, datetime, socket, os
+from lightning import Fabric
 from mirror.callbacks.callback import Callback
 from mirror.util import safe_training_run_path
-from mirror.models.mirror_model import MirrorModel
-from mirror.datasets.mirror_dataset import MirrorDataset
-from lightning import Fabric
-from torch.optim import Optimizer
 
-class ConfigSnapshotCallback(Callback):
+class ConfigSnapshotCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutputT]):
     is_singleton = True
 
     def on_fit_start(

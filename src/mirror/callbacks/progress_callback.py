@@ -1,14 +1,9 @@
-from lightning import Fabric
 import torch
+from lightning import Fabric
 from tqdm import tqdm
-from torch.optim import Optimizer
 from mirror.callbacks.callback import Callback
-from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.models.mirror_model import MirrorModel
-from mirror.types import TokenBatch, AttentionMaskBatch
 
-class ProgressCallback(Callback):
+class ProgressCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutputT]):
     def __init__(self, bar_refresh_interval = 5) -> None:
         super().__init__(is_singleton=True)
         self.progress_bar = None

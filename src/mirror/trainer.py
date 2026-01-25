@@ -21,21 +21,20 @@ from mirror.models.mirror_model import MirrorModel
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.util import pad_to_longest
 
-
-class Trainer:
+class Trainer[ProcessedT, ModelOutputT]:
     def __init__(
             self,
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback] = [],
+            callbacks: List[Callback[ProcessedT, ModelOutputT]] = [],
     ) -> None:
         config = get_config()
         self.config = config
         self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback] = [
+        default_callbacks: List[Callback[ProcessedT, ModelOutputT]] = [
             CheckpointCallback(),
             RequeueCallback(),
             ConfigSnapshotCallback(),
@@ -68,7 +67,7 @@ class Trainer:
                 return
             raise
 
-    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, epochs: int = 1, batch_size: int = 1, run_config_yaml: str = ""):
+    def fit(self, model: MirrorModel[ProcessedT, ModelOutputT], dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, epochs: int = 1, batch_size: int = 1, run_config_yaml: str = ""):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(
@@ -99,7 +98,8 @@ class Trainer:
         for i in range(epochs):
             for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
                 optimizer.zero_grad()
-                loss = model.training_step(tokens, attention_mask)
+                step = model.training_step(tokens=tokens, attention_mask=attention_mask)
+                loss = step.loss
                 loss_value = loss.item()
                 self.fabric.backward(loss)
                 optimizer.step()
@@ -120,7 +120,7 @@ class Trainer:
         )
 
 
-def separate_singletons(callbacks: List[Callback]):
+def separate_singletons[ProcessedT, ModelOutputT](callbacks: List[Callback[ProcessedT, ModelOutputT]]):
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
     return singletons, non_singletons
