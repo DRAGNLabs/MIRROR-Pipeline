@@ -1,6 +1,5 @@
 from lightning import Fabric
 from torch.optim import Optimizer
-
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 
