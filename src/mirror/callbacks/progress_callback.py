@@ -1,12 +1,7 @@
-from lightning import Fabric
 import torch
+from lightning import Fabric
 from tqdm import tqdm
-from torch.optim import Optimizer
 from mirror.callbacks.callback import Callback
-from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.models.mirror_model import MirrorModel
-from mirror.types import TokenBatch, AttentionMaskBatch
 
 class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
        Callback[RawT, ProcessedT, BatchT, ModelOutputT]

@@ -11,13 +11,10 @@ from torch.optim import Optimizer
 
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.slurm_util import get_job_id
-from mirror.types import AttentionMaskBatch, TokenBatch
 from mirror.util import is_power_of_ten, mirror_data_path
-
 
 def requeue_handoff_path():
     slurm_job_id = get_job_id()

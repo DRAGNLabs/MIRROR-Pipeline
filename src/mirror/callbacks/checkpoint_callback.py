@@ -1,11 +1,8 @@
 from lightning import Fabric
-import torch
 from torch.optim import Optimizer
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.types import TokenBatch, AttentionMaskBatch
 
 class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
        Callback[RawT, ProcessedT, BatchT, ModelOutputT]
@@ -27,7 +24,7 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
 
     def on_fit_end(
             self, 
-            *, 
+            *,
             fabric: Fabric, 
             model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
             optimizer: Optimizer, 
