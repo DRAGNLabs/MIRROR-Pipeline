@@ -66,7 +66,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 return
             raise
 
-    def fit[RawT, ProcessedT, BatchT](
+    def fit(
             self, 
             model: MirrorModel[RawT, ProcessedT, BatchT], 
             dataset: MirrorDataset[RawT], 
