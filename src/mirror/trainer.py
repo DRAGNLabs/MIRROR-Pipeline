@@ -2,7 +2,6 @@ from lightning import Fabric
 from torch.utils.data import DataLoader
 from typing import List
 import datetime
-import math
 import torch
 
 from lightning.fabric.strategies.strategy import Strategy
@@ -19,22 +18,22 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.util import pad_to_longest
 
-class Trainer[ProcessedT, ModelOutputT]:
+
+class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
     def __init__(
             self,
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback[ProcessedT, ModelOutputT]] = [],
+            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
         config = get_config()
         self.config = config
         self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback[ProcessedT, ModelOutputT]] = [
+        default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
             CheckpointCallback(),
             RequeueCallback(),
             ConfigSnapshotCallback(),
@@ -67,7 +66,15 @@ class Trainer[ProcessedT, ModelOutputT]:
                 return
             raise
 
-    def fit(self, model: MirrorModel[ProcessedT, ModelOutputT], dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, epochs: int = 1, batch_size: int = 1, run_config_yaml: str = ""):
+    def fit(
+            self, 
+            model: MirrorModel[RawT, ProcessedT, BatchT], 
+            dataset: MirrorDataset[RawT], 
+            checkpoint: CheckpointIdentifier | None = None, 
+            epochs: int = 1, 
+            batch_size: int = 1, 
+            run_config_yaml: str = ""
+    ):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(
@@ -85,30 +92,46 @@ class Trainer[ProcessedT, ModelOutputT]:
             }
             self.fabric.load(checkpoint.path, state)
 
-        def collate(batch):
-            return pad_to_longest(batch, pad_token=model.tokenizer.pad_token_id)
-
-        preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
-        dataloader = DataLoader(preprocessed_dataset, batch_size=batch_size, collate_fn=collate, drop_last=False)
+        preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocess_example)
+        dataloader = DataLoader(
+            preprocessed_dataset, 
+            batch_size=batch_size, 
+            collate_fn=model.collate, 
+            drop_last=False,
+        )
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
 
-        for i in range(epochs):
-            for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
+        for _ in range(epochs):
+            for batch_idx, batch in enumerate(dataloader):
+                batch: BatchT = batch
+
                 optimizer.zero_grad()
-                step = model.training_step(tokens=tokens, attention_mask=attention_mask)
-                loss = step.loss
+                loss = model.training_step(batch)
                 loss_value = loss.item()
                 self.fabric.backward(loss)
                 optimizer.step()
 
-                self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss_value, 
-                    tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
+                self.fabric.call(
+                    'on_train_batch_end', 
+                    fabric=self.fabric, 
+                    model=model, 
+                    optimizer=optimizer, 
+                    loss=loss_value, 
+                    batch=batch, 
+                    training_run_id=training_run_id, 
+                    batch_idx=batch_idx
+                )
 
-        self.fabric.call('on_fit_end', fabric=self.fabric, model=model, optimizer=optimizer, 
-            training_run_id=training_run_id)
+        self.fabric.call(
+            'on_fit_end', 
+            fabric=self.fabric,
+            model=model, 
+            optimizer=optimizer, 
+            training_run_id=training_run_id
+        )
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
         return Fabric(
@@ -120,7 +143,12 @@ class Trainer[ProcessedT, ModelOutputT]:
         )
 
 
-def separate_singletons[ProcessedT, ModelOutputT](callbacks: List[Callback[ProcessedT, ModelOutputT]]):
+def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
+       callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+) -> tuple[
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
     return singletons, non_singletons

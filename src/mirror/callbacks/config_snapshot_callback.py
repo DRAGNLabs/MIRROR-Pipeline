@@ -4,7 +4,9 @@ from lightning import Fabric
 from mirror.callbacks.callback import Callback
 from mirror.util import safe_training_run_path
 
-class ConfigSnapshotCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutputT]):
+class ConfigSnapshotCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+):
     is_singleton = True
 
     def on_fit_start(

@@ -2,9 +2,9 @@ from lightning import Fabric
 from torch.optim import Optimizer
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.types import AttentionMaskBatch
 
-class Callback[ProcessedT, ModelOutputT]:
+
+class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
     """
     The names of the methods here are based on those of Lightning's 
     Callback class: https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.Callback.html#lightning.pytorch.callbacks.Callback
@@ -21,9 +21,9 @@ class Callback[ProcessedT, ModelOutputT]:
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
-            dataset: MirrorDataset,
+            dataset: MirrorDataset[RawT],
             training_run_id: str,
             run_config_yaml: str,
             n_batches: int,
@@ -35,7 +35,7 @@ class Callback[ProcessedT, ModelOutputT]:
         self, 
         *, 
         fabric: Fabric, 
-        model: MirrorModel[ProcessedT, ModelOutputT], 
+        model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
         optimizer: Optimizer, 
         training_run_id: str
     ):
@@ -45,11 +45,10 @@ class Callback[ProcessedT, ModelOutputT]:
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             loss: float,
-            tokens: ProcessedT,
-            attention_mask: AttentionMaskBatch,
+            batch: BatchT,
             training_run_id: str,
             batch_idx: int,
     ):

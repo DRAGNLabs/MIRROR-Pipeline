@@ -23,7 +23,9 @@ def requeue_handoff_path():
 RequeueHandoff = Dict[Literal['previous_training_run_id'], str]
 
 
-class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutputT]):
+class RequeueCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+):
     def __init__(self, requeue_signal: int = signal.SIGHUP) -> None:
         super().__init__(is_singleton=True)
         self.requeue_signal = requeue_signal
@@ -37,7 +39,7 @@ class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutput
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             **kwargs,
     ):
@@ -50,7 +52,7 @@ class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutput
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
             **kwargs,
@@ -66,7 +68,7 @@ class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutput
     def _load_requeue_checkpoint_if_present(
             self, 
             fabric: Fabric, 
-            model: MirrorModel[ProcessedT, ModelOutputT], 
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
             optimizer: Optimizer
     ):
         path = requeue_handoff_path()
@@ -96,9 +98,9 @@ class RequeueCallback[ProcessedT, ModelOutputT](Callback[ProcessedT, ModelOutput
     def _save_checkpoint(
             self, 
             fabric: Fabric, 
-            model: MirrorModel[ProcessedT, ModelOutputT], 
-            optimizer: Optimizer, 
-            training_run_id: str
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
+            optimizer: Optimizer,
+            training_run_id: str,
     ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')
         checkpoint_id = self._requeue_checkpoint_id(training_run_id)
