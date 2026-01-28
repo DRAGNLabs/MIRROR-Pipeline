@@ -1,6 +1,8 @@
 from mirror.callbacks.callback import Callback
 
-class TestCallback(Callback): 
+class TestCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+):
     def __init__(self, is_singleton = False, test_variable: bool = False) -> None: 
         super().__init__(is_singleton=True) 
         

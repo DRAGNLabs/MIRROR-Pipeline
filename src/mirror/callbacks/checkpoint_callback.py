@@ -7,7 +7,9 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.types import TokenBatch, AttentionMaskBatch
 
-class CheckpointCallback(Callback):
+class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+):
     def __init__(self, every_n_train_steps: float | None = None) -> None:
         super().__init__(is_singleton=True)
         self.every_n_train_steps = every_n_train_steps
@@ -16,7 +18,7 @@ class CheckpointCallback(Callback):
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel,
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
             **kwargs,
@@ -27,7 +29,7 @@ class CheckpointCallback(Callback):
             self, 
             *, 
             fabric: Fabric, 
-            model: MirrorModel, 
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
             optimizer: Optimizer, 
             training_run_id: str
     ):
@@ -37,7 +39,7 @@ class CheckpointCallback(Callback):
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel,
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
             batch_idx: int,
@@ -54,7 +56,7 @@ class CheckpointCallback(Callback):
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            model: MirrorModel,
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             checkpoint_identifier: CheckpointIdentifier,
     ):

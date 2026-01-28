@@ -1,7 +1,9 @@
 from mirror.callbacks.callback import Callback
 
 
-class PrintStepCallback(Callback):
+class PrintStepCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+    Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+):
     def on_train_batch_end(
             self,
             *,

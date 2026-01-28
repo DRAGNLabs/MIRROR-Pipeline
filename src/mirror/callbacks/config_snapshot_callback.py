@@ -7,7 +7,9 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from lightning import Fabric
 from torch.optim import Optimizer
 
-class ConfigSnapshotCallback(Callback):
+class ConfigSnapshotCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+):
     is_singleton = True
 
     def on_fit_start(

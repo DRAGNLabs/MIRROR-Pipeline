@@ -19,7 +19,6 @@ def safe_training_run_path(training_run_id: str) -> Path:
 def get_device() -> str:
     return get_config()['device']
 
-
 def assert_can_download(item_name_to_download: str):
     config = get_config()
     if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
@@ -29,6 +28,8 @@ def is_power_of_ten(n: int):
     return n > 0 and math.log10(n).is_integer()
 
 def pad_to_longest(batch: list[TokenTensor], pad_token: int) -> tuple[TokenBatch, AttentionMaskBatch]:
+    device = get_device()
+    
     lens = torch.tensor([b.numel() for b in batch], device=device, dtype=torch.long)
     max_len = lens.max().item()
     batch_size = len(batch)

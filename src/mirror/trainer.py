@@ -17,24 +17,23 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.preprocessed_dataset import PreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.util import is_login_node, pad_to_longest
 from mirror.config import RuntimeEnvironment, get_config
 
 
-class Trainer:
+class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
     def __init__(
             self,
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback] = [],
+            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
         config = get_config()
         self.config = config
         self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback] = [
+        default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
             CheckpointCallback(),
             RequeueCallback(),
             ConfigSnapshotCallback(),
@@ -93,14 +92,14 @@ class Trainer:
             }
             self.fabric.load(checkpoint.path, state)
 
-        preprocessed_dataset = PreprocessedDataset(dataset, model.preprocess_example)
+        preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocess_example)
         dataloader = DataLoader(
             preprocessed_dataset, 
             batch_size=batch_size, 
             collate_fn=model.collate, 
             drop_last=False,
         )
-        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=not is_login_node())
+        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
@@ -144,7 +143,12 @@ class Trainer:
         )
 
 
-def separate_singletons(callbacks: List[Callback]):
+def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
+       callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+) -> tuple[
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
     return singletons, non_singletons
