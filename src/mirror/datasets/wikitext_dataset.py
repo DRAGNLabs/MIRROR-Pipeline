@@ -9,7 +9,7 @@ hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
 
 
-class WikitextDataset(MirrorDataset):
+class WikitextDataset(MirrorDataset[str]):
     def __init__(
         self,
         head: int | None = None,
@@ -37,8 +37,8 @@ class WikitextDataset(MirrorDataset):
     def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
         return ds.filter(lambda row: len(row['text']) > 0)
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> str:
         return self.examples[index]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.examples)

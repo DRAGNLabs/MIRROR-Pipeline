@@ -1,14 +1,11 @@
-from lightning import Fabric
 import torch
+from lightning import Fabric
 from tqdm import tqdm
-from torch.optim import Optimizer
 from mirror.callbacks.callback import Callback
-from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.models.mirror_model import MirrorModel
-from mirror.types import TokenBatch, AttentionMaskBatch
 
-class ProgressCallback(Callback):
+class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+):
     def __init__(self, bar_refresh_interval = 5) -> None:
         super().__init__(is_singleton=True)
         self.progress_bar = None
@@ -17,28 +14,20 @@ class ProgressCallback(Callback):
 
     def on_fit_start(
             self,
-            fabric: Fabric,
-            model: MirrorModel,
-            optimizer: Optimizer,
-            dataset: MirrorDataset,
-            training_run_id: str,
+            *,
             n_batches: int,
             epochs: int,
+            **kwargs,
     ):
         if (torch.distributed.get_rank() == 0):
             self.progress_bar = tqdm(total=(epochs * n_batches), desc="Training", mininterval=self.bar_refresh_interval)
 
     def on_train_batch_end(
             self,
-            fabric: Fabric,
-            model: MirrorModel,
-            optimizer: Optimizer,
+            *,
             loss: float,
-            tokens: TokenBatch,
-            attention_mask: AttentionMaskBatch,
-            training_run_id: str,
-            batch_idx: int,
+            **kwargs,
     ):
-        if (torch.distributed.get_rank() == 0):
+        if Fabric.is_global_zero and self.progress_bar is not None:
             self.progress_bar.set_postfix(Loss=f"{loss:.3f}")
             self.progress_bar.update(1)

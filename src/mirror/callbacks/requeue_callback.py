@@ -11,13 +11,10 @@ from torch.optim import Optimizer
 
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.slurm_util import get_job_id
-from mirror.types import AttentionMaskBatch, TokenBatch
 from mirror.util import is_power_of_ten, mirror_data_path
-
 
 def requeue_handoff_path():
     slurm_job_id = get_job_id()
@@ -26,7 +23,9 @@ def requeue_handoff_path():
 RequeueHandoff = Dict[Literal['previous_training_run_id'], str]
 
 
-class RequeueCallback(Callback):
+class RequeueCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+):
     def __init__(self, requeue_signal: int = signal.SIGHUP) -> None:
         super().__init__(is_singleton=True)
         self.requeue_signal = requeue_signal
@@ -38,13 +37,11 @@ class RequeueCallback(Callback):
 
     def on_fit_start(
             self,
+            *,
             fabric: Fabric,
-            model: MirrorModel,
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
-            dataset: MirrorDataset,
-            training_run_id: str,
-            n_batches: int,
-            epochs: int,
+            **kwargs,
     ):
         rank_zero_log(fabric, f'setting up requeue handler on signal {self.requeue_signal}')
         signal.signal(self.requeue_signal, self._make_requeue_handler(fabric))
@@ -53,14 +50,12 @@ class RequeueCallback(Callback):
 
     def on_train_batch_end(
             self,
+            *,
             fabric: Fabric,
-            model: MirrorModel,
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
-            loss: float,
-            tokens: TokenBatch,
-            attention_mask: AttentionMaskBatch,
             training_run_id: str,
-            batch_idx: int
+            **kwargs,
     ):
         self._warn_if_iteration_too_long(fabric)
         if self.requeue_signal_recieved:
@@ -70,7 +65,12 @@ class RequeueCallback(Callback):
                 self._requeue(fabric)
             exit()
 
-    def _load_requeue_checkpoint_if_present(self, fabric: Fabric, model: MirrorModel, optimizer: Optimizer):
+    def _load_requeue_checkpoint_if_present(
+            self, 
+            fabric: Fabric, 
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
+            optimizer: Optimizer
+    ):
         path = requeue_handoff_path()
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -88,11 +88,20 @@ class RequeueCallback(Callback):
         except FileNotFoundError:
             pass
 
-    def _requeue_checkpoint_id(self, training_run_id: str):
+    def _requeue_checkpoint_id(
+            self, 
+            training_run_id: str
+    ):
         return CheckpointIdentifier(training_run_id, checkpoint_name='requeue')
 
 
-    def _save_checkpoint(self, fabric: Fabric, model: MirrorModel, optimizer: Optimizer, training_run_id: str):
+    def _save_checkpoint(
+            self, 
+            fabric: Fabric, 
+            model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
+            optimizer: Optimizer,
+            training_run_id: str,
+    ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')
         checkpoint_id = self._requeue_checkpoint_id(training_run_id)
         fabric.save(checkpoint_id.path, {
@@ -100,7 +109,10 @@ class RequeueCallback(Callback):
             'optimizer': optimizer,
         })
 
-    def _create_requeue_handoff(self, training_run_id: str):
+    def _create_requeue_handoff(
+            self,
+            training_run_id: str
+    ):
         path = requeue_handoff_path()
         handoff: RequeueHandoff = {
             'previous_training_run_id': training_run_id

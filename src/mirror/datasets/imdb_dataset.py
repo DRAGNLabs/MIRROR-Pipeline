@@ -6,7 +6,7 @@ from mirror.datasets.util import load_hf_from_cache_or_download
 hf_dataset_path = 'stanfordnlp/imdb'
 
 
-class ImdbDataset(MirrorDataset):
+class ImdbDataset(MirrorDataset[str]):
     def __init__(
         self,
         head: int | None = None,
@@ -29,8 +29,8 @@ class ImdbDataset(MirrorDataset):
     def dataset_id(self) -> str:
         return hf_dataset_path
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> str:
         return self.examples[index]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.examples)

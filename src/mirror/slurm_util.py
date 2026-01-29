@@ -1,5 +1,7 @@
 import os
 import re
+from dataclasses import dataclass
+from typing import Optional
 
 def get_job_id():
     array_job_id = os.getenv('SLURM_ARRAY_JOB_ID')
@@ -13,3 +15,15 @@ def get_job_id():
 
     return job_id
 
+@dataclass
+class SlurmConfig:
+    submit: bool = True
+    time: str = "01:00:00"
+    nodes: Optional[int] = None
+    ntasks_per_node: Optional[int] = None
+    gpus_per_node: Optional[int] = None
+    mem_per_cpu: str = "128G"
+    output: str = "slurm_logs/%j.out"
+    open_mode: str = "append"
+    signal: str = "SIGHUP@90"
+    requeue: bool = True

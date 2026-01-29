@@ -1,7 +1,7 @@
 import torch
 
 from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
-from mirror.util import device
+from mirror.util import get_device
 
 
 class PlaceholderTokenizer(MirrorTokenizer):
@@ -10,7 +10,7 @@ class PlaceholderTokenizer(MirrorTokenizer):
         return "placeholder"
 
     def encode(self, text):
-        return torch.tensor([1, 2, 3, 4], device=device)
+        return torch.tensor([1, 2, 3, 4], device=get_device())
 
     def decode(self, tokens):
         return "this is an example text"
