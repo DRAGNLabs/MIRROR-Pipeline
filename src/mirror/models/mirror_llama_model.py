@@ -2,16 +2,26 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 
+from huggingface_hub import login
+from transformers import AutoModelForCausalLM
+
 from mirror.models.mirror_model import MirrorModel
+from mirror.models.model_util import load_hf_model_from_cache_or_download
 from mirror.tokenizers.mirror_llama_tokenizer import MirrorLlamaTokenizer
 from mirror.util import get_device
 
 
+hf_model_name = "meta-llama/Llama-3.3-70B-Instruct"
+
 class MirrorLlamaModel(MirrorModel):
     def __init__(self) -> None:
         super().__init__()
+        self.model = load_hf_model_from_cache_or_download(
+            hf_model_name,
+            model_cls=AutoModelForCausalLM,
+        )
         self.parameter = nn.Parameter(torch.tensor([0.0], device=get_device()))
-        self._tokenizer = MirrorLlamaTokenizer()
+        self._tokenizer = MirrorLlamaTokenizer(hf_model_name)
 
     @property
     def tokenizer(self):

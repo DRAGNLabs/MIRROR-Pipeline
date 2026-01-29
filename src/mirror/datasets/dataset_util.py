@@ -9,7 +9,7 @@ from mirror.util import assert_can_download, mirror_data_path
 datasets_path = mirror_data_path / 'datasets'
 
 
-def load_hf_from_cache_or_download(
+def load_hf_dataset_from_cache_or_download(
         hf_dataset_path: str,
         hf_dataset_name: str | None = None,
         process: Callable[[Dataset | DatasetDict], Dataset | DatasetDict] | None = None,
