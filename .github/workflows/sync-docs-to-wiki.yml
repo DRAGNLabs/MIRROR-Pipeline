@@ -1,0 +1,49 @@
+name: Sync docs to wiki
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # On PR close, sync the base branch after merge; on manual run, sync current ref
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Clone wiki
+        env:
+          WIKI_TOKEN: ${{ secrets.WIKI_TOKEN }}
+        run: |
+          git clone "https://x-access-token:${WIKI_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki
+
+      - name: Sync docs/ into wiki
+        run: |
+          rsync -av --delete \
+            --exclude ".git" \
+            docs/ wiki/
+
+          # Optional: if you want docs/README.md to become the wiki homepage
+          if [ -f "docs/README.md" ]; then
+            cp docs/README.md wiki/Home.md
+          fi
+
+      - name: Commit & push if changed
+        run: |
+          cd wiki
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Sync docs to wiki"
+            git push
+          else
+            echo "No changes to push."
+          fi
