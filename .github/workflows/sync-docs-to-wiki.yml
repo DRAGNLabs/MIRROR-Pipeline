@@ -30,11 +30,6 @@ jobs:
             --exclude ".git" \
             docs/ wiki/
 
-          # Optional: if you want docs/README.md to become the wiki homepage
-          if [ -f "docs/README.md" ]; then
-            cp docs/README.md wiki/Home.md
-          fi
-
       - name: Commit & push if changed
         run: |
           cd wiki
