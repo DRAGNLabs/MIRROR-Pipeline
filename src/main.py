@@ -26,7 +26,7 @@ from dataclasses import asdict
 import lightning.fabric.strategies
 import mirror.datasets
 
-Subcommand = Literal['fit'] | Literal['test']
+Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
 
 # This is only ever assigned by the parser dump 
 # Could change to pass as parameter to main when parser is updated/changed
@@ -43,6 +43,7 @@ def main(
     slurm: SlurmConfig = SlurmConfig(),
     epochs: int = 1,
     batch_size: int = 1,
+    reset_cache: bool = False,
 ):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
@@ -53,14 +54,22 @@ def main(
     if slurm.submit and is_login_node():
         job_id = _submit_slurm_job(python_args=sys.argv[1:], slurm=slurm, num_nodes=num_nodes, devices=devices)
         print(f"Submitted batch job {job_id}")
-        print(type(data)) # THIS IS TO SEE WHAT THIS DATA SHIZ IS
         return
     
     match subcommand:
+        case 'preprocess':
+            preprocess(data, reset_cache)
         case 'fit':
             fit(data, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
+
+def preprocess(
+    dataset: MirrorDataset,
+    reset_cache: bool = False,
+):
+    model = PlaceholderModel()
+    dataset.preprocess(tokenizer = model.tokenizer, reset_cache = reset_cache)
 
 
 def fit(

@@ -1,5 +1,6 @@
 import torch
 
+from typing import List
 from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
 from mirror.util import device
 
@@ -9,8 +10,8 @@ class PlaceholderTokenizer(MirrorTokenizer):
     def tokenization_id(self):
         return "placeholder"
 
-    def encode(self, text):
-        return torch.tensor([1, 2, 3, 4], device=device)
+    def encode(self, text) -> List[int]:
+        return [1, 2, 3, 4]
 
     def decode(self, tokens):
         return "this is an example text"

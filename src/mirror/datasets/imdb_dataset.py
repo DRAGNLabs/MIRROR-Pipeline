@@ -11,6 +11,7 @@ class ImdbDataset(MirrorDataset):
         self,
         head: int | None = None,
         split: Literal['train'] | Literal['test'] | Literal['unsupervised'] = 'train',
+        preprocess: bool = False,
     ):
         """
         Args:
@@ -21,9 +22,11 @@ class ImdbDataset(MirrorDataset):
 
         super().__init__()
         ds = load_hf_from_cache_or_download(hf_dataset_path)
-        self.examples: Sequence[str] = ds[split]['text']  # pyright: ignore
-        if head:
-            self.examples = self.examples[:head]
+
+        self.ds = ds       
+        self.head = head
+        self.split = split
+        self.preprocess_ = preprocess
 
     @property
     def dataset_id(self) -> str:

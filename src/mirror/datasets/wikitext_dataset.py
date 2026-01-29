@@ -3,7 +3,7 @@ from typing import Literal, Sequence
 from datasets import Dataset, DatasetDict
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.util import load_hf_from_cache_or_download
+from mirror.datasets.util import load_hf_from_cache_or_download, load_tokenized_from_cache
 
 hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
@@ -14,6 +14,7 @@ class WikitextDataset(MirrorDataset):
         self,
         head: int | None = None,
         split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
+        preprocess: bool = False,
     ):
         """
         Args:
@@ -26,9 +27,11 @@ class WikitextDataset(MirrorDataset):
             hf_dataset_name,
             self._process,
         )
-        self.examples: Sequence[str] = ds[split]['text']  # pyright: ignore
-        if head:
-            self.examples = self.examples[:head]
+
+        self.ds = ds       
+        self.head = head
+        self.split = split
+        self.preprocess_ = preprocess
 
     @property
     def dataset_id(self) -> str:

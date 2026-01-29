@@ -18,6 +18,9 @@ class PreprocessedDataset(Dataset):
         return len(self.raw_dataset)
 
     def __getitem__(self, index) -> TokenTensor:
-        # TODO: use cached preprocessed data
         item = self.tokenizer.encode(self.raw_dataset[index])
-        return item
+        return torch.tensor(item)
+
+
+
+# Our new preprocessed data class needs to account for the possibility of pretokenized data, and not pretokenized.

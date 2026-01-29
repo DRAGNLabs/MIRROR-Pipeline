@@ -65,8 +65,12 @@ class Trainer:
 
         def collate(batch):
             return pad_to_longest(batch, pad_token=model.tokenizer.pad_token_id)
-
-        preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
+        
+        if dataset.is_preprocessed(model.tokenizer):
+            preprocessed_dataset = dataset
+        else:
+            preprocessed_dataset = PreprocessedDataset(dataset, model.tokenizer)
+        
         dataloader = DataLoader(
             preprocessed_dataset, 
             batch_size=batch_size, 
