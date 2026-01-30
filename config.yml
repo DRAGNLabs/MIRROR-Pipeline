@@ -1,0 +1,12 @@
+subcommand: fit
+data:
+  class_path: WikitextDataset
+  init_args:
+    head: 50
+epochs: 4
+devices: 4
+# checkpoint:
+#   init_args:
+#     training_run_id: 2026-01-30T09-18-11.267637
+#     checkpoint_name: '0149'
+every_n_train_steps: 25
