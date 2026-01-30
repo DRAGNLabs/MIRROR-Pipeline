@@ -9,6 +9,8 @@ class CheckpointIdentifier:
     """
     training_run_id: str
     checkpoint_name: str
+    # epoch: int = -1
+    # batch_idx: int = -1
 
     @property
     def path(self):

@@ -26,7 +26,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback] = [], 
+            every_n_train_steps: int | None = None,
+            bar_refresh_interval: int = 5,
+            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
         config = get_config()
         self.config = config
@@ -34,10 +36,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         self.devices = devices
         self.num_nodes = num_nodes
         default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
-            CheckpointCallback(),
+            CheckpointCallback(every_n_train_steps),
             RequeueCallback(),
             ConfigSnapshotCallback(),
-            ProgressCallback(),
+            ProgressCallback(devices, bar_refresh_interval),
         ]
         if config['environment'] != RuntimeEnvironment.LOCAL:
             default_callbacks.append(RequeueCallback())
@@ -66,7 +68,15 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 return
             raise
 
-    def fit(self, model: MirrorModel, dataset: MirrorDataset, checkpoint: CheckpointIdentifier | None = None, batch_size=1):
+    def fit(
+            self, 
+            model: MirrorModel[RawT, ProcessedT, BatchT], 
+            dataset: MirrorDataset[RawT], 
+            checkpoint: CheckpointIdentifier | None = None, 
+            epochs: int = 1, 
+            batch_size: int = 1, 
+            run_config_yaml: str = ""
+    ):
         training_run_id = datetime.datetime.now().isoformat()
 
         model, optimizer = self.fabric.setup(
@@ -75,15 +85,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             move_to_device=self.config['device'] == 'cuda'
         )
 
-        if checkpoint:
-            # models and optimizers are treated specially: they are populated via their load_state_dict
-            # methods internally to fabric.load. Anything else in the state dict is just set in place.
-            state = {
-                'model': model,
-                'optimizer': optimizer,
-            }
-            self.fabric.load(checkpoint.path, state)
-
         preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocess_example)
         dataloader = DataLoader(
             preprocessed_dataset, 
@@ -91,27 +92,61 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             collate_fn=model.collate, 
             drop_last=False,
         )
+
+        start_epoch = 0
+        start_batch = 0
+        n_batches = len(dataloader)
+
+        if checkpoint:
+            # models and optimizers are treated specially: they are populated via their load_state_dict
+            # methods internally to fabric.load. Anything else in the state dict is just set in place.
+            checkpoint_global_step = int(checkpoint.checkpoint_name)
+            start_epoch = checkpoint_global_step // n_batches
+            start_batch = checkpoint_global_step % n_batches
+            state = {
+                'model': model,
+                'optimizer': optimizer,
+            }
+            self.fabric.load(checkpoint.path, state)
+
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
-            training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, 
+            training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch, 
+            start_batch=start_batch, run_config_yaml=run_config_yaml)
+            
+        for epoch in range(start_epoch, epochs):
+            for batch_idx, batch in enumerate(dataloader):
+                
+                if epoch == start_epoch and batch_idx < start_batch:
+                    continue
 
-        for batch_idx, (tokens, attention_mask) in enumerate(dataloader):
-            optimizer.zero_grad()
-            loss = model.training_step(tokens, attention_mask)
-            loss_value = loss.item()
-            self.fabric.backward(loss)
-            optimizer.step()
+                batch: BatchT = batch
 
-            self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, loss=loss_value, 
-                tokens=tokens, attention_mask=attention_mask, training_run_id=training_run_id, batch_idx=batch_idx)
+                optimizer.zero_grad()
+                loss = model.training_step(batch)
+                loss_value = loss.item()
+                self.fabric.backward(loss)
+                optimizer.step()
+
+                self.fabric.call(
+                    'on_train_batch_end', 
+                    fabric=self.fabric, 
+                    model=model, 
+                    optimizer=optimizer, 
+                    loss=loss_value, 
+                    batch=batch, 
+                    epoch=epoch,
+                    training_run_id=training_run_id, 
+                    batch_idx=batch_idx
+                )
 
         self.fabric.call(
             'on_fit_end', 
             fabric=self.fabric,
             model=model, 
             optimizer=optimizer, 
-            training_run_id=training_run_id
+            training_run_id=training_run_id,
         )
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:

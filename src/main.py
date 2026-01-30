@@ -47,6 +47,8 @@ def main(
     slurm: SlurmConfig = SlurmConfig(),
     epochs: int = 1,
     batch_size: int = 1,
+    every_n_train_steps: int | None = None,
+    bar_refresh_interval: int = 5,
     device: Literal['cpu', 'cuda'] | None = None,
 ):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
@@ -68,7 +70,7 @@ def main(
     
     match subcommand:
         case 'fit':
-            fit(data, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
+            fit(data, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size, every_n_train_steps, bar_refresh_interval)
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
@@ -82,8 +84,10 @@ def fit(
     checkpoint: CheckpointIdentifier | None,
     epochs: int,
     batch_size: int,
+    every_n_train_steps: int | None,
+    bar_refresh_interval: int,
 ):
-    trainer = Trainer(strategy, devices, num_nodes, callbacks)
+    trainer = Trainer(strategy, devices, num_nodes, every_n_train_steps, bar_refresh_interval, callbacks)
 
     trainer.launch()
 
