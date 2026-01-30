@@ -1,18 +1,18 @@
+from __future__ import annotations
 from typing import Sized, Sequence
 from torch.utils.data import Dataset
 from abc import abstractmethod
 
 from mirror.datasets.util import load_tokenized_from_cache
 from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
-
-class MirrorDataset(Dataset, Sized):
+class MirrorDataset[RawT](Dataset[RawT], Sized):
     @property
     @abstractmethod
     def dataset_id(self) -> str:
         pass
 
     @abstractmethod
-    def __getitem__(self, index: int) -> str:
+    def __getitem__(self, index: int) -> RawT:
         pass
 
     def preprocess(self, tokenizer: MirrorTokenizer, reset_cache: bool = False): # add types 

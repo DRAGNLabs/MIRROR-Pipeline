@@ -8,11 +8,14 @@ from pathlib import Path
 
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
+from lightning.fabric.strategies.single_device import SingleDeviceStrategy
+from lightning.fabric.utilities.warnings import PossibleUserWarning
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.placeholder_model import PlaceholderModel
 from mirror.trainer import Trainer
@@ -24,6 +27,7 @@ from dataclasses import asdict
 # These are required so that their items can be found easily by jsonargparse without
 # having to give the full classpath
 import lightning.fabric.strategies
+import mirror.callbacks
 import mirror.datasets
 
 Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
@@ -44,12 +48,19 @@ def main(
     epochs: int = 1,
     batch_size: int = 1,
     reset_cache: bool = False,
+    device: Literal['cpu', 'cuda'] | None = None,
 ):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*`load_state_dict` is deprecated and will be removed in future versions\\. Please use `load` instead.*')
     warnings.filterwarnings('ignore', category=UserWarning, message='.*Please use the new API settings to control TF32 behavior.*')
     warnings.filterwarnings('ignore', category=UserWarning, message='.*`_get_pg_default_device` will be deprecated, it only stays for backward-compatibility reason.*')
+    # Local development warning
+    warnings.filterwarnings('ignore', category=PossibleUserWarning, message='.*`srun` command is available on your system but is not used.*')
+
+    config = init_config(device)
+    if config['device'] == 'cpu' and isinstance(strategy, FSDPStrategy):
+        strategy = SingleDeviceStrategy(device="cpu")
 
     if slurm.submit and is_login_node():
         job_id = _submit_slurm_job(python_args=sys.argv[1:], slurm=slurm, num_nodes=num_nodes, devices=devices)

@@ -2,7 +2,7 @@ import torch
 
 from typing import List
 from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
-from mirror.util import device
+from mirror.util import get_device
 
 
 class PlaceholderTokenizer(MirrorTokenizer):
