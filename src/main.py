@@ -4,6 +4,7 @@ import warnings
 import subprocess
 import sys
 import shlex
+import importlib
 from pathlib import Path
 
 from lightning.fabric.strategies.strategy import Strategy
@@ -32,7 +33,7 @@ import mirror.datasets
 
 Subcommand = Literal['fit'] | Literal['test']
 
-# This is only ever assigned by the parser dump 
+# This is only ever assigned by the parser dump
 # Could change to pass as parameter to main when parser is updated/changed
 run_config_yaml = ""
 
@@ -89,6 +90,24 @@ def fit(
 
     trainer.launch()
 
+    if not isinstance(model, MirrorModel):
+        with trainer.fabric.init_module():
+            if not hasattr(model, "class_path"):
+                raise ValueError("Model config missing class_path. Use --model <ClassName>.")
+            class_path = model.class_path
+            init_args = getattr(model, "init_args", None)
+            if init_args is None:
+                kwargs = {}
+            elif isinstance(init_args, dict):
+                kwargs = init_args
+            else:
+                kwargs = vars(init_args)
+            module_name, _, class_name = class_path.rpartition(".")
+            if not module_name:
+                raise ValueError(f"Invalid class path '{class_path}'")
+            cls = getattr(importlib.import_module(module_name), class_name)
+            model = cls(**kwargs)
+
     trainer.fit(dataset, model, checkpoint, epochs, batch_size, run_config_yaml=run_config_yaml)
 
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
@@ -132,12 +151,65 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
 
 
 if __name__ == '__main__':
+    argv = sys.argv[1:]
+    has_model = any(
+        a in ("--model", "--model.name") or a.startswith("--model=") or a.startswith("--model.name=")
+        for a in argv
+    )
+    if has_model:
+        normalized = []
+        skip_next = False
+        for i, arg in enumerate(argv):
+            if skip_next:
+                skip_next = False
+                continue
+            if arg == "--model.class_path":
+                skip_next = True
+                continue
+            if arg.startswith("--model.class_path="):
+                continue
+            if arg in ("--model", "--model.name"):
+                if i + 1 >= len(argv):
+                    raise ValueError(f"{arg} requires a value")
+                name = argv[i + 1]
+                if "." in name:
+                    class_path = name
+                else:
+                    class_path = "mirror.models." + "".join(
+                        ["_" + c.lower() if c.isupper() else c for c in name]
+                    ).lstrip("_") + f".{name}"
+                normalized.extend(["--model.class_path", class_path])
+                skip_next = True
+                continue
+            if arg.startswith("--model=") or arg.startswith("--model.name="):
+                name = arg.split("=", 1)[1]
+                if "." in name:
+                    class_path = name
+                else:
+                    class_path = "mirror.models." + "".join(
+                        ["_" + c.lower() if c.isupper() else c for c in name]
+                    ).lstrip("_") + f".{name}"
+                normalized.append(f"--model.class_path={class_path}")
+                continue
+            if arg.startswith("--model.") and not arg.startswith("--model.init_args.") and not arg.startswith("--model.class_path") and not arg.startswith("--model.name") and not arg.startswith("--model.help"):
+                normalized.append("--model.init_args." + arg[len("--model."):])
+                continue
+            normalized.append(arg)
+        argv = normalized
+    sys.argv = [sys.argv[0], *argv]
     parser = auto_parser(main)
     cfg = parser.parse_args()
     run_config_yaml = parser.dump(cfg)
     if hasattr(cfg, 'config'):
         del cfg.config  # pyright: ignore
 
-    init = parser.instantiate_classes(cfg)
+    model_cfg = cfg.model
+    del cfg.model  # pyright: ignore
 
-    main(**init)
+    init = parser.instantiate_classes(cfg)
+    if isinstance(init, dict):
+        init["model"] = model_cfg
+        main(**init)
+    else:
+        init.model = model_cfg  # pyright: ignore
+        main(**vars(init))

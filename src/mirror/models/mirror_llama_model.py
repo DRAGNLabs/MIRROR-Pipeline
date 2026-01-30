@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+import os
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -11,7 +13,12 @@ from mirror.tokenizers.mirror_llama_tokenizer import MirrorLlamaTokenizer
 from mirror.util import get_device
 
 
-hf_model_name = "meta-llama/Llama-3.3-70B-Instruct"
+# hf_model_name = "meta-llama/Llama-3.3-70B-Instruct"
+hf_model_name = "meta-llama/Llama-3.1-8B-Instruct"
+
+load_dotenv(".ENV")
+hf_token = os.getenv("HUGGINGFACE_HUB_TOKEN")
+login(token=hf_token)
 
 class MirrorLlamaModel(MirrorModel):
     def __init__(self) -> None:
