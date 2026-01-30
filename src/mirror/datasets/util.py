@@ -1,6 +1,7 @@
 import os
 import shutil
 from typing import Callable
+from pathlib import Path
 
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
 
@@ -49,3 +50,43 @@ def load_hf_from_cache_or_download(
         ds.save_to_disk(dataset_path)
 
     return ds
+
+def load_tokenized_from_cache(
+        dataset: Dataset | None,
+        dataset_id: str,
+        tokenizer_function: Callable | None = None,
+        reset_cache: bool = False,
+        preprocess: bool = False,
+) -> Dataset | DatasetDict:
+    """
+    The first time this is called with a particular dataset, it will tokenize
+    the dataset. Thereafter, if it is called again with reset_cache=False, it will use 
+    the cached tokenized data. Note that if you have changed your tokenizor method, 
+    you'll need to set reset_cache=True to run the new processing.
+
+    Also note that the cached data will be used *any* time the path/name pair is passed.
+    This means if your process function should not rely on information that might change
+    independently of the path/name (such as split).
+    """
+    dataset_path = Path(mirror_data_path / f'tokenized_data/{dataset_id}')
+
+    is_cached = os.path.exists(dataset_path)
+
+    if reset_cache and is_cached:
+        print("Resetting cache.")
+        shutil.rmtree(dataset_path)
+        is_cached = False
+
+    if is_cached:
+        dataset = load_from_disk(dataset_path)
+        print("Dataset already tokenized & loaded from disk.")
+    else:
+        print("Dataset is not yet cached.")
+        if preprocess and dataset:
+            dataset = dataset.map(tokenizer_function)
+            print("Dataset tokenized.")
+            dataset.save_to_disk(dataset_path)
+            print("Dataset saved to disk.")
+            is_cached = True
+
+    return dataset, is_cached

@@ -19,7 +19,7 @@ class PlaceholderModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, Attention
         return self._tokenizer
 
     def preprocess_example(self, text: str) -> TokenTensor:
-        return self._tokenizer.encode(text)
+        return torch.tensor(self._tokenizer.encode(text))
     
     def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
         tokens, attention_mask = batch

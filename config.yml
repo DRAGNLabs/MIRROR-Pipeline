@@ -1,0 +1,7 @@
+subcommand: fit
+data:
+  class_path: WikitextDataset
+  init_args:
+    head: 10 # This is obsolete when subcommand != fit
+#     preprocess: True
+# reset_cache: True
