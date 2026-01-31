@@ -24,12 +24,10 @@ def load_hf_model_from_cache_or_download(
     model_id = hf_model_name
 
     if reset_cache:
-        shutil.rmtree(model_path)
+        shutil.rmtree(model_path, ignore_errors=True)
 
-    is_cached = os.path.exists(model_path)
-
-    if is_cached:
-        model = model_cls.from_pretrained(model_path)
+    if os.path.exists(model_path): # cached
+        model = model_cls.from_pretrained(model_path, local_files_only=True)
     else:
         assert_can_download(model_id)
         model = model_cls.from_pretrained(model_id, cache_dir=models_path)

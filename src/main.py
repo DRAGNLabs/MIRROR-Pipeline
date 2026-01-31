@@ -108,7 +108,7 @@ def fit(
             cls = getattr(importlib.import_module(module_name), class_name)
             model = cls(**kwargs)
 
-    trainer.fit(dataset, model, checkpoint, epochs, batch_size, run_config_yaml=run_config_yaml)
+    trainer.fit(model, dataset, checkpoint, epochs, batch_size, run_config_yaml=run_config_yaml)
 
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
     # Prevent recursion: job run should not submit again

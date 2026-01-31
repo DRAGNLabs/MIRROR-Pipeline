@@ -21,12 +21,10 @@ def load_hf_tokenizer_from_cache_or_download(
     tokenizer_id = hf_model_name
 
     if reset_cache:
-        shutil.rmtree(tokenizer_path)
+        shutil.rmtree(tokenizer_path, ignore_errors=True)
 
-    is_cached = os.path.exists(tokenizer_path)
-
-    if is_cached:
-        tokenizer = tokenizer_cls.from_pretrained(tokenizer_path)
+    if os.path.exists(tokenizer_path): # cached
+        tokenizer = tokenizer_cls.from_pretrained(tokenizer_path, local_files_only=True)
     else:
         assert_can_download(tokenizer_id)
         tokenizer = tokenizer_cls.from_pretrained(tokenizer_id, cache_dir=tokenizers_path)

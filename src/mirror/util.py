@@ -5,16 +5,14 @@ import torch
 from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
 from mirror.config import RuntimeEnvironment, get_config
 
-mirror_data_path = Path(
-    f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data'
-)
+mirror_data_path = Path(f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data")
 
 def is_login_node() -> bool:
     return get_config()['environment'] == RuntimeEnvironment.SLURM_LOGIN
 
 def safe_training_run_path(training_run_id: str) -> Path:
     safe_id = training_run_id.replace(":", "-")
-    return Path(f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data/training_runs') / safe_id
+    return (Path(f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data/training_runs") / safe_id)
 
 def get_device() -> str:
     return get_config()['device']
