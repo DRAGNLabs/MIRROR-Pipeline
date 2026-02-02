@@ -1,4 +1,4 @@
-subcommand: fit
+subcommand: preprocess
 data:
   class_path: WikitextDataset
   init_args:
