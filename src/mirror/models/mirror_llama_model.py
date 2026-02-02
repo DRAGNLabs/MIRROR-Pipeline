@@ -4,7 +4,7 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 
-# from huggingface_hub import login
+from huggingface_hub import login
 from transformers import AutoModelForCausalLM
 
 from mirror.models.mirror_model import MirrorModel
@@ -15,7 +15,8 @@ from mirror.util import get_device, pad_to_longest
 
 
 # hf_model_name = "meta-llama/Llama-3.3-70B-Instruct"
-hf_model_name = "meta-llama/Llama-3.1-8B-Instruct"
+# hf_model_name = "meta-llama/Llama-3.1-8B-Instruct"
+hf_model_name = "meta-llama/Llama-3.2-1B"
 
 # load_dotenv(".ENV")
 # hf_token = os.getenv("HUGGINGFACE_HUB_TOKEN")
@@ -42,7 +43,17 @@ class MirrorLlamaModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, Attention
         return pad_to_longest(examples, pad_token=self.tokenizer.pad_token_id)
 
     def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
-        return self.parameter
+        input_ids, attention_mask = batch
+        labels = input_ids.clone()
+        if attention_mask is not None:
+            labels = labels.masked_fill(attention_mask == 0, -100) 
+
+        outputs = self.model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            labels=labels,
+        )
+        return outputs.loss
 
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())

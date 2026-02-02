@@ -29,7 +29,7 @@ def load_hf_model_from_cache_or_download(
     if os.path.exists(model_path): # cached
         model = model_cls.from_pretrained(model_path, local_files_only=True)
     else:
-        assert_can_download(model_id)
+        assert_can_download(model_id, require_hf_login=True)
         model = model_cls.from_pretrained(model_id, cache_dir=models_path)
         model.save_pretrained(model_path)
 
