@@ -35,7 +35,7 @@ def assert_can_download(item_name_to_download: str, *, require_hf_login: bool = 
             if not token:
                 raise RuntimeError(
                     "Hugging Face login did not produce a cached token. "
-                    "Try `huggingface-cli login` or set `HF_TOKEN`/`HUGGINGFACE_HUB_TOKEN`."
+                    "Try `huggingface-cli login` or set `HUGGINGFACE_HUB_TOKEN` in `.ENV`."
                 )
 
 def is_power_of_ten(n: int):
@@ -58,3 +58,41 @@ def pad_to_longest(batch: list[TokenTensor], pad_token: int) -> tuple[TokenBatch
         tokens[i,:L] = b
     
     return tokens, attention_mask
+
+def normalize_model_argv(argv: list[str]) -> list[str]:
+    model_modules = {
+        "MirrorLlamaModel": "mirror_llama_model",
+        "MirrorGPTModel": "mirror_gpt_model"
+    }
+    out: list[str] = []
+    i = 0
+    while i < len(argv):
+        a = argv[i]
+        if a.startswith("--model.class_path"):
+            i += 2 if a == "--model.class_path" else 1
+            continue
+
+        name = None
+        if a in ("--model", "--model.name"):
+            name = argv[i + 1]
+            i += 2
+        elif a.startswith("--model=") or a.startswith("--model.name="):
+            name = a.split("=", 1)[1]
+            i += 1
+        if name is not None:
+            if "." not in name:
+                mod = model_modules.get(name)
+                name = f"mirror.models.{mod}.{name}"
+            out.extend(["--model.class_path", name])
+            continue
+
+        if a.startswith("--model.") and not a.startswith(
+            ("--model.init_args.", "--model.class_path", "--model.name", "--model.help")
+        ):
+            out.append("--model.init_args." + a[len("--model."):])
+            i += 1
+            continue
+
+        out.append(a)
+        i += 1
+    return out

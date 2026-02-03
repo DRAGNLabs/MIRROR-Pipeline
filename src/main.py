@@ -20,7 +20,7 @@ from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.trainer import Trainer
-from mirror.util import is_login_node
+from mirror.util import is_login_node, normalize_model_argv
 from mirror.slurm_util import SlurmConfig
 
 from dataclasses import asdict
@@ -68,12 +68,18 @@ def main(
         print(f"Submitted batch job {job_id}")
         return
     
-    match subcommand:
-        case 'fit':
-            fit(data, model, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
-        case _:
-            print(f'unimplemented subcommand: {subcommand}')
-
+    try:
+        match subcommand:
+            case 'fit':
+                fit(data, model, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
+            case _:
+                print(f'unimplemented subcommand: {subcommand}')
+    except Exception as exc:
+        if is_login_node() and not slurm.submit:
+            raise RuntimeError(
+                "Model downloaded. Re-run on a compute node."
+            ) from exc
+        raise
 
 def fit(
     dataset: MirrorDataset,
@@ -152,50 +158,11 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
 
 if __name__ == '__main__':
     argv = sys.argv[1:]
-    has_model = any(
-        a in ("--model", "--model.name") or a.startswith("--model=") or a.startswith("--model.name=")
+    if any(
+        a == "--model" or a.startswith("--model=") or a == "--model.name" or a.startswith("--model.name=")
         for a in argv
-    )
-    if has_model:
-        normalized = []
-        skip_next = False
-        for i, arg in enumerate(argv):
-            if skip_next:
-                skip_next = False
-                continue
-            if arg == "--model.class_path":
-                skip_next = True
-                continue
-            if arg.startswith("--model.class_path="):
-                continue
-            if arg in ("--model", "--model.name"):
-                if i + 1 >= len(argv):
-                    raise ValueError(f"{arg} requires a value")
-                name = argv[i + 1]
-                if "." in name:
-                    class_path = name
-                else:
-                    class_path = "mirror.models." + "".join(
-                        ["_" + c.lower() if c.isupper() else c for c in name]
-                    ).lstrip("_") + f".{name}"
-                normalized.extend(["--model.class_path", class_path])
-                skip_next = True
-                continue
-            if arg.startswith("--model=") or arg.startswith("--model.name="):
-                name = arg.split("=", 1)[1]
-                if "." in name:
-                    class_path = name
-                else:
-                    class_path = "mirror.models." + "".join(
-                        ["_" + c.lower() if c.isupper() else c for c in name]
-                    ).lstrip("_") + f".{name}"
-                normalized.append(f"--model.class_path={class_path}")
-                continue
-            if arg.startswith("--model.") and not arg.startswith("--model.init_args.") and not arg.startswith("--model.class_path") and not arg.startswith("--model.name") and not arg.startswith("--model.help"):
-                normalized.append("--model.init_args." + arg[len("--model."):])
-                continue
-            normalized.append(arg)
-        argv = normalized
+    ):
+        argv = normalize_model_argv(argv)
     sys.argv = [sys.argv[0], *argv]
     parser = auto_parser(main)
     cfg = parser.parse_args()
