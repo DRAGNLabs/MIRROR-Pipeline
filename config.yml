@@ -1,7 +1,6 @@
 subcommand: fit
 data:
-  class_path: WikitextDataset
+  class_path: mirror.datasets.WikitextDataset
   init_args:
-    head: 10 # This is obsolete when subcommand != fit
-#     preprocess: True
-# reset_cache: True
+    head: 10
+reset_cache: False

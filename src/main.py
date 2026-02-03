@@ -69,7 +69,7 @@ def main(
     
     match subcommand:
         case 'preprocess':
-            preprocess(data, reset_cache)
+            preprocess(data, reset_cache, devices)
         case 'fit':
             fit(data, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
         case _:
@@ -77,7 +77,8 @@ def main(
 
 def preprocess(
     dataset: MirrorDataset,
-    reset_cache: bool = False,
+    reset_cache: bool,
+    devices: int,
 ):
     model = PlaceholderModel()
     dataset.preprocess(tokenizer = model.tokenizer, reset_cache = reset_cache)

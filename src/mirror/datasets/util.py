@@ -51,18 +51,18 @@ def load_hf_from_cache_or_download(
 
     return ds
 
-def load_tokenized_from_cache(
-        dataset: Dataset | None,
+def load_tokenized_from_cache[RawT, ProcessedT](
+        dataset: Dataset | DatasetDict | None,
         dataset_id: str,
+        devices: int | None = None,
         tokenizer_function: Callable | None = None,
         reset_cache: bool = False,
-        preprocess: bool = False,
 ) -> Dataset | DatasetDict:
     """
     The first time this is called with a particular dataset, it will tokenize
-    the dataset. Thereafter, if it is called again with reset_cache=False, it will use 
-    the cached tokenized data. Note that if you have changed your tokenizor method, 
-    you'll need to set reset_cache=True to run the new processing.
+    and cache the dataset. Thereafter, if it is called again with reset_cache=False, 
+    it will use the cached tokenized data. Note that if you have changed your tokenizor 
+    method, you'll need to set reset_cache=True to run the new processing.
 
     Also note that the cached data will be used *any* time the path/name pair is passed.
     This means if your process function should not rely on information that might change
@@ -82,8 +82,8 @@ def load_tokenized_from_cache(
         print("Dataset already tokenized & loaded from disk.")
     else:
         print("Dataset is not yet cached.")
-        if preprocess and dataset:
-            dataset = dataset.map(tokenizer_function)
+        if dataset:
+            dataset = dataset.map(tokenizer_function, batched=True, num_proc=devices)
             print("Dataset tokenized.")
             dataset.save_to_disk(dataset_path)
             print("Dataset saved to disk.")

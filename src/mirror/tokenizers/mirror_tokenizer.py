@@ -41,13 +41,8 @@ class MirrorTokenizer(ABC):
     def pad_token_id(self) -> int:
         pass
 
-    def create_hf_map_function_(self, data_column: str = 'text'):
+    def create_hf_map_function(self, data_column: str = 'text'):
         """
-        Call this function on the name of the column containing the text of your dataset. 
-        If left blank, this defaults to 'text' which is the typical column name.
-        Additionally, you may specify the name of your output column, where the tokenized 
-        text will be stored. 
-        
         Returns a function to be used in a ds.map(...) function call.
         """
         def hf_map_callable(input):
