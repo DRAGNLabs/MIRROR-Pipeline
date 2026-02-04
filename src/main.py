@@ -1,4 +1,4 @@
-from jsonargparse import auto_parser
+from jsonargparse import ArgumentParser, ActionConfigFile
 from typing import List, Literal
 import warnings
 import subprocess
@@ -20,7 +20,7 @@ from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.trainer import Trainer
-from mirror.util import is_login_node, normalize_model_argv
+from mirror.util import is_login_node
 from mirror.slurm_util import SlurmConfig
 
 from dataclasses import asdict
@@ -30,12 +30,15 @@ from dataclasses import asdict
 import lightning.fabric.strategies
 import mirror.callbacks
 import mirror.datasets
+import mirror.models.mirror_gpt_model
+import mirror.models.mirror_llama_model
 
 Subcommand = Literal['fit'] | Literal['test']
 
 # This is only ever assigned by the parser dump
 # Could change to pass as parameter to main when parser is updated/changed
 run_config_yaml = ""
+
 
 def main(
     subcommand: Subcommand,
@@ -68,18 +71,14 @@ def main(
         print(f"Submitted batch job {job_id}")
         return
     
-    try:
-        match subcommand:
-            case 'fit':
-                fit(data, model, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
-            case _:
-                print(f'unimplemented subcommand: {subcommand}')
-    except Exception as exc:
-        if is_login_node() and not slurm.submit:
-            raise RuntimeError(
-                "Model downloaded. Re-run on a compute node."
-            ) from exc
-        raise
+    if is_login_node() and not slurm.submit and subcommand == "fit" and isinstance(model, MirrorModel):
+        raise RuntimeError("Model downloaded. Re-run on a compute node.")
+
+    match subcommand:
+        case 'fit':
+            fit(data, model, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
+        case _:
+            print(f'unimplemented subcommand: {subcommand}')
 
 def fit(
     dataset: MirrorDataset,
@@ -95,7 +94,6 @@ def fit(
     trainer = Trainer(strategy, devices, num_nodes, callbacks)
 
     trainer.launch()
-
     if not isinstance(model, MirrorModel):
         with trainer.fabric.init_module():
             if not hasattr(model, "class_path"):
@@ -157,26 +155,29 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
 
 
 if __name__ == '__main__':
-    argv = sys.argv[1:]
-    if any(
-        a == "--model" or a.startswith("--model=") or a == "--model.name" or a.startswith("--model.name=")
-        for a in argv
-    ):
-        argv = normalize_model_argv(argv)
-    sys.argv = [sys.argv[0], *argv]
-    parser = auto_parser(main)
+    parser = ArgumentParser()
+    parser.add_argument("--config", action=ActionConfigFile)
+    parser.add_argument("subcommand", choices=["fit", "test"])
+    parser.add_function_arguments(main, skip={"subcommand", "model"})
+    # jsonargparse has issues with `--print_config=skip_default` when a nested argument
+    # default is `None` and the value is a dict-like config, so use `{}` and enforce
+    # requiredness manually after parsing.
+    parser.add_subclass_arguments(MirrorModel, "model", required=False, instantiate=False)
+    for action in parser._actions:
+        if action.dest in {"data", "model"}:
+            action.default = {}
+
     cfg = parser.parse_args()
+    if not cfg.data:
+        parser.error("the following arguments are required: --data")
+    if not cfg.model:
+        parser.error("the following arguments are required: --model")
     run_config_yaml = parser.dump(cfg)
     if hasattr(cfg, 'config'):
         del cfg.config  # pyright: ignore
 
-    model_cfg = cfg.model
-    del cfg.model  # pyright: ignore
-
     init = parser.instantiate_classes(cfg)
     if isinstance(init, dict):
-        init["model"] = model_cfg
         main(**init)
     else:
-        init.model = model_cfg  # pyright: ignore
         main(**vars(init))

@@ -3,12 +3,13 @@ from dotenv import load_dotenv
 import torch
 import torch.optim as optim
 import torch.nn as nn
+from typing import Literal
 
 from huggingface_hub import login
 from transformers import AutoModelForCausalLM
 
 from mirror.models.mirror_model import MirrorModel
-from mirror.models.model_util import load_hf_model_from_cache_or_download
+from mirror.models.model_util import load_hf_config_from_cache_or_download, load_hf_model_from_cache_or_download
 from mirror.tokenizers.mirror_gpt_tokenizer import MirrorGPTTokenizer
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
 from mirror.util import get_device, pad_to_longest
@@ -16,17 +17,19 @@ from mirror.util import get_device, pad_to_longest
 
 hf_model_name = "openai-community/gpt2"
 
-# load_dotenv(".ENV")
-# hf_token = os.getenv("HUGGINGFACE_HUB_TOKEN")
-# login(token=hf_token)
-
 class MirrorGPTModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
-    def __init__(self) -> None:
+    def __init__(self, weights: Literal["pretrained", "random"] = "pretrained") -> None:
         super().__init__()
-        self.model = load_hf_model_from_cache_or_download(
-            hf_model_name,
-            model_cls=AutoModelForCausalLM,
-        )
+        if weights == "pretrained":
+            self.model = load_hf_model_from_cache_or_download(
+                hf_model_name,
+                model_cls=AutoModelForCausalLM,
+            )
+        elif weights == "random":
+            config = load_hf_config_from_cache_or_download(hf_model_name)
+            self.model = AutoModelForCausalLM.from_config(config)
+        else:
+            raise ValueError(f"Unknown weights option: {weights}")
         self.parameter = nn.Parameter(torch.tensor([0.0], device=get_device()))
         self._tokenizer = MirrorGPTTokenizer(hf_model_name)
 
