@@ -71,8 +71,8 @@ def main(
         print(f"Submitted batch job {job_id}")
         return
     
-    if is_login_node() and not slurm.submit and subcommand == "fit" and isinstance(model, MirrorModel):
-        raise RuntimeError("Model downloaded. Re-run on a compute node.")
+    # if is_login_node() and not slurm.submit and subcommand == "fit":
+    #     raise RuntimeError("Model downloaded. Re-run on a compute node.")
 
     match subcommand:
         case 'fit':

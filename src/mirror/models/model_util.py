@@ -70,9 +70,9 @@ def load_hf_config_from_cache_or_download(
     available locally and returns a config object. Useful for random-weight
     initialization via `model_cls.from_config(...)`.
     """
-    model_configs_path = mirror_data_path / "model_configs"
     hf_cache_path = mirror_data_path / "hf_cache"
-    model_path = model_configs_path / hf_model_name
+    models_path = mirror_data_path / "models"
+    model_path = models_path / hf_model_name
     model_id = hf_model_name
 
     if reset_cache:
@@ -88,7 +88,6 @@ def load_hf_config_from_cache_or_download(
         )
 
     assert_can_download(model_id, require_hf_login=True)
-    # Keep HF cache layout out of our `mirror_data/model_configs/...` tree.
     config = AutoConfig.from_pretrained(model_id, cache_dir=hf_cache_path)
     model_path.mkdir(parents=True, exist_ok=True)
     config.save_pretrained(model_path)
