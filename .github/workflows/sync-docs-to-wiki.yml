@@ -16,7 +16,6 @@ jobs:
         with:
           # On PR close, sync the base branch after merge; on manual run, sync current ref
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref_name }}
-          fetch-depth: 0
 
       - name: Clone wiki
         env:
