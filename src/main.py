@@ -20,7 +20,7 @@ from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.trainer import Trainer
-from mirror.util import is_login_node
+from mirror.util import instantiate_model, is_login_node
 from mirror.slurm_util import SlurmConfig
 
 from dataclasses import asdict
@@ -70,10 +70,14 @@ def main(
         job_id = _submit_slurm_job(python_args=sys.argv[1:], slurm=slurm, num_nodes=num_nodes, devices=devices)
         print(f"Submitted batch job {job_id}")
         return
-    
-    # if is_login_node() and not slurm.submit and subcommand == "fit":
-    #     raise RuntimeError("Model downloaded. Re-run on a compute node.")
 
+    if is_login_node() and not slurm.submit and subcommand == "fit":
+        trainer = Trainer(strategy, devices, num_nodes, callbacks)
+        trainer.launch()
+        instantiate_model(model, fabric=trainer.fabric, base_cls=MirrorModel)
+        print("Model downloaded/cached. Re-run on a compute node.")
+        return
+    
     match subcommand:
         case 'fit':
             fit(data, model, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
@@ -94,23 +98,8 @@ def fit(
     trainer = Trainer(strategy, devices, num_nodes, callbacks)
 
     trainer.launch()
-    if not isinstance(model, MirrorModel):
-        with trainer.fabric.init_module():
-            if not hasattr(model, "class_path"):
-                raise ValueError("Model config missing class_path. Use --model <ClassName>.")
-            class_path = model.class_path
-            init_args = getattr(model, "init_args", None)
-            if init_args is None:
-                kwargs = {}
-            elif isinstance(init_args, dict):
-                kwargs = init_args
-            else:
-                kwargs = vars(init_args)
-            module_name, _, class_name = class_path.rpartition(".")
-            if not module_name:
-                raise ValueError(f"Invalid class path '{class_path}'")
-            cls = getattr(importlib.import_module(module_name), class_name)
-            model = cls(**kwargs)
+
+    model = instantiate_model(model, fabric=trainer.fabric)
 
     trainer.fit(model, dataset, checkpoint, epochs, batch_size, run_config_yaml=run_config_yaml)
 
@@ -159,9 +148,8 @@ if __name__ == '__main__':
     parser.add_argument("--config", action=ActionConfigFile)
     parser.add_argument("subcommand", choices=["fit", "test"])
     parser.add_function_arguments(main, skip={"subcommand", "model"})
-    # jsonargparse has issues with `--print_config=skip_default` when a nested argument
-    # default is `None` and the value is a dict-like config, so use `{}` and enforce
-    # requiredness manually after parsing.
+    # jsonargparse has issues with `--print_config=skip_default` when a nested argument default is `None`
+    # and the value is a dict-like config, so use `{}` and enforce requiredness manually after parsing
     parser.add_subclass_arguments(MirrorModel, "model", required=False, instantiate=False)
     for action in parser._actions:
         if action.dest in {"data", "model"}:

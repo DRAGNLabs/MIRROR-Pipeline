@@ -28,36 +28,22 @@ def load_hf_model_from_cache_or_download(
         shutil.rmtree(model_path, ignore_errors=True)
 
     path_exists = model_path.exists()
-    weights_present = path_exists and (
-        any(
-            (model_path / name).exists()
-            for name in (
-                "model.safetensors",
-                "model.safetensors.index.json",
-                "pytorch_model.bin",
-                "pytorch_model.bin.index.json",
-            )
-        )
-        or any(model_path.glob("model-*.safetensors"))
-        or any(model_path.glob("pytorch_model-*.bin"))
+    weights_present = path_exists and (any((model_path / name).exists() for name in (
+                "model.safetensors", "model.safetensors.index.json",
+                "pytorch_model.bin", "pytorch_model.bin.index.json",
+            )) 
+            or any(model_path.glob("model-*.safetensors")) 
+            or any(model_path.glob("pytorch_model-*.bin"))
     )
 
     if weights_present:  # cached
         model = model_cls.from_pretrained(model_path, local_files_only=True)
     else:
-        if path_exists:
-            # Config-only cache created for random init.
+        if path_exists: #  config-only cache created for random-weight init
             shutil.rmtree(model_path, ignore_errors=True)
         assert_can_download(model_id, require_hf_login=True)
-        # Keep HF's internal cache layout (models--org--repo, blobs/, refs/, etc.)
-        # out of our `mirror_data/models/...` tree.
         model = model_cls.from_pretrained(model_id, cache_dir=hf_cache_path)
         model.save_pretrained(model_path)
-
-    # Some HF configs ship `loss_type=None`, which triggers a warning in newer
-    # `transformers`. For CausalLM models we always want the default.
-    if hasattr(model, "config") and getattr(model.config, "loss_type", "MISSING") is None:
-        model.config.loss_type = "ForCausalLMLoss"
 
     return model
 
@@ -80,12 +66,6 @@ def load_hf_config_from_cache_or_download(
 
     if os.path.exists(model_path):  # cached
         return AutoConfig.from_pretrained(model_path, local_files_only=True)
-
-    if get_config()["environment"] == RuntimeEnvironment.SLURM_COMPUTE:
-        raise RuntimeError(
-            f"Model config for '{model_id}' is not cached locally, and downloads are disabled on compute nodes.\n"
-            "Try again on a login node, or use `--model.weights=pretrained`."
-        )
 
     assert_can_download(model_id, require_hf_login=True)
     config = AutoConfig.from_pretrained(model_id, cache_dir=hf_cache_path)

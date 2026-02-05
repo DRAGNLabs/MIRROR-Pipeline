@@ -3,10 +3,11 @@ import os
 from dotenv import load_dotenv
 from huggingface_hub import get_token, login
 from pathlib import Path
-import sys
 import torch 
-from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
 from mirror.config import RuntimeEnvironment, get_config
+from mirror.models.mirror_model import MirrorModel
+from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
+import importlib
 
 mirror_data_path = Path(f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data")
 
@@ -58,3 +59,19 @@ def pad_to_longest(batch: list[TokenTensor], pad_token: int) -> tuple[TokenBatch
         tokens[i,:L] = b
     
     return tokens, attention_mask
+
+def instantiate_model(model: object, *, fabric):
+    if isinstance(model, MirrorModel):
+        return model
+    with fabric.init_module():
+        class_path = model.class_path
+        init_args = getattr(model, "init_args", None)
+        if init_args is None:
+            kwargs = {}
+        elif isinstance(init_args, dict):
+            kwargs = init_args
+        else:
+            kwargs = vars(init_args)
+        module_name, _, class_name = class_path.rpartition(".")
+        cls = getattr(importlib.import_module(module_name), class_name)
+        return cls(**kwargs)
