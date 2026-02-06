@@ -92,7 +92,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             }
             self.fabric.load(checkpoint.path, state)
 
-        preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocess_example)
+        if dataset.is_preprocessed(model.tokenizer):
+            preprocessed_dataset = dataset
+        else:
+            preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocess_example)
         dataloader = DataLoader(
             preprocessed_dataset, 
             batch_size=batch_size, 

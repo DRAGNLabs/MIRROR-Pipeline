@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Sequence
+from typing import Sequence, List
 
 import torch
 
@@ -10,22 +10,48 @@ class MirrorTokenizer(ABC):
     @property
     @abstractmethod
     def tokenization_id(self) -> str:
+        """Unique Identifier for a given tokenizer."""
         pass
 
     @abstractmethod
-    def encode(self, text: str) -> TokenTensor:
+    def pad_token_id(self) -> int:
+        """The integer ID used for padding."""
         pass
-
-    def encode_batch(self, texts: Sequence[str]) -> TokenBatch:
-        return torch.stack([self.encode(text) for text in texts])
 
     @abstractmethod
-    def decode(self, tokens: TokenTensor) -> str:
+    def encode(self, text: str) -> List[int]:
+        """
+        By Leaving out torch.tensor we are making the code more saveable, 
+        and supposedly HF will wrap this with a C++ / Rust implementation to make it fast.
+        The above is hopefully true for encode_batch, and hf_map.
+        """
         pass
 
-    def decode_batch(self, token_batch: TokenBatch) -> Sequence[str]:
+    def encode_batch(self, texts: Sequence[str]) -> List[List[str]]:
+        return [self.encode(text) for text in texts]
+
+    @abstractmethod
+    def decode(self, tokens: List[int]) -> str:
+        pass
+
+    def decode_batch(self, token_batch: Sequence[List[int]]) -> Sequence[str]:
         return [self.decode(tokens) for tokens in token_batch]
 
     @property
     def pad_token_id(self) -> int:
         pass
+
+    def create_hf_map_function_(self, data_column: str = 'text'):
+        """
+        Call this function on the name of the column containing the text of your dataset. 
+        If left blank, this defaults to 'text' which is the typical column name.
+        Additionally, you may specify the name of your output column, where the tokenized 
+        text will be stored. 
+        
+        Returns a function to be used in a ds.map(...) function call.
+        """
+        def hf_map_callable(input):
+            input['input_ids'] = self.encode(input[data_column])
+            return input
+        
+        return hf_map_callable
