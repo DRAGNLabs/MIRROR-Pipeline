@@ -4,7 +4,7 @@ from typing import Callable
 
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
 
-from mirror.util import assert_can_download, mirror_data_path
+from mirror.download_util import assert_can_download, mirror_data_path
 
 datasets_path = mirror_data_path / 'datasets'
 
