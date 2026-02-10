@@ -1,7 +1,9 @@
 import os
 import shutil
+import importlib
 from typing import Type
 
+from lightning import Fabric
 from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, PreTrainedModel, PretrainedConfig
 
 from mirror.download_util import assert_can_download, mirror_data_path
@@ -74,3 +76,20 @@ def build_causal_lm(
             config = load_hf_config_from_cache_or_download(model_name)
             model = AutoModelForCausalLM.from_config(config)
     return model
+
+
+def instantiate_model(model: object, *, fabric: Fabric) -> MirrorModel:
+    if isinstance(model, MirrorModel):
+        return model
+    with fabric.init_module():
+        class_path = model.class_path
+        init_args = getattr(model, "init_args", None)
+        if init_args is None:
+            kwargs = {}
+        elif isinstance(init_args, dict):
+            kwargs = init_args
+        else:
+            kwargs = vars(init_args)
+        module_name, _, class_name = class_path.rpartition(".")
+        cls = getattr(importlib.import_module(module_name), class_name)
+        return cls(**kwargs)

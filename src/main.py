@@ -1,26 +1,25 @@
-from jsonargparse import ArgumentParser, ActionConfigFile
-from typing import List, Literal
+from jsonargparse import ArgumentParser, auto_parser
+from typing import Literal
 import warnings
 import subprocess
 import sys
 import shlex
 from pathlib import Path
 
-from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 from lightning.fabric.utilities.warnings import PossibleUserWarning
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.config import init_config
+from mirror.config import get_config, init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models import __init__
 from mirror.models.mirror_model import MirrorModel
+from mirror.models.model_util import instantiate_model
 from mirror.trainer import Trainer
-from mirror.util import instantiate_model, is_login_node
+from mirror.util import is_login_node
 from mirror.slurm_util import SlurmConfig
 
 from dataclasses import asdict
@@ -32,26 +31,10 @@ import mirror.callbacks
 import mirror.datasets
 
 Subcommand = Literal['fit'] | Literal['test']
-
-# This is only ever assigned by the parser dump
-# Could change to pass as parameter to main when parser is updated/changed
 run_config_yaml = ""
 
 
-def main(
-    subcommand: Subcommand,
-    data: MirrorDataset,
-    model: MirrorModel,
-    strategy: Strategy = FSDPStrategy(),
-    devices: int = 1,
-    num_nodes: int = 1,
-    callbacks: List[Callback] = [],
-    checkpoint: CheckpointIdentifier | None = None,
-    slurm: SlurmConfig = SlurmConfig(),
-    epochs: int = 1,
-    batch_size: int = 1,
-    device: Literal['cpu', 'cuda'] | None = None,
-):
+def main(subcommand: Subcommand):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*`load_state_dict` is deprecated and will be removed in future versions\\. Please use `load` instead.*')
@@ -60,33 +43,66 @@ def main(
     # Local development warning
     warnings.filterwarnings('ignore', category=PossibleUserWarning, message='.*`srun` command is available on your system but is not used.*')
 
-    config = init_config(device)
-    if config['device'] == 'cpu' and isinstance(strategy, FSDPStrategy):
-        strategy = SingleDeviceStrategy(device="cpu")
-
-    if slurm.submit and is_login_node():
-        job_id = _submit_slurm_job(python_args=sys.argv[1:], slurm=slurm, num_nodes=num_nodes, devices=devices)
-        print(f"Submitted batch job {job_id}")
-        return
-        
     match subcommand:
         case 'fit':
-            fit(data, model, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
+            parser = auto_parser(fit, as_positional=False)
+            parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
+            cfg = parser.parse_args(sys.argv[2:])
+
+            global run_config_yaml
+            run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
+
+            if hasattr(cfg, 'config'):
+                del cfg.config  # pyright: ignore
+
+            init_config(cfg.device)
+            init = parser.instantiate_classes(cfg)
+            fit(
+                data=init.data,
+                model=init.model,
+                trainer=init.trainer,
+                checkpoint=init.checkpoint,
+                slurm=init.slurm,
+                epochs=init.epochs,
+                batch_size=init.batch_size,
+            )
+
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
+
 def fit(
-    dataset: MirrorDataset,
+    data: MirrorDataset,
     model: MirrorModel,
-    strategy: Strategy,
-    devices: int,
-    num_nodes: int,
-    callbacks: List[Callback],
-    checkpoint: CheckpointIdentifier | None,
-    epochs: int,
-    batch_size: int,
+    trainer: Trainer | None = None,
+    checkpoint: CheckpointIdentifier | None = None,
+    slurm: SlurmConfig = SlurmConfig(),
+    epochs: int = 1,
+    batch_size: int = 1,
 ):
-    trainer = Trainer(strategy, devices, num_nodes, callbacks)
+    if trainer is None:
+        if get_config()['device'] == 'cpu':
+            trainer = Trainer(strategy=SingleDeviceStrategy(device="cpu"))
+        else:
+            trainer = Trainer()
+
+    if slurm.submit and is_login_node():
+        job_id = _submit_slurm_job(
+            python_args=sys.argv[1:],
+            slurm=slurm,
+            num_nodes=trainer.num_nodes,
+            devices=trainer.devices,
+        )
+        print(f"Submitted batch job {job_id}")
+        return
+
+    if get_config()['device'] == 'cpu' and isinstance(trainer.strategy, FSDPStrategy):
+        trainer = Trainer(
+            strategy=SingleDeviceStrategy(device="cpu"),
+            devices=trainer.devices,
+            num_nodes=trainer.num_nodes,
+            callbacks=trainer.callbacks,
+        )
 
     trainer.launch()
 
@@ -96,7 +112,14 @@ def fit(
         print("Model downloaded/cached. Re-run on a compute node.")
         return
     
-    trainer.fit(model, dataset, checkpoint, epochs, batch_size, run_config_yaml=run_config_yaml)
+    trainer.fit(
+        model,
+        data,
+        checkpoint,
+        epochs,
+        batch_size,
+        run_config_yaml,
+    )
 
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
     # Prevent recursion: job run should not submit again
@@ -140,14 +163,6 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument("--config", action=ActionConfigFile)
-    parser.add_function_arguments(main, skip={"model"})
-    parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
-
-    cfg = parser.parse_args()
-    run_config_yaml = parser.dump(cfg)
-    if hasattr(cfg, 'config'):
-        del cfg.config  # pyright: ignore
-
-    init = parser.instantiate_classes(cfg)
-    main(**vars(init))
+    parser.add_argument("subcommand", type=Subcommand)
+    cfg = parser.parse_args(sys.argv[1:2])
+    main(cfg.subcommand)
