@@ -1,7 +1,7 @@
 from typing import Literal, Sequence
 
+from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.dataset_util import load_hf_dataset_from_cache_or_download
 
 hf_dataset_path = 'stanfordnlp/imdb'
 
@@ -20,7 +20,7 @@ class ImdbDataset(MirrorDataset[str]):
         """
 
         super().__init__()
-        ds = load_hf_dataset_from_cache_or_download(hf_dataset_path)
+        ds = load_hf_dataset(hf_dataset_path)
         self.examples: Sequence[str] = ds[split]['text']  # pyright: ignore
         if head:
             self.examples = self.examples[:head]

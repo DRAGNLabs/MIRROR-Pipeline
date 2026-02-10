@@ -3,7 +3,7 @@ from transformers import PreTrainedTokenizerBase
 from typing import cast
 
 from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
-from mirror.tokenizers.tokenizer_util import load_hf_tokenizer_from_cache_or_download
+from mirror.tokenizers.tokenizer_util import load_hf_tokenizer
 from mirror.types import TokenTensor
 from mirror.util import get_device
 
@@ -11,7 +11,7 @@ from mirror.util import get_device
 class MirrorGPTTokenizer[HfTokenizerT: PreTrainedTokenizerBase](MirrorTokenizer):
     def __init__(self) -> None:
         self._hf_model_name = "openai-community/gpt2"
-        self._tokenizer = cast(HfTokenizerT, load_hf_tokenizer_from_cache_or_download(self._hf_model_name))
+        self._tokenizer = cast(HfTokenizerT, load_hf_tokenizer(self._hf_model_name))
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
 

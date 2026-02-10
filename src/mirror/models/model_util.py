@@ -1,16 +1,15 @@
+import importlib
 import os
 import shutil
-import importlib
-from typing import Type
-
 from lightning import Fabric
 from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, PreTrainedModel, PretrainedConfig
+from typing import Type
 
 from mirror.download_util import assert_can_download, mirror_data_path
 from mirror.models.mirror_model import MirrorModel
 
 
-def load_hf_model_from_cache_or_download(
+def load_hf_model(
         hf_model_name: str | None = None,
         reset_cache: bool = False,
         model_cls: Type[PreTrainedModel] = AutoModel,
@@ -39,7 +38,7 @@ def load_hf_model_from_cache_or_download(
 
     return model
 
-def load_hf_config_from_cache_or_download(
+def load_hf_config(
         hf_model_name: str | None = None,
         reset_cache: bool = False,
 ) -> PretrainedConfig:
@@ -58,7 +57,7 @@ def load_hf_config_from_cache_or_download(
         return AutoConfig.from_pretrained(model_path, local_files_only=True)
 
     # Avoid creating config-only directory 
-    load_hf_model_from_cache_or_download(hf_model_name=hf_model_name, reset_cache=reset_cache)
+    load_hf_model(hf_model_name=hf_model_name, reset_cache=reset_cache)
 
     return AutoConfig.from_pretrained(model_path, local_files_only=True)
 
@@ -68,15 +67,14 @@ def build_causal_lm(
 ) -> MirrorModel:
     match weights:
         case "pretrained":
-            model = load_hf_model_from_cache_or_download(
+            model = load_hf_model(
                 model_name,
                 model_cls=AutoModelForCausalLM,
             )
         case "random":
-            config = load_hf_config_from_cache_or_download(model_name)
+            config = load_hf_config(model_name)
             model = AutoModelForCausalLM.from_config(config)
     return model
-
 
 def instantiate_model(model: object, *, fabric: Fabric) -> MirrorModel:
     if isinstance(model, MirrorModel):
