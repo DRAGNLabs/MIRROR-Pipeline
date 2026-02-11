@@ -1,19 +1,18 @@
 from jsonargparse import ArgumentParser, auto_parser
 from typing import Literal
+from inspect import signature
 import warnings
 import subprocess
 import sys
 import shlex
 from pathlib import Path
 
-from lightning.fabric.strategies.fsdp import FSDPStrategy
-from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 from lightning.fabric.utilities.warnings import PossibleUserWarning
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.config import get_config, init_config
+from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models import __init__
 from mirror.models.mirror_model import MirrorModel
@@ -46,6 +45,10 @@ def main(subcommand: Subcommand):
     match subcommand:
         case 'fit':
             parser = auto_parser(fit, as_positional=False)
+            for action in parser._actions:
+                if action.dest == "model" and hasattr(action, "sub_add_kwargs"):
+                    action.sub_add_kwargs["instantiate"] = False
+                    break
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(sys.argv[2:])
 
@@ -56,16 +59,11 @@ def main(subcommand: Subcommand):
                 del cfg.config  # pyright: ignore
 
             init_config(cfg.device)
-            init = parser.instantiate_classes(cfg)
-            fit(
-                data=init.data,
-                model=init.model,
-                trainer=init.trainer,
-                checkpoint=init.checkpoint,
-                slurm=init.slurm,
-                epochs=init.epochs,
-                batch_size=init.batch_size,
-            )
+            init_cfg = cfg.clone()
+            del init_cfg.device
+            init = parser.instantiate_classes(init_cfg)
+            fit_kwargs = {name: getattr(init, name) for name in signature(fit).parameters}
+            fit(**fit_kwargs)
 
         case _:
             print(f'unimplemented subcommand: {subcommand}')
@@ -81,10 +79,7 @@ def fit(
     batch_size: int = 1,
 ):
     if trainer is None:
-        if get_config()['device'] == 'cpu':
-            trainer = Trainer(strategy=SingleDeviceStrategy(device="cpu"))
-        else:
-            trainer = Trainer()
+        trainer = Trainer()
 
     if slurm.submit and is_login_node():
         job_id = _submit_slurm_job(
@@ -96,22 +91,15 @@ def fit(
         print(f"Submitted batch job {job_id}")
         return
 
-    if get_config()['device'] == 'cpu' and isinstance(trainer.strategy, FSDPStrategy):
-        trainer = Trainer(
-            strategy=SingleDeviceStrategy(device="cpu"),
-            devices=trainer.devices,
-            num_nodes=trainer.num_nodes,
-            callbacks=trainer.callbacks,
-        )
+    if is_login_node():
+        model = instantiate_model(model)
+        print("Model downloaded/cached. Re-run on a compute node.")
+        return
 
     trainer.launch()
 
     model = instantiate_model(model, fabric=trainer.fabric)
 
-    if is_login_node():
-        print("Model downloaded/cached. Re-run on a compute node.")
-        return
-    
     trainer.fit(
         model,
         data,

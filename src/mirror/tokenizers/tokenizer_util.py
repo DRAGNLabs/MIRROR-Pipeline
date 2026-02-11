@@ -8,10 +8,10 @@ from mirror.download_util import assert_can_download, mirror_data_path
 tokenizers_path = mirror_data_path / "tokenizers"
 
 
-def load_hf_tokenizer[HfTokenizerT: PreTrainedTokenizerBase](
-        hf_model_name: str | None = None,
+def load_hf_tokenizer(
+        hf_model_name: str,
         reset_cache: bool = False,
-) -> HfTokenizerT:
+) -> PreTrainedTokenizerBase:
     """
     Cache tokenizer artifacts under mirror_data/tokenizers/<hf_model_name>.
     """

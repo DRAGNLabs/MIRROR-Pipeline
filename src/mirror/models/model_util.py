@@ -1,16 +1,17 @@
-import importlib
 import os
 import shutil
+from jsonargparse import ArgumentParser, Namespace
 from lightning import Fabric
 from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, PreTrainedModel, PretrainedConfig
-from typing import Type
+from typing import Literal, Type
 
 from mirror.download_util import assert_can_download, mirror_data_path
 from mirror.models.mirror_model import MirrorModel
 
+ignore_id = -100 
 
 def load_hf_model(
-        hf_model_name: str | None = None,
+        hf_model_name: str,
         reset_cache: bool = False,
         model_cls: Type[PreTrainedModel] = AutoModel,
 ) -> PreTrainedModel:
@@ -39,7 +40,7 @@ def load_hf_model(
     return model
 
 def load_hf_config(
-        hf_model_name: str | None = None,
+        hf_model_name: str,
         reset_cache: bool = False,
 ) -> PretrainedConfig:
     """
@@ -62,8 +63,8 @@ def load_hf_config(
     return AutoConfig.from_pretrained(model_path, local_files_only=True)
 
 def build_causal_lm(
-        model_name: str | None = None,
-        weights: str = "pretrained"
+        model_name: str,
+        weights: Literal["pretrained", "random"] = "pretrained"
 ) -> MirrorModel:
     match weights:
         case "pretrained":
@@ -79,15 +80,15 @@ def build_causal_lm(
 def instantiate_model(model: object, *, fabric: Fabric) -> MirrorModel:
     if isinstance(model, MirrorModel):
         return model
-    with fabric.init_module():
-        class_path = model.class_path
-        init_args = getattr(model, "init_args", None)
-        if init_args is None:
-            kwargs = {}
-        elif isinstance(init_args, dict):
-            kwargs = init_args
-        else:
-            kwargs = vars(init_args)
-        module_name, _, class_name = class_path.rpartition(".")
-        cls = getattr(importlib.import_module(module_name), class_name)
-        return cls(**kwargs)
+    
+    model_parser = ArgumentParser()
+    model_parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=True)
+
+    if fabric is not None:
+        def fabric_instantiator(class_type, *args, **kwargs):
+            with fabric.init_module():
+                return class_type(*args, **kwargs)
+
+        model_parser.add_instantiator(fabric_instantiator, MirrorModel, subclasses=True, prepend=True)
+
+    return model_parser.instantiate_classes(Namespace(model=model)).model
