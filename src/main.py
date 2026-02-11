@@ -92,7 +92,7 @@ def fit(
         return
 
     if is_login_node():
-        model = instantiate_model(model)
+        model = instantiate_model(model, fabric=None)
         print("Model downloaded/cached. Re-run on a compute node.")
         return
 

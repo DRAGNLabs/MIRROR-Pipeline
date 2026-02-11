@@ -77,7 +77,7 @@ def build_causal_lm(
             model = AutoModelForCausalLM.from_config(config)
     return model
 
-def instantiate_model(model: object, *, fabric: Fabric) -> MirrorModel:
+def instantiate_model(model: object, fabric: Fabric | None) -> MirrorModel:
     if isinstance(model, MirrorModel):
         return model
     
