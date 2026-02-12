@@ -21,11 +21,11 @@ class WikitextDataset(MirrorDataset[str]):
             split: which dataset split to use.
         """
         super().__init__()
-        ds = load_hf_from_cache_or_download(
+        sefl.ds = load_hf_from_cache_or_download(
             hf_dataset_path,
             hf_dataset_name,
             self._process,
-        )
+        )[split]
         self.examples: Sequence[str] = ds[split]['text']  # pyright: ignore
         if head:
             self.examples = self.examples[:head]
@@ -38,7 +38,7 @@ class WikitextDataset(MirrorDataset[str]):
         return ds.filter(lambda row: len(row['text']) > 0)
 
     def __getitem__(self, index: int) -> str:
-        return self.examples[index]
+        return self.ds[index]
 
     def __len__(self) -> int:
         return len(self.examples)
