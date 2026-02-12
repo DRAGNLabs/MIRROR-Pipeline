@@ -41,12 +41,12 @@ class MirrorTokenizer(ABC):
     def pad_token_id(self) -> int:
         pass
 
-    def create_hf_map_function(self, data_column: str = 'text'):
+    def create_hf_map_function(self, data_column: str = 'text', output_column: str = 'input_ids'):
         """
         Returns a function to be used in a ds.map(...) function call.
         """
         def hf_map_callable(input):
-            input['input_ids'] = self.encode(input[data_column])
+            input[output_column] = self.encode(input[data_column])
             return input
         
         return hf_map_callable

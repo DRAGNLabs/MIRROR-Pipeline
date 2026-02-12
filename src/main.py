@@ -17,6 +17,7 @@ from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.util import load_hf_tk_from_cache_or_map
 from mirror.models.placeholder_model import PlaceholderModel
 from mirror.trainer import Trainer
 from mirror.util import is_login_node
@@ -47,7 +48,7 @@ def main(
     slurm: SlurmConfig = SlurmConfig(),
     epochs: int = 1,
     batch_size: int = 1,
-    reset_cache: bool = False,
+    # reset_cache: bool = False,
     device: Literal['cpu', 'cuda'] | None = None,
 ):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
@@ -69,7 +70,9 @@ def main(
     
     match subcommand:
         case 'preprocess':
-            preprocess(data, reset_cache, devices)
+            preprocess(data, 
+            # reset_cache
+            )
         case 'fit':
             fit(data, strategy, devices, num_nodes, callbacks, checkpoint, epochs, batch_size)
         case _:
@@ -77,12 +80,19 @@ def main(
 
 def preprocess(
     dataset: MirrorDataset,
-    reset_cache: bool,
-    devices: int,
+    # reset_cache: bool,
+    # model: MirrorModel,
 ):
+    print("Beginning preprocess...") #####################################################################################
     model = PlaceholderModel()
-    dataset.preprocess(tokenizer = model.tokenizer, reset_cache = reset_cache)
+    tk_id = model.tokenizer.tokenization_id
+    model.get_column_names(dataset.data_column, dataset.label_column)
+    print("Pre-if-statement... ") ########################################################################################
+    
+    ds = load_hf_tk_from_cache_or_map(dataset, tk_id, model.preprocess_row, dataset.reset_cache) 
+        # TODO: fix preprocess example to expect ds row when we have a hf_ds
 
+    print("Preprocessing complete.")
 
 def fit(
     dataset: MirrorDataset,
@@ -143,6 +153,7 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
     return res.stdout.strip().split()[-1]
 
 if __name__ == '__main__':
+    print("Name does = __main__...") ################################################################################
     parser = auto_parser(main)
     cfg = parser.parse_args()
     run_config_yaml = parser.dump(cfg)
@@ -150,5 +161,5 @@ if __name__ == '__main__':
         del cfg.config  # pyright: ignore
 
     init = parser.instantiate_classes(cfg)
-
+    print("Calling main...") ########################################################################################
     main(**init)

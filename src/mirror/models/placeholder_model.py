@@ -20,11 +20,24 @@ class PlaceholderModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, Attention
 
     def preprocess_example(self, text: str) -> TokenTensor:
         return torch.tensor(self._tokenizer.encode(text))
+
+    def get_column_names(self, data_column: str, label_column: str):
+        self.data_column = data_column
+        self.label_column = label_column
+
+    def preprocess_row[RawT](self, row: dict[str,RawT]) -> TokenTensor:
+        text = row[self.data_column] # This placeholder doesn't use labels so it's left out
+        label = row[self.label_column]
+        return {'input_ids': torch.tensor(self._tokenizer.encode(text))}
+
+    def get_preprocess_row_function(self, dataset: MirrorDataset):
+        dataset.data_column
+
     
     def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
         tokens, attention_mask = batch
         return self.parameter
-    
+
     def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
         return pad_to_longest(examples, pad_token=self.tokenizer.pad_token_id)
 

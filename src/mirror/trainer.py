@@ -73,7 +73,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             checkpoint: CheckpointIdentifier | None = None, 
             epochs: int = 1, 
             batch_size: int = 1, 
-            run_config_yaml: str = ""
+            run_config_yaml: str = "",
     ):
         training_run_id = datetime.datetime.now().isoformat()
 
@@ -91,9 +91,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 'optimizer': optimizer,
             }
             self.fabric.load(checkpoint.path, state)
-
-        if dataset.is_preprocessed(model.tokenizer):
-            preprocessed_dataset = dataset
+        tokenization_id = model.tokenizer.tokenization_id
+        if dataset.is_preprocessed(tokenization_id):
+            preprocessed_dataset = load_tk_from_cache_or_map(dataset, tokenization_id, model.preprocess_example, reset_cache = False) # TODO: fix preprocess example to expect ds row when we have a hf_ds
         else:
             preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocess_example)
         
@@ -134,7 +134,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             fabric=self.fabric,
             model=model, 
             optimizer=optimizer, 
-            training_run_id=training_run_id
+            training_run_id=training_run_id,
         )
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:

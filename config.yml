@@ -1,6 +1,6 @@
 subcommand: fit
 data:
-  class_path: mirror.datasets.WikitextDataset
+  class_path: WikitextDataset
   init_args:
     head: 10
-reset_cache: False
+    # reset_cache: True

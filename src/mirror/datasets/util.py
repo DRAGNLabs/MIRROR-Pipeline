@@ -1,11 +1,12 @@
 import os
+import torch
 import shutil
-from typing import Callable
+from typing import Callable, Sequence
 from pathlib import Path
 
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
-
-from mirror.util import assert_can_download, mirror_data_path
+from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.util import assert_can_download, mirror_data_path, is_login_node
 
 datasets_path = mirror_data_path / 'datasets'
 
@@ -30,10 +31,11 @@ def load_hf_from_cache_or_download(
     dataset_path = datasets_path / hf_dataset_path / hf_dataset_name \
         if hf_dataset_name else datasets_path / hf_dataset_path
 
-    if reset_cache:
-        shutil.rmtree(dataset_path)
-
     is_cached = os.path.exists(dataset_path)
+
+    if is_login_node() and is_cached and reset_cache:
+        shutil.rmtree(dataset_path)
+        is_cached = False
 
     if is_cached:
         ds = load_from_disk(dataset_path)
@@ -51,42 +53,27 @@ def load_hf_from_cache_or_download(
 
     return ds
 
-def load_tokenized_from_cache[RawT, ProcessedT](
-        dataset: Dataset | DatasetDict | None,
-        dataset_id: str,
-        devices: int | None = None,
-        tokenizer_function: Callable | None = None,
-        reset_cache: bool = False,
-) -> Dataset | DatasetDict:
-    """
-    The first time this is called with a particular dataset, it will tokenize
-    and cache the dataset. Thereafter, if it is called again with reset_cache=False, 
-    it will use the cached tokenized data. Note that if you have changed your tokenizor 
-    method, you'll need to set reset_cache=True to run the new processing.
-
-    Also note that the cached data will be used *any* time the path/name pair is passed.
-    This means if your process function should not rely on information that might change
-    independently of the path/name (such as split).
-    """
+def check_tk_is_cached(dataset_id: str) -> bool:
     dataset_path = Path(mirror_data_path / f'tokenized_data/{dataset_id}')
+    is_cached = os.path.exists(dataset_path)
+    return is_cached
 
+# This is what to do on/by Monday
+def load_hf_tk_from_cache_or_map[RawT, ProcessedT](
+        dataset: MirrorDataset, # benefit of knowing which column
+        tokenization_id: str,
+        tokenizer_function: Callable[[RawT], dict[str,ProcessedT]] | None = None, # probably a model actually, or a function that has the same signature and type as the pre proc func on models now
+        reset_cache: bool = False,
+) -> Sequence[ProcessedT]:
+
+    dataset_id = f"{dataset.dataset_id}_TKID-{tokenization_id}".replace("/","-")
+    dataset_path = mirror_data_path / f'tokenized_data/{dataset_id}'
+    
     is_cached = os.path.exists(dataset_path)
 
-    if reset_cache and is_cached:
-        print("Resetting cache.")
-        shutil.rmtree(dataset_path)
-        is_cached = False
-
     if is_cached:
-        dataset = load_from_disk(dataset_path)
-        print("Dataset already tokenized & loaded from disk.")
+        ds = load_from_disk(dataset_path)
     else:
-        print("Dataset is not yet cached.")
-        if dataset:
-            dataset = dataset.map(tokenizer_function, batched=True, num_proc=devices)
-            print("Dataset tokenized.")
-            dataset.save_to_disk(dataset_path)
-            print("Dataset saved to disk.")
-            is_cached = True
-
-    return dataset, is_cached
+        ds = dataset.ds.map(tokenizer_function)
+        ds.save_to_disk(dataset_path)
+    return ds[dataset.split]['input_ids']

@@ -3,7 +3,7 @@ from typing import Literal, Sequence
 from datasets import Dataset, DatasetDict
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.util import load_hf_from_cache_or_download, load_tokenized_from_cache
+from mirror.datasets.util import load_hf_from_cache_or_download, load_hf_tk_from_cache_or_map
 
 hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
@@ -13,25 +13,38 @@ class WikitextDataset(MirrorDataset[str]):
     def __init__(
         self,
         head: int | None = None,
+        reset_cache: bool = False,
         split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
-        preprocess: bool = False,
+        should_preprocess: bool = False,
     ):
         """
         Args:
             head: how many examples to include. None includes the whole split.
             split: which dataset split to use.
         """
-        super().__init__()
-        ds = load_hf_from_cache_or_download(
+        print("Begin Wikitext INIT...")
+        self.hf_dataset_path = 'Salesforce/wikitext'
+        self.hf_dataset_name = 'wikitext-2-raw-v1'
+        self.head = head
+        self.reset_cache = reset_cache
+        self.split = split
+        self.should_preprocess = should_preprocess
+        self.data_column = 'text'
+        self.label_column = None
+        print("Downloading wikitext...")
+        self._hf_ds = load_hf_from_cache_or_download(
             hf_dataset_path,
             hf_dataset_name,
             self._process,
-        )
+            self.reset_cache,
+            )
 
-        self.ds = ds       
-        self.head = head
-        self.split = split
-        self.preprocess_ = preprocess
+        if head:
+            self._hf_ds = self._hf_ds[split].select(range(head))
+
+    @property
+    def ds(self) -> Dataset:
+        return self._hf_ds
 
     @property
     def dataset_id(self) -> str:
@@ -41,7 +54,7 @@ class WikitextDataset(MirrorDataset[str]):
         return ds.filter(lambda row: len(row['text']) > 0)
 
     def __getitem__(self, index: int) -> str:
-        return self.examples[index]
+        return self._hf_ds[self.data_column] if self.head else self._hf_ds[self.split][index]
 
     def __len__(self) -> int:
-        return len(self.examples)
+        return self.head if self.head else len(self._hf_ds[self.split])

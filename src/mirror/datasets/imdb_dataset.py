@@ -23,10 +23,15 @@ class ImdbDataset(MirrorDataset[str]):
         super().__init__()
         ds = load_hf_from_cache_or_download(hf_dataset_path)
 
-        self.ds = ds       
+        self._ds = ds
         self.head = head
         self.split = split
         self.preprocess_ = preprocess
+        self.data_column = 'text'
+        
+        self.examples: Sequence[str] = ds[split]['text']  # pyright: ignore
+        if head:
+            self.examples = self.examples[:head]
 
     @property
     def dataset_id(self) -> str:
