@@ -1,4 +1,4 @@
-from jsonargparse import ArgumentParser, auto_parser
+from jsonargparse import ArgumentParser
 from typing import Literal
 from inspect import signature
 import warnings
@@ -44,11 +44,10 @@ def main(subcommand: Subcommand):
 
     match subcommand:
         case 'fit':
-            parser = auto_parser(fit, as_positional=False)
-            for action in parser._actions:
-                if action.dest == "model" and hasattr(action, "sub_add_kwargs"):
-                    action.sub_add_kwargs["instantiate"] = False
-                    break
+            parser = ArgumentParser()
+            parser.add_function_arguments(fit, as_positional=False, skip={"model", "trainer"})
+            parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
+            parser.add_subclass_arguments(Trainer, "trainer", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(sys.argv[2:])
 
@@ -60,10 +59,20 @@ def main(subcommand: Subcommand):
 
             init_config(cfg.device)
             init_cfg = cfg.clone()
-            del init_cfg.device
             init = parser.instantiate_classes(init_cfg)
+            trainer = init.trainer or Trainer()
+            model = init.model
+
+            trainer.launch()
+            if not (is_login_node() and init.slurm.submit):
+                model = instantiate_model(model, fabric=trainer.fabric)
+
+            if is_login_node() and not init.slurm.submit:
+                print("Model downloaded/cached. Re-run on a compute node.")
+                return
+
             fit_kwargs = {name: getattr(init, name) for name in signature(fit).parameters}
-            fit(**fit_kwargs)
+            fit(**{**fit_kwargs, "model": model, "trainer": trainer})
 
         case _:
             print(f'unimplemented subcommand: {subcommand}')
@@ -72,15 +81,12 @@ def main(subcommand: Subcommand):
 def fit(
     data: MirrorDataset,
     model: MirrorModel,
-    trainer: Trainer | None = None,
+    trainer: Trainer,
     checkpoint: CheckpointIdentifier | None = None,
     slurm: SlurmConfig = SlurmConfig(),
     epochs: int = 1,
     batch_size: int = 1,
 ):
-    if trainer is None:
-        trainer = Trainer()
-
     if slurm.submit and is_login_node():
         job_id = _submit_slurm_job(
             python_args=sys.argv[1:],
@@ -90,15 +96,6 @@ def fit(
         )
         print(f"Submitted batch job {job_id}")
         return
-
-    if is_login_node():
-        model = instantiate_model(model, fabric=None)
-        print("Model downloaded/cached. Re-run on a compute node.")
-        return
-
-    trainer.launch()
-
-    model = instantiate_model(model, fabric=trainer.fabric)
 
     trainer.fit(
         model,

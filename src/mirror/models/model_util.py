@@ -8,7 +8,7 @@ from typing import Literal, Type
 from mirror.download_util import assert_can_download, mirror_data_path
 from mirror.models.mirror_model import MirrorModel
 
-ignore_id = -100 
+IGNORE_ID = -100 
 
 def load_hf_model(
         hf_model_name: str,
@@ -84,11 +84,8 @@ def instantiate_model(model: object, fabric: Fabric | None) -> MirrorModel:
     model_parser = ArgumentParser()
     model_parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=True)
 
-    if fabric is not None:
-        def fabric_instantiator(class_type, *args, **kwargs):
-            with fabric.init_module():
-                return class_type(*args, **kwargs)
+    if fabric is None:
+        return model_parser.instantiate_classes(Namespace(model=model)).model
 
-        model_parser.add_instantiator(fabric_instantiator, MirrorModel, subclasses=True, prepend=True)
-
-    return model_parser.instantiate_classes(Namespace(model=model)).model
+    with fabric.init_module():
+        return model_parser.instantiate_classes(Namespace(model=model)).model
