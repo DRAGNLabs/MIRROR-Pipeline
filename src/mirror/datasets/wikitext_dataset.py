@@ -2,8 +2,8 @@ from typing import Literal, Sequence
 
 from datasets import Dataset, DatasetDict
 
+from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.util import load_hf_from_cache_or_download
 
 hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
@@ -21,7 +21,7 @@ class WikitextDataset(MirrorDataset[str]):
             split: which dataset split to use.
         """
         super().__init__()
-        ds = load_hf_from_cache_or_download(
+        ds = load_hf_dataset(
             hf_dataset_path,
             hf_dataset_name,
             self._process,
