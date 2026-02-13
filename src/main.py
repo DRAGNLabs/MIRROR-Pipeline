@@ -1,4 +1,4 @@
-from jsonargparse import ArgumentParser
+from jsonargparse import ActionConfigFile, ArgumentParser
 from typing import Literal
 from inspect import signature
 import warnings
@@ -8,6 +8,7 @@ import shlex
 from pathlib import Path
 
 from lightning.fabric.utilities.warnings import PossibleUserWarning
+from transformers import LlamaConfig
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
@@ -34,6 +35,10 @@ run_config_yaml = ""
 
 
 def main(subcommand: Subcommand):
+    # Fix incorrect `int | None` type declaration in configuration_llama.py
+    annotations = getattr(LlamaConfig.__init__, "__annotations__", {})
+    annotations["rms_norm_eps"] = (float | None) 
+
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*`load_state_dict` is deprecated and will be removed in future versions\\. Please use `load` instead.*')
@@ -45,6 +50,7 @@ def main(subcommand: Subcommand):
     match subcommand:
         case 'fit':
             parser = ArgumentParser()
+            parser.add_argument("--config", action=ActionConfigFile)
             parser.add_function_arguments(fit, as_positional=False, skip={"model", "trainer"})
             parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
             parser.add_subclass_arguments(Trainer, "trainer", required=False, instantiate=True)

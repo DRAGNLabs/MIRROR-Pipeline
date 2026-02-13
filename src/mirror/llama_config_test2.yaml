@@ -1,0 +1,4 @@
+model:
+  class_path: mirror.models.mirror_llama_model.MirrorLlamaModel
+  init_args:
+    initialization: 3.2-1B
