@@ -7,7 +7,7 @@ from mirror.tokenizers.placeholder_tokenizer import PlaceholderTokenizer
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
 from mirror.util import get_device, pad_to_longest
 
-from mirror.rowtype import TextRow
+from mirror.row_types import TextRow
 
 class PlaceholderModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
     def __init__(self) -> None:
