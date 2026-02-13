@@ -4,6 +4,7 @@ from datasets import Dataset, DatasetDict
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.util import load_hf_from_cache_or_download, load_hf_tk_from_cache_or_map
+from mirror.row_types import TextRow
 
 hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
@@ -22,29 +23,25 @@ class WikitextDataset(MirrorDataset[str]):
             head: how many examples to include. None includes the whole split.
             split: which dataset split to use.
         """
-        print("Begin Wikitext INIT...")
-        self.hf_dataset_path = 'Salesforce/wikitext'
-        self.hf_dataset_name = 'wikitext-2-raw-v1'
-        self.head = head
-        self.reset_cache = reset_cache
-        self.split = split
-        self.should_preprocess = should_preprocess
-        self.data_column = 'text'
-        self.label_column = None
-        print("Downloading wikitext...")
+
+        super().__init__()
         self._hf_ds = load_hf_from_cache_or_download(
             hf_dataset_path,
             hf_dataset_name,
             self._process,
-            self.reset_cache,
-            )
+            reset_cache,
+        )[split]
+
+        self.reset_cache = reset_cache
+        self.should_preprocess = should_preprocess
 
         if head:
-            self._hf_ds = self._hf_ds[split].select(range(head))
+            self._hf_ds = self._hf_ds.select(range(head))
 
     @property
     def ds(self) -> Dataset:
         return self._hf_ds
+        
 
     @property
     def dataset_id(self) -> str:
@@ -53,8 +50,11 @@ class WikitextDataset(MirrorDataset[str]):
     def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
         return ds.filter(lambda row: len(row['text']) > 0)
 
-    def __getitem__(self, index: int) -> str:
-        return self._hf_ds[self.data_column] if self.head else self._hf_ds[self.split][index]
+    def __getitem__(self, index: int) -> TextRow:
+        return self._hf_ds[index]
 
     def __len__(self) -> int:
-        return self.head if self.head else len(self._hf_ds[self.split])
+        return len(self._hf_ds)
+
+    def item(self, index) -> str:
+       return self._hf_ds['text'][index]
