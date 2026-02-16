@@ -85,11 +85,9 @@ def preprocess(
 ):
     print("Beginning preprocess...") #####################################################################################
     model = PlaceholderModel()
-    tk_id = model.tokenizer.tokenization_id
-    model.get_column_names(dataset.data_column, dataset.label_column)
     print("Pre-if-statement... ") ########################################################################################
     
-    ds = load_hf_tk_from_cache_or_map(dataset, tk_id, model.preprocess_row, dataset.reset_cache) 
+    ds = load_hf_tk_from_cache_or_map(dataset, model.tokenizer.tokenization_id, model.preprocess_row, dataset.reset_cache) 
         # TODO: fix preprocess example to expect ds row when we have a hf_ds
 
     print("Preprocessing complete.")
