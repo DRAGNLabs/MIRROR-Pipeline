@@ -83,7 +83,7 @@ def preprocess(
     # reset_cache: bool,
     # model: MirrorModel,
 ):
-    print("Beginning preprocess...") #####################################################################################
+    print("Beginning preprocess..git status.") #####################################################################################
     model = PlaceholderModel()
     print("Pre-if-statement... ") ########################################################################################
     
