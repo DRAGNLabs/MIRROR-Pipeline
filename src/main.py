@@ -14,7 +14,6 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
-# from mirror.models import __init__
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import instantiate_model
 from mirror.trainer import Trainer
