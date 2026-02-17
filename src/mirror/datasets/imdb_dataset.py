@@ -1,8 +1,8 @@
 from typing import Literal, cast
 
+from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
 from datasets import Dataset, DatasetDict
-from mirror.datasets.util import load_hf_from_cache_or_download
 from mirror.row_types import TextRow
 
 hf_dataset_path = 'stanfordnlp/imdb'
@@ -22,7 +22,7 @@ class ImdbDataset(MirrorDataset[TextRow]):
         """
 
         super().__init__()
-        self.ds: Dataset = cast(DatasetDict, load_hf_from_cache_or_download(
+        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
         ))[split]
 

@@ -2,8 +2,8 @@ from typing import Literal, cast
 
 from datasets import Dataset, DatasetDict
 
+from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.util import load_hf_from_cache_or_download
 from mirror.row_types import TextRow
 
 hf_dataset_path = 'Salesforce/wikitext'
@@ -22,7 +22,7 @@ class WikitextDataset(MirrorDataset[TextRow]):
             split: which dataset split to use.
         """
         super().__init__()
-        self.ds: Dataset = cast(DatasetDict, load_hf_from_cache_or_download(
+        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
             hf_dataset_name,
             self._process,

@@ -1,28 +1,22 @@
 import math
 import os
-from pathlib import Path
 import torch 
-from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
-from mirror.config import RuntimeEnvironment, get_config
+from pathlib import Path
 
-mirror_data_path = Path(
-    f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data'
-)
+from mirror.config import RuntimeEnvironment, get_config
+from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
+
+mirror_data_path = Path(f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data")
 
 def is_login_node() -> bool:
     return get_config()['environment'] == RuntimeEnvironment.SLURM_LOGIN
 
 def safe_training_run_path(training_run_id: str) -> Path:
     safe_id = training_run_id.replace(":", "-")
-    return Path(f'/home/{os.environ['USER']}/nobackup/autodelete/mirror_data/training_runs') / safe_id
+    return (mirror_data_path / "training_runs" / safe_id)
 
 def get_device() -> str:
     return get_config()['device']
-
-def assert_can_download(item_name_to_download: str):
-    config = get_config()
-    if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
-        raise Exception(f'Cannot download {item_name_to_download}. Try again on a login node.')
 
 def is_power_of_ten(n: int):
     return n > 0 and math.log10(n).is_integer()
