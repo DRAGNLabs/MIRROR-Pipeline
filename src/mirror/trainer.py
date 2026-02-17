@@ -28,10 +28,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             num_nodes: int = 1,
             callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
-        # if strategy is None:
-        #     strategy = FSDPStrategy()
-        # if callbacks is None:
-        #     callbacks = []
         config = get_config()
         self.config = config
         if config['device'] == "cpu" and isinstance(strategy, FSDPStrategy):
