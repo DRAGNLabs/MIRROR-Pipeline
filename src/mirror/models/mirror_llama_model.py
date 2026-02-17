@@ -1,11 +1,12 @@
 import torch
 import torch.optim as optim
 import torch.nn as nn
-from transformers import AutoModelForCausalLM, LlamaConfig
+from transformers import AutoModelForCausalLM
 from typing import Literal
 
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
+from mirror.models.configuration_llama import LlamaConfig
 from mirror.tokenizers.mirror_llama_tokenizer import MirrorLlamaTokenizer
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
 from mirror.util import pad_to_longest

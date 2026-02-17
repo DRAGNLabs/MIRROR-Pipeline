@@ -23,15 +23,15 @@ from mirror.config import RuntimeEnvironment, get_config
 class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
     def __init__(
             self,
-            strategy: Strategy | None = None,
+            strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] | None = None,
+            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
-        if strategy is None:
-            strategy = FSDPStrategy()
-        if callbacks is None:
-            callbacks = []
+        # if strategy is None:
+        #     strategy = FSDPStrategy()
+        # if callbacks is None:
+        #     callbacks = []
         config = get_config()
         self.config = config
         if config['device'] == "cpu" and isinstance(strategy, FSDPStrategy):
