@@ -1,0 +1,30 @@
+data:
+  class_path: WikitextDataset
+  init_args:
+    split: train
+    head: 10
+
+model:
+  class_path: mirror.models.mirror_llama_model.MirrorLlamaModel
+  init_args:
+    initialization: 3.2-1B
+      # vocab_size: 128256
+      # hidden_size: 256
+      # intermediate_size: 1024
+      # num_hidden_layers: 4
+      # num_attention_heads: 8
+      # num_key_value_heads: 8
+
+slurm:
+  submit: true
+  time: "01:00:00"
+  gpus_per_node: h200:1
+  mem_per_cpu: "128G"
+  output: "slurm_logs/%j.out"
+  open_mode: "append"
+  signal: "SIGHUP@90"
+  requeue: true
+
+epochs: 1
+batch_size: 1
+device: cpu

@@ -12,3 +12,4 @@ dependencies:
     - --extra-index-url https://download.pytorch.org/whl/cu126
     - lightning==2.5.5
     - tqdm==4.67.1
+    - wandb

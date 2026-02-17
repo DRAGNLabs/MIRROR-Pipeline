@@ -1,4 +1,4 @@
-from jsonargparse import ArgumentParser
+from jsonargparse import ActionConfigFile, ArgumentParser
 from typing import Literal
 from inspect import signature
 import warnings
@@ -45,6 +45,7 @@ def main(subcommand: Subcommand):
     match subcommand:
         case 'fit':
             parser = ArgumentParser()
+            parser.add_argument("--config", action=ActionConfigFile)
             parser.add_function_arguments(fit, as_positional=False, skip={"model", "trainer"})
             parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
             parser.add_subclass_arguments(Trainer, "trainer", required=False, instantiate=True)
