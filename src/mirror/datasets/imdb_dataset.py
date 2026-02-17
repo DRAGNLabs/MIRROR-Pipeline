@@ -7,7 +7,7 @@ from mirror.row_types import TextRow
 hf_dataset_path = 'stanfordnlp/imdb'
 
 
-class ImdbDataset(MirrorDataset[str]):
+class ImdbDataset(MirrorDataset[TextRow]):
     def __init__(
         self,
         head: int | None = None,
@@ -21,9 +21,9 @@ class ImdbDataset(MirrorDataset[str]):
         """
 
         super().__init__()
-        self.ds = load_hf_from_cache_or_download(
+        self.ds: Dataset = cast(DatasetDict, load_hf_from_cache_or_download(
             hf_dataset_path,
-        )[split]
+        ))[split]
 
         if head: 
             self.ds = self.ds.select(range(head))
