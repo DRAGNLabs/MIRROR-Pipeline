@@ -1,2 +1,3 @@
-import mirror.models.mirror_gpt_model
-import mirror.models.mirror_llama_model
+from mirror.models.mirror_gpt_model import MirrorGPTModel
+from mirror.models.mirror_llama_model import MirrorLlamaModel
+from mirror.models.placeholder_model import PlaceholderModel

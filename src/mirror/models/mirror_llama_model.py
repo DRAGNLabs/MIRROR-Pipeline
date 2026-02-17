@@ -8,9 +8,9 @@ from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.tokenizers.mirror_llama_tokenizer import MirrorLlamaTokenizer
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
 from mirror.util import get_device, pad_to_longest
+from mirror.row_types import TextRow
 
-
-class MirrorLlamaModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
+class MirrorLlamaModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
     def __init__(
         self,
         id: Literal["3.2-1B", "3.2-1B-Instruct"] = "3.2-1B",
@@ -25,8 +25,8 @@ class MirrorLlamaModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, Attention
     def tokenizer(self) -> MirrorLlamaTokenizer:
         return self._tokenizer
 
-    def preprocess_example(self, text: str) -> TokenTensor:
-        return self.tokenizer.encode(text)
+    def preprocess_example(self, example: TextRow) -> TokenTensor:
+        return self.tokenizer.encode(example['text'])
 
     def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
         return pad_to_longest(examples, pad_token=self.tokenizer.pad_token_id)
