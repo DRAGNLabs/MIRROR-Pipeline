@@ -19,8 +19,8 @@ class PlaceholderModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Atten
     def tokenizer(self) -> PlaceholderTokenizer:
         return self._tokenizer
 
-    def preprocess_example(self, row: TextRow) -> TokenTensor:
-        return self._tokenizer.encode(row['text'])
+    def preprocess_example(self, example: TextRow) -> TokenTensor:
+        return self._tokenizer.encode(example['text'])
     
     def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
         tokens, attention_mask = batch

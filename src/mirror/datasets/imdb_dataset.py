@@ -1,6 +1,7 @@
-from typing import Literal, Sequence
+from typing import Literal, cast
 
 from mirror.datasets.mirror_dataset import MirrorDataset
+from datasets import Dataset, DatasetDict
 from mirror.datasets.util import load_hf_from_cache_or_download
 from mirror.row_types import TextRow
 
@@ -33,7 +34,7 @@ class ImdbDataset(MirrorDataset[TextRow]):
         return hf_dataset_path
 
     def __getitem__(self, index: int) -> TextRow:
-        return self.ds[index]
+        return cast(TextRow, self.ds[index])
 
     def __len__(self) -> int:
         return len(self.ds)
