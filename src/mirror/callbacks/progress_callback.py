@@ -30,13 +30,5 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             **kwargs,
     ):
         if fabric.is_global_zero and self.progress_bar is not None:
-            self.progress_bar.set_postfix(Loss=f"{loss:.3f}")
+            self.progress_bar.set_postfix(Loss=f"{loss:.3f}", refresh=False)
             self.progress_bar.update(1)
-
-    def on_fit_end(
-            self,
-            **kwargs,
-    ):
-        if self.progress_bar is not None:
-            self.progress_bar.close()
-            self.progress_bar = None
