@@ -2,3 +2,4 @@ slurm_logs/
 .env/
 src/**/__pycache__/
 .ENV
+config.yaml
