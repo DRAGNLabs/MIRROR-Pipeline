@@ -11,4 +11,5 @@ dependencies:
     - jsonargparse==4.42.0
     - --extra-index-url https://download.pytorch.org/whl/cu126
     - lightning==2.5.5
+    - transformers==5.2.0
     - tqdm==4.67.1
