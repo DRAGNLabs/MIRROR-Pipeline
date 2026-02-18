@@ -9,7 +9,7 @@ from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.models.configuration_llama import LlamaConfig
 from mirror.tokenizers.mirror_llama_tokenizer import MirrorLlamaTokenizer
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
-from mirror.util import get_device, pad_to_longest
+from mirror.util import pad_to_longest
 from mirror.row_types import TextRow
 
 class MirrorLlamaModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
