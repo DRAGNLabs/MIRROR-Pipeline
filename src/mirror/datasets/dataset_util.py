@@ -6,12 +6,14 @@ from pathlib import Path
 
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.util import assert_can_download, mirror_data_path, is_login_node
+from mirror.util import is_login_node
+
+from mirror.download_util import assert_can_download, mirror_data_path
 
 datasets_path = mirror_data_path / 'datasets'
 
 
-def load_hf_from_cache_or_download(
+def load_hf_dataset(
         hf_dataset_path: str,
         hf_dataset_name: str | None = None,
         process: Callable[[Dataset | DatasetDict], Dataset | DatasetDict] | None = None,

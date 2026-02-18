@@ -1,16 +1,16 @@
-from typing import Literal, Sequence
+from typing import Literal, cast
 
 from datasets import Dataset, DatasetDict
 
+from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.util import load_hf_from_cache_or_download, load_hf_tk_from_cache_or_map
 from mirror.row_types import TextRow
 
 hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
 
 
-class WikitextDataset(MirrorDataset[str]):
+class WikitextDataset(MirrorDataset[TextRow]):
     def __init__(
         self,
         head: int | None = None,
@@ -25,23 +25,14 @@ class WikitextDataset(MirrorDataset[str]):
         """
 
         super().__init__()
-        self._hf_ds = load_hf_from_cache_or_download(
+        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
             hf_dataset_name,
             self._process,
-            reset_cache,
-        )[split]
+        ))[split]
 
-        self.reset_cache = reset_cache
-        self.should_preprocess = should_preprocess
-
-        if head:
-            self._hf_ds = self._hf_ds.select(range(head))
-
-    @property
-    def ds(self) -> Dataset:
-        return self._hf_ds
-        
+        if head: 
+            self.ds = self.ds.select(range(head))
 
     @property
     def dataset_id(self) -> str:
@@ -51,10 +42,10 @@ class WikitextDataset(MirrorDataset[str]):
         return ds.filter(lambda row: len(row['text']) > 0)
 
     def __getitem__(self, index: int) -> TextRow:
-        return self._hf_ds[index]
+        return cast(TextRow, self.ds[index])
 
     def __len__(self) -> int:
-        return len(self._hf_ds)
+        return len(self.ds)
 
     def item(self, index) -> str:
-       return self._hf_ds['text'][index]
+       return self.ds[index]['text']

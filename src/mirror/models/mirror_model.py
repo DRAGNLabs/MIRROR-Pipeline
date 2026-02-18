@@ -1,7 +1,7 @@
 from torch.optim import Optimizer
 import torch.nn as nn
 from abc import ABC, abstractmethod
-from mirror.types import AttentionMaskBatch, TrainStepOutput, Loss
+from mirror.types import Loss
 from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
 
 

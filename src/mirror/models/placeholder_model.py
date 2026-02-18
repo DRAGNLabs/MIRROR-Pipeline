@@ -9,7 +9,7 @@ from mirror.util import get_device, pad_to_longest
 
 from mirror.row_types import TextRow
 
-class PlaceholderModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
+class PlaceholderModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
     def __init__(self) -> None:
         super().__init__()
         self.parameter = nn.Parameter(torch.tensor([0.0], device=get_device()))
@@ -19,8 +19,8 @@ class PlaceholderModel(MirrorModel[str, TokenTensor, tuple[TokenBatch, Attention
     def tokenizer(self) -> PlaceholderTokenizer:
         return self._tokenizer
 
-    def preprocess_example(self, row: TextRow) -> TokenTensor:
-        return self._tokenizer.encode(row['text'])
+    def preprocess_example(self, example: TextRow) -> TokenTensor:
+        return self._tokenizer.encode(example['text'])
     
     def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
         tokens, attention_mask = batch
