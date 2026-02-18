@@ -12,6 +12,7 @@ from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
 from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.requeue_callback import RequeueCallback
+from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
@@ -41,6 +42,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             RequeueCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
+            WandbCallback()
         ]
         if config['environment'] != RuntimeEnvironment.LOCAL:
             default_callbacks.append(RequeueCallback())
