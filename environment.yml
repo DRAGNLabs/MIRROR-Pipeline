@@ -7,6 +7,7 @@ dependencies:
   - pip:
     - aiohttp==3.13.1
     - datasets==4.3.0
+    - dotenv==0.9.9
     - jaxtyping==0.3.3
     - jsonargparse==4.42.0
     - --extra-index-url https://download.pytorch.org/whl/cu126
