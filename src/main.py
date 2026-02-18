@@ -14,7 +14,6 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.config import init_config
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.models import __init__
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import instantiate_model
 from mirror.trainer import Trainer
@@ -51,7 +50,7 @@ def main(subcommand: Subcommand):
             parser.add_subclass_arguments(Trainer, "trainer", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(sys.argv[2:])
-
+            
             global run_config_yaml
             run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
 

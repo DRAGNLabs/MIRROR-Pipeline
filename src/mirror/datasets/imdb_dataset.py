@@ -1,12 +1,14 @@
-from typing import Literal, Sequence
+from typing import Literal, cast
 
 from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
+from datasets import Dataset, DatasetDict
+from mirror.row_types import TextRow
 
 hf_dataset_path = 'stanfordnlp/imdb'
 
 
-class ImdbDataset(MirrorDataset[str]):
+class ImdbDataset(MirrorDataset[TextRow]):
     def __init__(
         self,
         head: int | None = None,
@@ -20,17 +22,22 @@ class ImdbDataset(MirrorDataset[str]):
         """
 
         super().__init__()
-        ds = load_hf_dataset(hf_dataset_path)
-        self.examples: Sequence[str] = ds[split]['text']  # pyright: ignore
-        if head:
-            self.examples = self.examples[:head]
+        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
+            hf_dataset_path,
+        ))[split]
+
+        if head: 
+            self.ds = self.ds.select(range(head))
 
     @property
     def dataset_id(self) -> str:
         return hf_dataset_path
 
-    def __getitem__(self, index: int) -> str:
-        return self.examples[index]
+    def __getitem__(self, index: int) -> TextRow:
+        return cast(TextRow, self.ds[index])
 
     def __len__(self) -> int:
-        return len(self.examples)
+        return len(self.ds)
+
+    def item(self, index) -> str:
+       return self.ds['text'][index]
