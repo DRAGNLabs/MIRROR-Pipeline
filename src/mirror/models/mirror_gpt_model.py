@@ -7,7 +7,7 @@ from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.tokenizers.mirror_gpt_tokenizer import MirrorGPTTokenizer
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
-from mirror.util import get_device, pad_to_longest
+from mirror.util import pad_to_longest
 from mirror.row_types import TextRow
 
 
