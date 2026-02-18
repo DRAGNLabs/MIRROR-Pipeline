@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mirror_pipeline"
+version = "0.1.0"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiohttp==3.13.1",
+    "datasets==4.3.0",
+    "dotenv==0.9.9",
+    "jaxtyping==0.3.3",
+    "jsonargparse==4.42.0",
+    "lightning==2.5.5",
+    "transformers==5.2.0",
+    "tqdm==4.67.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
