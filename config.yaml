@@ -7,10 +7,14 @@ data:
 model:
   class_path: mirror.models.mirror_llama_model.MirrorLlamaModel
   init_args:
-    initialization: 3.2-1B
-      # vocab_size: 128256
-      # hidden_size: 256
-      # intermediate_size: 1024
+    initialization:
+      # 3.2-1B
+
+      3.2-1B-Instruct
+
+      # vocab_size: 128256 # Default:
+      # hidden_size: 256 # Default: 4096
+      # intermediate_size: 1024 # Default: 11008
       # num_hidden_layers: 4
       # num_attention_heads: 8
       # num_key_value_heads: 8
