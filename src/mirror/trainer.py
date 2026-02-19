@@ -38,7 +38,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         self.num_nodes = num_nodes
         default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
             CheckpointCallback(),
-            RequeueCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
         ]
