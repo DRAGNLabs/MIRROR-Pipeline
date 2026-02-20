@@ -43,6 +43,9 @@ def fit(
         run_config_yaml,
     )
 
+def preprocess(dataset: MirrorDataset, model: MirrorModel) -> None:
+    pass
+
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
     # Prevent recursion: job run should not submit again
     args = [a for a in python_args if not a.startswith("--slurm.submit")]
