@@ -7,9 +7,10 @@ import sys
 from lightning.fabric.utilities.warnings import PossibleUserWarning
 
 from mirror.config import init_config
+from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import instantiate_model
-from mirror.subcommands import fit
+from mirror.subcommands import fit, preprocess
 from mirror.trainer import Trainer
 from mirror.util import is_login_node
 
@@ -20,7 +21,7 @@ import mirror.callbacks
 import mirror.datasets
 import mirror.models
 
-Subcommand = Literal['fit'] | Literal['test']
+Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
 
 def main(subcommand: Subcommand):
     # These warnings happen internal to Fabric, so there's not much we can do about them.
@@ -65,6 +66,19 @@ def main(subcommand: Subcommand):
 
             fit(**{**init, "model": model, "trainer": trainer, "run_config_yaml": run_config_yaml})
 
+        case 'preprocess':
+            parser = ArgumentParser()
+            parser.add_argument("--config", action=ActionConfigFile)
+            parser.add_subclass_arguments(MirrorDataset, "dataset", required=True, instantiate=True)
+            parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
+            cfg = parser.parse_args(sys.argv[2:])
+            init = parser.instantiate_classes(cfg)
+
+            dataset = init.dataset
+            model = instantiate_model(init.model, fabric=None)
+
+            preprocess(dataset, model)
+            
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
