@@ -48,7 +48,6 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             loss: float,
-            batch: BatchT,
             training_run_id: str,
             batch_idx: int,
     ):
