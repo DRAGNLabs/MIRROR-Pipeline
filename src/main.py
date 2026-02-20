@@ -69,10 +69,16 @@ def main(subcommand: Subcommand):
         case 'preprocess':
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_subclass_arguments(MirrorDataset, "dataset", required=True, instantiate=False)
+            parser.add_subclass_arguments(MirrorDataset, "dataset", required=True, instantiate=True)
             parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
             cfg = parser.parse_args(sys.argv[2:])
+            init = parser.instantiate_classes(cfg)
 
+            dataset = init.dataset
+            model = instantiate_model(init.model, fabric=None)
+
+            preprocess(dataset, model)
+            
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
