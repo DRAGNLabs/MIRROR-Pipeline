@@ -1,13 +1,15 @@
 import torch
 from transformers import PreTrainedTokenizerBase
 
-from mirror.tokenizers.mirror_tokenizer import MirrorTokenizer
-from mirror.tokenizers.tokenizer_util import load_hf_tokenizer
-from mirror.types import TokenTensor
-from mirror.util import get_device
+from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.preprocessors.preprocessor_util import load_hf_tokenizer
+from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
+from mirror.util import get_device, pad_to_longest
+from mirror.row_types import TextRow
 
 
-class MirrorGPTTokenizer(MirrorTokenizer):
+
+class MirrorGPTPreprocessor(MirrorPreprocessor):
     def __init__(self) -> None:
         self._hf_model_name = "openai-community/gpt2"
         self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(self._hf_model_name)
@@ -16,7 +18,7 @@ class MirrorGPTTokenizer(MirrorTokenizer):
 
     @property
     def tokenization_id(self) -> str:
-        return "MirrorGPTTokenizer"
+        return "MirrorGPTPreprocessor"
 
     def encode(self, text: str) -> TokenTensor:
         ids = self._tokenizer.encode(text, add_special_tokens=True)
@@ -25,9 +27,11 @@ class MirrorGPTTokenizer(MirrorTokenizer):
             ids = [eos, eos] if len(ids) == 0 else [*ids, eos] # GPT causal LM loss shifts labels by 1, so seq_len=1 produces zero training targets
         return torch.tensor(ids, device=get_device(), dtype=torch.long)
 
-    def decode(self, tokens: TokenTensor) -> str:
-        tokens = tokens.tolist()
-        return self._tokenizer.decode(tokens, skip_special_tokens=False)
+    def preprocess_example(self, example: TextRow) -> TokenTensor:
+        return self.encode(example['text'])
+
+    def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
+        return pad_to_longest(examples, pad_token=self.pad_token_id)
 
     @property
     def pad_token_id(self) -> int:
