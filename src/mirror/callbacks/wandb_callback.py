@@ -1,11 +1,14 @@
+from typing import Literal
+
 import wandb
-from typing import Any, Literal
 
 from lightning import Fabric
 
 from mirror.callbacks.callback import Callback
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.util import mirror_data_path
+
+from wandb.sdk.wandb_run import Run as WandbRun
 
 WandbMode = Literal["online", "offline"]
 
@@ -15,7 +18,7 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
 ):
     def __init__(self) -> None:
         super().__init__(is_singleton=True)
-        self.run: Any | None = None
+        self.run: WandbRun | None = None
         self.step = 0
 
     def on_fit_start(
@@ -47,7 +50,7 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             "epochs": epochs,
             "n_batches": n_batches,
             "run_config_yaml": run_config_yaml,
-        }, allow_val_change=True)
+        })
         
     def on_train_batch_end(
         self,

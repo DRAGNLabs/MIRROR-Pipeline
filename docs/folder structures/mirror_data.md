@@ -24,7 +24,7 @@ mirror_data
     -- openai-community
         -- gpt2
 -- training_runs
-
+-- wandb
 
 # datasets
 Contains dataset source folders (e.g. Salesforce), which contain dataset folders (e.g. wikitext).
@@ -43,3 +43,6 @@ Contains model family folders (e.g. meta-llama), which contain specific model fo
 
 # training_runs
 Contains a folder with logs for each submitted training run, including checkpoints.
+
+# wandb 
+Contains Wandb data saved offline, which can be synced to the cloud from a login node.
