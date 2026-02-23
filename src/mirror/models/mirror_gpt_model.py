@@ -5,7 +5,7 @@ from typing import Literal
 
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
-from mirror.tokenizers.mirror_gpt_tokenizer import MirrorGPTTokenizer
+from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
 from mirror.util import pad_to_longest
 from mirror.row_types import TextRow
@@ -17,17 +17,11 @@ class MirrorGPTModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Attenti
     def __init__(self, weights: Literal["pretrained", "random"] = "pretrained") -> None:
         super().__init__()
         self.model = build_causal_lm(hf_model_name, weights)
-        self._tokenizer = MirrorGPTTokenizer()
+        self._preprocessor = MirrorGPTPreprocessor()
 
     @property
-    def tokenizer(self) -> MirrorGPTTokenizer:
-        return self._tokenizer
-
-    def preprocess_example(self, example: TextRow) -> TokenTensor:
-        return self.tokenizer.encode(example['text'])
-
-    def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
-        return pad_to_longest(examples, pad_token=self.tokenizer.pad_token_id)
+    def preprocessor(self) -> MirrorGPTPreprocessor:
+        return self._preprocessor
 
     def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
         input_ids, attention_mask = batch

@@ -9,7 +9,8 @@ dependencies:
     - datasets==4.3.0
     - jaxtyping==0.3.3
     - jsonargparse==4.42.0
-    - --extra-index-url https://download.pytorch.org/whl/cu126
     - lightning==2.5.5
     - tqdm==4.67.1
     - wandb
+    - --extra-index-url https://download.pytorch.org/whl/cu126 # needed for compatibility with all supercomputer nodes
+    - -e . # install this package (the mirror package)

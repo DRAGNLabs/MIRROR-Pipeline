@@ -3,3 +3,4 @@ slurm_logs/
 src/**/__pycache__/
 .ENV
 config.yaml
+mirror_pipeline.egg-info/

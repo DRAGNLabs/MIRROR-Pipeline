@@ -39,7 +39,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         self.num_nodes = num_nodes
         default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
             CheckpointCallback(),
-            RequeueCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
             WandbCallback()
@@ -97,11 +96,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             }
             self.fabric.load(checkpoint.path, state)
 
-        preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocess_example)
+        preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
         dataloader = DataLoader(
             preprocessed_dataset, 
             batch_size=batch_size, 
-            collate_fn=model.collate, 
+            collate_fn=model.preprocessor.collate, 
             drop_last=False,
         )
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
