@@ -71,7 +71,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
     def fit(
             self, 
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
+            model: MirrorModel[RawT, ProcessedT, BatchT], 
             dataset: MirrorDataset[RawT], 
             checkpoint: CheckpointIdentifier | None = None, 
             epochs: int = 1, 
