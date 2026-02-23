@@ -20,11 +20,13 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             training_run_id: str,
             epochs: int,
             n_batches: int,
+            devices: int,
             **kwargs,
     ):
-        self.digits = len(str(epochs*n_batches)) + 1
+        self.n_print_digits = len(str(epochs*n_batches)) + 1
         self.n_batches = n_batches
         self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'start'))
+        self.devices = devices
 
     def on_fit_end(
             self, 
@@ -47,12 +49,12 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             batch_idx: int,
             **kwargs,
     ):
-        if self.every_n_train_steps and (batch_idx + 1) % self.every_n_train_steps == 0:
+        if self.every_n_train_steps and (batch_idx * self.devices + 1) % (self.every_n_train_steps) == 0:
             self._save_checkpoint(
                 fabric,
                 model,
                 optimizer,
-                CheckpointIdentifier(training_run_id, f"{epoch * self.n_batches + batch_idx:0{self.digits}d}")
+                CheckpointIdentifier(training_run_id, f"{epoch * self.n_batches + batch_idx:0{self.n_print_digits}d}")
             )
 
     def _save_checkpoint(

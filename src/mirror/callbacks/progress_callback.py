@@ -22,7 +22,7 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             start_batch: int,
             **kwargs,
     ):
-        if Fabric.is_global_zero:
+        if torch.distributed.get_rank() == 0:
             self.progress_bar = tqdm(total=(epochs * n_batches), initial=(start_epoch*n_batches + start_batch), desc="Training", mininterval=self.bar_refresh_interval)
 
     def on_train_batch_end(
@@ -31,6 +31,6 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             loss: float,
             **kwargs,
     ):
-        if Fabric.is_global_zero and self.progress_bar is not None:
+        if torch.distributed.get_rank() == 0 and self.progress_bar is not None:
             self.progress_bar.set_postfix(Loss=f"{loss:.3f}")
             self.progress_bar.update(self.devices)
