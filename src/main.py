@@ -54,13 +54,13 @@ def main(subcommand: Subcommand):
             model = init.model
 
             trainer.launch()
-            if not (is_login_node() and init.slurm.submit):
+            if not (is_login_node() and init.slurm.job_type == "compute"):
                 model = instantiate_model(model, fabric=trainer.fabric)
 
-            if is_login_node() and not init.slurm.submit:
+            if is_login_node() and init.slurm.job_type == "local-download":
                 print("Model downloaded/cached. Re-run on a compute node.")
                 return
-            
+                
             del init.model # pyright: ignore
             del init.device # pyright: ignore
 

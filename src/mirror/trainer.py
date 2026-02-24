@@ -41,7 +41,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             ConfigSnapshotCallback(),
             ProgressCallback(),
         ]
-        if config['environment'] != RuntimeEnvironment.LOCAL:
+        if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
             default_callbacks.append(RequeueCallback())
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
@@ -102,7 +102,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             drop_last=False,
         )
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
-
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
 
