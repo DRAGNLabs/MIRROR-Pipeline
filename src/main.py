@@ -32,10 +32,25 @@ def main(subcommand: Subcommand):
     warnings.filterwarnings('ignore', category=PossibleUserWarning, message='.*`srun` command is available on your system but is not used.*')
 
     match subcommand:
-        case 'preprocess':
-            preprocess(data, 
-            # reset_cache
-            )
+        # case 'preprocess':
+            # parser = ArgumentParser()
+            # parser.add_argument("--config", action=ActionConfigFile)
+            # parser.add_function_arguments(preprocess, as_positional=False, skip={"model"})
+            # parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
+            # parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
+            # cfg = parser.parse_args(sys.argv[2:])
+            
+            # if hasattr(cfg, 'config'):
+            #     del cfg.config  # pyright: ignore
+
+            # init_config(cfg.device)
+            # init_cfg = cfg.clone()
+            # init = parser.instantiate_classes(init_cfg)
+            # model = init.model
+
+            # preprocess_kwargs = {name: getattr(init, name) for name in signature(preprocess).parameters}
+            # preprocess(**{**preprocess_kwargs, "model": model})
+
         case 'fit':
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
@@ -71,19 +86,6 @@ def main(subcommand: Subcommand):
 
         case _:
             print(f'unimplemented subcommand: {subcommand}')
-
-def preprocess(
-    dataset: MirrorDataset,
-    # model: MirrorModel,
-):
-    print("Beginning preprocess..git status.") #####################################################################################
-    model = PlaceholderModel()
-    print("Pre-if-statement... ") ########################################################################################
-    
-    ds = load_hf_tk_from_cache_or_map(dataset, model.tokenizer.tokenization_id, model.preprocess_row, dataset.reset_cache) 
-        # TODO: fix preprocess example to expect ds row when we have a hf_ds
-
-    print("Preprocessing complete.")
 
 if __name__ == '__main__':
     parser = ArgumentParser()

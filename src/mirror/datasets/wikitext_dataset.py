@@ -23,16 +23,19 @@ class WikitextDataset(MirrorDataset[TextRow]):
             head: how many examples to include. None includes the whole split.
             split: which dataset split to use.
         """
-
         super().__init__()
-        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
+        self.ds = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
             hf_dataset_name,
             self._process,
-        ))[split]
-
+        ))
+        # print("DatasetDict:",self.ds._fingerprint) #########################################
+        self.ds = self.ds[split]
+        print("DatasetSplit:",self.ds._fingerprint) #########################################
+        print("DatasetSplit:",self.ds._fingerprint) #########################################
         if head: 
             self.ds = self.ds.select(range(head))
+            print("Head selected:",self.ds._fingerprint) #########################################
 
     @property
     def dataset_id(self) -> str:

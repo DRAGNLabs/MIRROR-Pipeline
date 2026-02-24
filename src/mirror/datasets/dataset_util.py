@@ -1,5 +1,4 @@
 import os
-import torch
 import shutil
 from typing import Callable, Sequence
 from pathlib import Path
@@ -60,22 +59,21 @@ def check_tk_is_cached(dataset_id: str) -> bool:
     is_cached = os.path.exists(dataset_path)
     return is_cached
 
-# This is what to do on/by Monday
-def load_hf_tk_from_cache_or_map[RawT, ProcessedT](
-        dataset: MirrorDataset, # benefit of knowing which column
-        tokenization_id: str,
-        tokenizer_function: Callable[[RawT], dict[str,ProcessedT]] | None = None, # probably a model actually, or a function that has the same signature and type as the pre proc func on models now
-        reset_cache: bool = False,
-) -> Sequence[ProcessedT]:
+# def load_hf_tk_from_cache_or_map[RawT, ProcessedT](
+#         dataset: MirrorDataset, # benefit of knowing which column
+#         tokenization_id: str,
+#         tokenizer_function: Callable[[RawT], dict[str,ProcessedT]] | None = None, # probably a model actually, or a function that has the same signature and type as the pre proc func on models now
+#         reset_cache: bool = False,
+# ) -> Sequence[ProcessedT]:
 
-    dataset_id = f"{dataset.dataset_id}_TKID-{tokenization_id}".replace("/","-")
-    dataset_path = mirror_data_path / f'tokenized_data/{dataset_id}'
+#     dataset_id = f"{dataset.dataset_id}_TKID-{tokenization_id}".replace("/","-")
+#     dataset_path = mirror_data_path / f'tokenized_data/{dataset_id}'
     
-    is_cached = os.path.exists(dataset_path)
+#     is_cached = os.path.exists(dataset_path)
 
-    if is_cached:
-        ds = load_from_disk(dataset_path)
-    else:
-        ds = dataset.ds.map(tokenizer_function)
-        ds.save_to_disk(dataset_path)
-    return ds[dataset.split]['input_ids']
+#     if is_cached:
+#         ds : Dataset | DatasetDict = load_from_disk(dataset_path)
+#     else:
+#         ds = dataset.ds.map(tokenizer_function)
+#         ds.save_to_disk(dataset_path)
+#     return ds[dataset.split]['input_ids']

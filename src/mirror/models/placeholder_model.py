@@ -1,6 +1,7 @@
 import torch
 import torch.optim as optim
 import torch.nn as nn
+from typing import List
 
 from mirror.models.mirror_model import MirrorModel
 from mirror.tokenizers.placeholder_tokenizer import PlaceholderTokenizer
@@ -19,9 +20,6 @@ class PlaceholderModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Atten
     def tokenizer(self) -> PlaceholderTokenizer:
         return self._tokenizer
 
-    def preprocess_example(self, example: TextRow) -> TokenTensor:
-        return self._tokenizer.encode(example['text'])
-    
     def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
         tokens, attention_mask = batch
         return self.parameter

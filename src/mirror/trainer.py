@@ -94,11 +94,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 'optimizer': optimizer,
             }
             self.fabric.load(checkpoint.path, state)
-        tokenization_id = model.tokenizer.tokenization_id
-        if dataset.is_preprocessed(tokenization_id):
-            preprocessed_dataset = load_tk_from_cache_or_map(dataset, tokenization_id, model.preprocess_example, reset_cache = False) # TODO: fix preprocess example to expect ds row when we have a hf_ds
+        
+        if dataset.should_preprocess:
+            preprocessed_dataset = dataset.preprocess(model.tokenizer.preprocess_example)
         else:
-            preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocess_example)
+            preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.tokenizer.preprocess_example)
         
         dataloader = DataLoader(
             preprocessed_dataset, 
