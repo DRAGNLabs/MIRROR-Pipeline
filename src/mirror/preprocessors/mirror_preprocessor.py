@@ -6,16 +6,11 @@ import torch
 from mirror.types import TokenTensor, TokenBatch
 
 
-class MirrorTokenizer(ABC):
+class MirrorPreprocessor[RawT, ProcessedT, BatchT](ABC):
     @property
     @abstractmethod
     def tokenization_id(self) -> str:
         """Unique Identifier for a given tokenizer."""
-        pass
-
-    @abstractmethod
-    def pad_token_id(self) -> int:
-        """The integer ID used for padding."""
         pass
 
     @abstractmethod
@@ -27,17 +22,19 @@ class MirrorTokenizer(ABC):
         """
         pass
 
-    def encode_batch(self, texts: Sequence[str]) -> List[List[str]]:
-        return [self.encode(text) for text in texts]
-
+    def encode_batch(self, texts: Sequence[str]) -> Sequence[ProcessedT]:
+        return torch.stack([self.encode(text) for text in texts])
+    
     @abstractmethod
-    def decode(self, tokens: List[int]) -> str:
+    def preprocess_example(self, example: RawT) -> ProcessedT:
         pass
 
-    def decode_batch(self, token_batch: Sequence[List[int]]) -> Sequence[str]:
-        return [self.decode(tokens) for tokens in token_batch]
+    @abstractmethod
+    def collate(self, examples: list[ProcessedT]) -> BatchT:
+        pass
 
     @property
+    @abstractmethod
     def pad_token_id(self) -> int:
         pass
 
