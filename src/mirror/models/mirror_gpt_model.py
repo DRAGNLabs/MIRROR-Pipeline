@@ -1,9 +1,8 @@
 import torch
 import torch.optim as optim
-from typing import Callable, Literal, Tuple, TypedDict, Union, cast
+from typing import Literal, TypedDict, Union, cast
 
 from transformers import GPT2LMHeadModel
-from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from mirror.models.hf_model_utils.model_output_extraction import HFTransformerInput, fresh_executor
 from mirror.models.mirror_model import MirrorModel

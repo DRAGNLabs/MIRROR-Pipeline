@@ -1,10 +1,8 @@
 import torch
 import torch.optim as optim
 from transformers import AutoModelForCausalLM, LlamaForCausalLM
-from typing import Literal, Tuple, TypedDict, cast
+from typing import Literal, TypedDict, cast
 
-from transformers.modeling_outputs import BaseModelOutput, CausalLMOutputWithPast
-from transformers.utils.generic import TransformersKwargs
 
 from mirror.models.hf_model_utils.model_output_extraction import HFTransformerInput, fresh_executor
 from mirror.models.mirror_model import MirrorModel
