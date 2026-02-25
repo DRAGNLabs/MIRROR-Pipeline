@@ -6,15 +6,17 @@ import torch
 from transformers.modeling_outputs import CausalLMOutputWithPast, CausalLMOutputWithCrossAttentions
 from transformers.utils.generic import TransformersKwargs
 
-class HFTransformerInput(TransformersKwargs):
-    labels: torch.LongTensor | None
-
+"""
+The following types are assumptions and made need to be edited down the line
+"""
 RawHFOutputTypes = CausalLMOutputWithPast | CausalLMOutputWithCrossAttentions
-
 Logits = torch.FloatTensor
 LossPresent = torch.FloatTensor
 HiddenStatesPresent = List[torch.FloatTensor]
 AttentionsPresent = List[torch.FloatTensor]
+
+class HFTransformerInput(TransformersKwargs):
+    labels: torch.LongTensor | None
 
 @dataclass(frozen=True)
 class HFTransformerOutput[LossT: LossPresent | None, HiddenStatesT: HiddenStatesPresent | None, AttentionsT: AttentionsPresent | None, RawT: RawHFOutputTypes]:
