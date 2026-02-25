@@ -3,9 +3,6 @@ from typing import Sequence, List
 
 import torch
 
-from mirror.types import TokenTensor, TokenBatch
-
-
 class MirrorPreprocessor[RawT, ProcessedT, BatchT](ABC):
     @property
     @abstractmethod
