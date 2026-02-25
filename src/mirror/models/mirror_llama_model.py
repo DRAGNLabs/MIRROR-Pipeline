@@ -6,8 +6,8 @@ from typing import Literal, Tuple, TypedDict, cast
 from transformers.modeling_outputs import BaseModelOutput, CausalLMOutputWithPast
 from transformers.utils.generic import TransformersKwargs
 
-from mirror.models.hf_mirror_model import HFMirrorModel
 from mirror.models.hf_model_utils.model_output_extraction import HFTransformerInput, fresh_executor
+from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.models.configuration_llama import LlamaConfig
 from mirror.preprocessors.mirror_llama_preprocessor import MirrorLlamaPreprocessor
@@ -19,7 +19,7 @@ class LlamaDict(TypedDict):
     input_ids: torch.Tensor
     attention_mask: torch.Tensor
 
-class MirrorLlamaModel(HFMirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], LlamaForCausalLM]):
+class MirrorLlamaModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
     def __init__(
         self,
         initialization: Literal["3.2-1B", "3.2-1B-Instruct"] | LlamaConfig = "3.2-1B-Instruct"

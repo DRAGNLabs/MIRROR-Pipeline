@@ -5,8 +5,8 @@ from typing import Callable, Literal, Tuple, TypedDict, Union, cast
 from transformers import GPT2LMHeadModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
-from mirror.models.hf_mirror_model import HFMirrorModel
 from mirror.models.hf_model_utils.model_output_extraction import HFTransformerInput, fresh_executor
+from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
@@ -20,7 +20,7 @@ class GptDict(TypedDict):
     input_ids: torch.Tensor
     attention_mask: torch.Tensor
 
-class MirrorGPTModel(HFMirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], GPT2LMHeadModel]):
+class MirrorGPTModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
     def __init__(self, weights: Literal["pretrained", "random"] = "pretrained") -> None:
         super().__init__()
         self.hf_model = cast(GPT2LMHeadModel, build_causal_lm(hf_model_name, weights))
