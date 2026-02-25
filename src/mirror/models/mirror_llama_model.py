@@ -38,10 +38,7 @@ class MirrorLlamaModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Atten
     @property
     def preprocessor(self) -> MirrorLlamaPreprocessor:
         return self._preprocessor
-    
-    def call_hf(self, args: LlamaDict) -> Tuple[CausalLMOutputWithPast]:
-        return self.hf_model(**args)
-
+   
     def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
         input_ids, attention_mask = batch
         labels = input_ids

@@ -29,9 +29,6 @@ class MirrorGPTModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Attenti
     @property
     def preprocessor(self) -> MirrorGPTPreprocessor:
         return self._preprocessor
-    
-    def call_hf(self, args: GptDict) -> Tuple[CausalLMOutputWithPast]:
-        return self.hf_model(**args)
 
     def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
         input_ids, attention_mask = batch
@@ -41,11 +38,11 @@ class MirrorGPTModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Attenti
         labels = cast(torch.LongTensor, labels)
 
         def run(kwargs: HFTransformerInput):
-            return assert_union_snd(self.hf_model.forward)(
+            return assert_union_snd(self.hf_model.forward(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 **kwargs
-            )
+            ))
 
         output = fresh_executor().include_loss(labels).execute(run)
         return output.loss
@@ -53,5 +50,5 @@ class MirrorGPTModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Attenti
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())
 
-def assert_union_snd[**P, A, B](f: Callable[P, Union[A, B]]) -> Callable[P, A]:
-    return f #pyright: ignore
+def assert_union_snd[A, B](union: Union[A, B]) -> A:
+    return union #pyright: ignore
