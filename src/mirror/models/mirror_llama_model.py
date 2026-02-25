@@ -4,9 +4,10 @@ from transformers import AutoModelForCausalLM, LlamaForCausalLM
 from typing import Literal, Tuple, TypedDict, cast
 
 from transformers.modeling_outputs import BaseModelOutput, CausalLMOutputWithPast
+from transformers.utils.generic import TransformersKwargs
 
 from mirror.models.hf_mirror_model import HFMirrorModel
-from mirror.models.hf_model_utils.model_output_extraction import CoreDict, LabelsDict, tuplize, with_loss
+from mirror.models.hf_model_utils.model_output_extraction import HFTransformerInput, fresh_executor
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.models.configuration_llama import LlamaConfig
 from mirror.preprocessors.mirror_llama_preprocessor import MirrorLlamaPreprocessor
@@ -47,13 +48,16 @@ class MirrorLlamaModel(HFMirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Att
         if attention_mask is not None:
             labels = labels.masked_fill(attention_mask == 0, IGNORE_ID) 
         labels = cast(torch.LongTensor, labels)
+        
+        def run(kwargs: HFTransformerInput):
+            return self.hf_model.forward(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                **kwargs 
+            )
 
-        loss, _ = with_loss(tuplize(self.hf_model.forward))(
-            input_ids=cast(torch.LongTensor, input_ids),
-            attention_mask=attention_mask,
-            labels=labels
-        )
-        return loss
+        output = fresh_executor().include_loss(labels).execute(run)
+        return output.loss
 
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())

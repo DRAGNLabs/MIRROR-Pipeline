@@ -6,7 +6,7 @@ from transformers import GPT2LMHeadModel
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 from mirror.models.hf_mirror_model import HFMirrorModel
-from mirror.models.hf_model_utils.model_output_extraction import tuplize, with_loss
+from mirror.models.hf_model_utils.model_output_extraction import HFTransformerInput, fresh_executor
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
@@ -40,13 +40,15 @@ class MirrorGPTModel(HFMirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Atten
             labels = labels.masked_fill(attention_mask == 0, IGNORE_ID) 
         labels = cast(torch.LongTensor, labels)
 
-        test = with_loss(tuplize(assert_union_snd(self.hf_model.forward)))
-        loss, _ = with_loss(tuplize(assert_union_snd(self.hf_model.forward)))(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            labels=labels,
-        )
-        return loss
+        def run(kwargs: HFTransformerInput):
+            return assert_union_snd(self.hf_model.forward)(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                **kwargs
+            )
+
+        output = fresh_executor().include_loss(labels).execute(run)
+        return output.loss
 
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())
