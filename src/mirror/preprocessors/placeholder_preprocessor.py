@@ -6,10 +6,6 @@ from mirror.row_types import TextRow
 from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
 
 class PlaceholderPreprocessor(MirrorPreprocessor):
-    @property
-    def tokenization_id(self):
-        return "placeholder"
-
     def encode(self, text):
         return torch.tensor([1, 2, 3, 4], device=get_device())
 

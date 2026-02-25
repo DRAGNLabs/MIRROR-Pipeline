@@ -9,7 +9,6 @@ from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.models.configuration_llama import LlamaConfig
 from mirror.preprocessors.mirror_llama_preprocessor import MirrorLlamaPreprocessor
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor
-from mirror.util import pad_to_longest
 from mirror.row_types import TextRow
 
 class MirrorLlamaModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
@@ -18,11 +17,11 @@ class MirrorLlamaModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Atten
         initialization: Literal["3.2-1B", "3.2-1B-Instruct"] | LlamaConfig = "3.2-1B-Instruct"
     ) -> None:
         super().__init__()
-        default_preprocessor_hf_name = "meta-llama/Llama-3.2-1B-Instruct"
+        default_tokenizer_hf_name = "meta-llama/Llama-3.2-1B-Instruct"
 
         if isinstance(initialization, LlamaConfig):
             self.model = AutoModelForCausalLM.from_config(initialization)
-            self._preprocessor = MirrorLlamaPreprocessor(default_preprocessor_hf_name)
+            self._preprocessor = MirrorLlamaPreprocessor(default_tokenizer_hf_name)
         else:
             hf_model_name = f"meta-llama/Llama-{initialization}"
             self.model = build_causal_lm(hf_model_name, weights="pretrained")
