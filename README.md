@@ -10,7 +10,7 @@
       - Example config.yaml contents: 
       ```
       data:
-        class_path: WikitextDataset
+        class_path: WikitextDataset # Note that class name or full class path works
         init_args:
           split: train
           head: 10
@@ -20,20 +20,21 @@
         init_args:
           initialization:
             # 3.2-1B
-
             3.2-1B-Instruct
 
-            # vocab_size: 128256 # Default:
-            # hidden_size: 4096 # Default: 4096
-            # intermediate_size: 11008 # Default: 11008
-            # num_hidden_layers: 32
-            # num_attention_heads: 32
-            # num_key_value_heads: null
+            # Can use either a pretrained model (above) or customize the config (below)
+
+            # vocab_size: 128256 # Default: 128256
+            # hidden_size: 1024 # Default: 4096 
+            # intermediate_size: 2048 # Default: 11008
+            # num_hidden_layers: 8 # Default: 32
+            # num_attention_heads: 8 # Default: 32
+            # num_key_value_heads: null # Default: null
 
       slurm:
         submit: true
         time: "01:00:00"
-        gpus_per_node: h200:1
+        gpus_per_node: p100:1 # Use 1 P100 GPU. Options: A100, A200, P100, L40S, H200
         mem_per_cpu: "128G"
         output: "slurm_logs/%j.out"
         open_mode: "append"
