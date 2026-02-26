@@ -1,13 +1,13 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import Callable, List, cast
 
-from attr import dataclass
 import torch
 from transformers.modeling_outputs import CausalLMOutputWithPast, CausalLMOutputWithCrossAttentions
 from transformers.utils.generic import TransformersKwargs
 
 """
-The following types are assumptions and made need to be edited down the line
+The following types are assumptions and may need to be edited down the line
 """
 RawHFOutputTypes = CausalLMOutputWithPast | CausalLMOutputWithCrossAttentions
 Logits = torch.FloatTensor
@@ -57,7 +57,10 @@ class HFTransformerExecutor[LossT: LossPresent | None, HiddenStatesT: HiddenStat
     """
     input: HFTransformerInput
 
-    def execute[RawT: RawHFOutputTypes](self, f: Callable[[HFTransformerInput], RawT]) -> HFTransformerOutput[LossT, HiddenStatesT, AttentionsT, RawT]:
+    def execute[RawT: RawHFOutputTypes](
+        self,
+        f: Callable[[HFTransformerInput], RawT]
+    ) -> HFTransformerOutput[LossT, HiddenStatesT, AttentionsT, RawT]:
         raw = f(self.input)
         logits = cast(Logits, raw.logits) # I'm not totally sure when logits would be None. I'm doing this cast here to make the types nicer. If we run into type errors down the line we can correct it.
         loss = cast(LossT, raw.loss)

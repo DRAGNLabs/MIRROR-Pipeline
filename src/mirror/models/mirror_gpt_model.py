@@ -14,7 +14,7 @@ from mirror.row_types import TextRow
 
 hf_model_name = "openai-community/gpt2"
 
-class GptDict(TypedDict):
+class GPTDict(TypedDict):
     labels: torch.LongTensor
     input_ids: torch.Tensor
     attention_mask: torch.Tensor
