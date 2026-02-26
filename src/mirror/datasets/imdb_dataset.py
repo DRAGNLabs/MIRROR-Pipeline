@@ -32,10 +32,6 @@ class ImdbDataset(MirrorDataset[TextRow]):
         if head: 
             self.ds = self.ds.select(range(head))
 
-    @property
-    def dataset_id(self) -> str:
-        return hf_dataset_path
-
     def __getitem__(self, index: int) -> TextRow:
         return cast(TextRow, self.ds[index])
 

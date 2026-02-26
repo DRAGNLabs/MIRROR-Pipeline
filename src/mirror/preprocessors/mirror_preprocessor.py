@@ -1,15 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Sequence, List
+from typing import Sequence, List, Callable
 
 import torch
 
 class MirrorPreprocessor[RawT, ProcessedT, BatchT](ABC):
-    @property
-    @abstractmethod
-    def tokenization_id(self) -> str:
-        """Unique Identifier for a given tokenizer."""
-        pass
-
+    
     @abstractmethod
     def encode(self, text: str) -> List[int]:
         """
@@ -35,12 +30,12 @@ class MirrorPreprocessor[RawT, ProcessedT, BatchT](ABC):
     def pad_token_id(self) -> int:
         pass
 
-    def create_hf_map_function(self, data_column: str = 'text', output_column: str = 'input_ids'):
+    def create_hf_map_function(self, output_column: str = "input_ids") -> Callable[[RawT], dict[str,ProcessedT]]:
         """
         Returns a function to be used in a ds.map(...) function call.
         """
-        def hf_map_callable(input):
-            input[output_column] = self.encode(input[data_column])
+        def hf_map_callable(input) -> dict[str, ProcessedT]:
+            input[output_column] = self.preprocess_example(input)
             return input
         
         return hf_map_callable

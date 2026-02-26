@@ -9,6 +9,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
+from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.slurm_util import SlurmConfig
 from mirror.trainer import Trainer
 from mirror.util import is_login_node
@@ -43,8 +44,18 @@ def fit(
         run_config_yaml,
     )
 
-def preprocess(dataset: MirrorDataset, model: MirrorModel) -> None:
-    pass
+def preprocess(data: MirrorDataset, preprocessor: MirrorPreprocessor, slurm: SlurmConfig = SlurmConfig()) -> None:
+    if slurm.submit and is_login_node():
+        job_id = _submit_slurm_job(
+            python_args=sys.argv[1:],
+            slurm=slurm,
+            num_nodes=slurm.nodes or 1,
+            devices=slurm.ntasks_per_node or 1,
+        )
+        print(f"Submitted batch job {job_id}")
+        return
+    
+    data.preprocess(preprocessor.preprocess_example)
 
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
     # Prevent recursion: job run should not submit again

@@ -14,7 +14,6 @@ class WikitextDataset(MirrorDataset[TextRow]):
     def __init__(
         self,
         head: int | None = None,
-        reset_cache: bool = False,
         split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
         should_preprocess: bool = False,
     ):
@@ -24,22 +23,16 @@ class WikitextDataset(MirrorDataset[TextRow]):
             split: which dataset split to use.
         """
         super().__init__()
-        self.ds = cast(DatasetDict, load_hf_dataset(
+        self.should_preprocess = should_preprocess
+
+        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
             hf_dataset_name,
             self._process,
-        ))
-        # print("DatasetDict:",self.ds._fingerprint) #########################################
-        self.ds = self.ds[split]
-        print("DatasetSplit:",self.ds._fingerprint) #########################################
-        print("DatasetSplit:",self.ds._fingerprint) #########################################
+        ))[split]
+
         if head: 
             self.ds = self.ds.select(range(head))
-            print("Head selected:",self.ds._fingerprint) #########################################
-
-    @property
-    def dataset_id(self) -> str:
-        return f'{hf_dataset_path}/{hf_dataset_name}'
 
     def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
         return ds.filter(lambda row: len(row['text']) > 0)
