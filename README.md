@@ -6,4 +6,6 @@
 3. (Optional) deactivate the environment `mamba deactivate`
 4. Run using `launch.sh`. Modify `launch.sh` as needed. Later we will have a better way to launch.
   a. Example using callbacks: `python src/main.py fit --callbacks='[{"class_path": "mirror.callbacks.checkpoint_callback.CheckpointCallback", "init_args": {"every_n_train_steps": 3}}]'`
-
+5. Weights & Biases tracking is enabled by default through `Trainer`.
+  a. On SLURM compute nodes it defaults to offline mode and writes runs to `~/nobackup/autodelete/mirror_data/wandb`.
+  b. Sync cached runs later from a login node with `wandb sync ~/nobackup/autodelete/mirror_data/wandb/offline-run-*`.
