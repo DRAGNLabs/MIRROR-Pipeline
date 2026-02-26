@@ -1,6 +1,0 @@
-subcommand: fit
-data:
-  class_path: WikitextDataset
-  init_args:
-    head: 10
-    # reset_cache: True

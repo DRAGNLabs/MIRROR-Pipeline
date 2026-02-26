@@ -11,6 +11,9 @@ mirror_data_path = Path(f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_
 def is_login_node() -> bool:
     return get_config()['environment'] == RuntimeEnvironment.SLURM_LOGIN
 
+def is_compute_node() -> bool:
+    return get_config()['environment'] == RuntimeEnvironment.SLURM_COMPUTE
+
 def safe_training_run_path(training_run_id: str) -> Path:
     safe_id = training_run_id.replace(":", "-")
     return (mirror_data_path / "training_runs" / safe_id)
