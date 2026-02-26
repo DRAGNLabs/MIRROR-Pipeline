@@ -26,7 +26,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
+            callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [],
     ) -> None:
         config = get_config()
         self.config = config
@@ -36,7 +36,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
+        default_callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [
             CheckpointCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
@@ -121,8 +121,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     fabric=self.fabric, 
                     model=model, 
                     optimizer=optimizer, 
-                    loss=loss_value, 
-                    batch=batch, 
+                    loss=loss_value,
                     training_run_id=training_run_id, 
                     batch_idx=batch_idx
                 )
@@ -144,11 +143,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             accelerator=accelerator,
         )
 
-def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
-       callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+def separate_singletons[RawT, ProcessedT, ModelOutputT](
+       callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]]
 ) -> tuple[
-   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
-   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+   List[Callback[RawT, ProcessedT, ModelOutputT]],
+   List[Callback[RawT, ProcessedT, ModelOutputT]]
 ]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
