@@ -14,10 +14,6 @@ class MirrorLlamaPreprocessor(MirrorPreprocessor):
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
 
-    @property
-    def tokenization_id(self) -> str:
-        return "MirrorLlamaPreprocessor"
-
     def encode(self, text: str) -> TokenTensor:
         ids = self._tokenizer.encode(text, add_special_tokens=True)
         if len(ids) < 2:

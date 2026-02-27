@@ -23,7 +23,7 @@ class MirrorLlamaModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Atten
         initialization: Literal["3.2-1B", "3.2-1B-Instruct"] | LlamaConfig = "3.2-1B-Instruct"
     ) -> None:
         super().__init__()
-        default_preprocessor_hf_name = "meta-llama/Llama-3.2-1B-Instruct"
+        default_tokenizer_hf_name = "meta-llama/Llama-3.2-1B-Instruct"
 
         if isinstance(initialization, LlamaConfig):
             self.hf_model = cast(LlamaForCausalLM, AutoModelForCausalLM.from_config(initialization))
