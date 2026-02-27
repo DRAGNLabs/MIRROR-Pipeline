@@ -29,13 +29,3 @@ class MirrorPreprocessor[RawT, ProcessedT, BatchT](ABC):
     @abstractmethod
     def pad_token_id(self) -> int:
         pass
-
-    def create_hf_map_function(self, output_column: str = "input_ids") -> Callable[[RawT], dict[str,ProcessedT]]:
-        """
-        Returns a function to be used in a ds.map(...) function call.
-        """
-        def hf_map_callable(input) -> dict[str, ProcessedT]:
-            input[output_column] = self.preprocess_example(input)
-            return input
-        
-        return hf_map_callable

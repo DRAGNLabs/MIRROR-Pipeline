@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 
-class PreprocessedDataset[RawT, ProcessedT](Dataset[ProcessedT]):
+class OnDemandPreprocessedDataset[RawT, ProcessedT](Dataset[ProcessedT]):
     def __init__(
             self, 
             raw_dataset: MirrorDataset[RawT], 

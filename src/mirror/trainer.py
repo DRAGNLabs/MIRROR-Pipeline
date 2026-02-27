@@ -15,7 +15,7 @@ from mirror.callbacks.requeue_callback import RequeueCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.preprocessed_dataset import PreprocessedDataset
+from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.config import RuntimeEnvironment, get_config
 
@@ -75,6 +75,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             checkpoint: CheckpointIdentifier | None = None, 
             epochs: int = 1, 
             batch_size: int = 1, 
+            should_preprocess: bool = False,
             run_config_yaml: str = "",
     ):
         training_run_id = datetime.datetime.now().isoformat()
@@ -94,10 +95,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             }
             self.fabric.load(checkpoint.path, state)
         
-        if dataset.should_preprocess:
+        if should_preprocess:
             preprocessed_dataset = dataset.preprocess(model.preprocessor.preprocess_example)
         else:
-            preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
+            preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
         
         dataloader = DataLoader(
             preprocessed_dataset, 

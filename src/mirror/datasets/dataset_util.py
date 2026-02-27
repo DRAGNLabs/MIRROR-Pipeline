@@ -5,7 +5,6 @@ from typing import Callable, Sequence
 from pathlib import Path
 
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
-from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.util import is_compute_node
 
 from mirror.download_util import assert_can_download, mirror_data_path
@@ -55,8 +54,3 @@ def load_hf_dataset(
         ds.save_to_disk(dataset_path)
 
     return ds
-
-def check_tk_is_cached(dataset_id: str) -> bool:
-    dataset_path = Path(mirror_data_path / f'tokenized_data/{dataset_id}')
-    is_cached = os.path.exists(dataset_path)
-    return is_cached

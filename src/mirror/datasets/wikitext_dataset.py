@@ -15,7 +15,6 @@ class WikitextDataset(MirrorDataset[TextRow]):
         self,
         head: int | None = None,
         split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
-        should_preprocess: bool = False,
     ):
         """
         Args:
@@ -23,7 +22,6 @@ class WikitextDataset(MirrorDataset[TextRow]):
             split: which dataset split to use.
         """
         super().__init__()
-        self.should_preprocess = should_preprocess
 
         self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
