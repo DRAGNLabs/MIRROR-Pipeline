@@ -10,15 +10,12 @@ from mirror.row_types import TextRow
 
 
 class MirrorGPTPreprocessor(MirrorPreprocessor):
+    
     def __init__(self) -> None:
         self._hf_model_name = "openai-community/gpt2"
         self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(self._hf_model_name)
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
-
-    @property
-    def tokenization_id(self) -> str:
-        return "MirrorGPTPreprocessor"
 
     def encode(self, text: str) -> TokenTensor:
         ids = self._tokenizer.encode(text, add_special_tokens=True)

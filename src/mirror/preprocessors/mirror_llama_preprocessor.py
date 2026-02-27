@@ -8,15 +8,12 @@ from mirror.util import get_device, pad_to_longest
 from mirror.row_types import TextRow
 
 class MirrorLlamaPreprocessor(MirrorPreprocessor):
+    
     def __init__(self, hf_model_name: str) -> None:
         self._hf_model_name = hf_model_name
         self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(hf_model_name)
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
-
-    @property
-    def tokenization_id(self) -> str:
-        return "MirrorLlamaPreprocessor"
 
     def encode(self, text: str) -> TokenTensor:
         ids = self._tokenizer.encode(text, add_special_tokens=True)
