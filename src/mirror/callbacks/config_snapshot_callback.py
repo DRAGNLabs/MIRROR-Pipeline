@@ -4,8 +4,8 @@ from lightning import Fabric
 from mirror.callbacks.callback import Callback
 from mirror.util import safe_training_run_path
 
-class ConfigSnapshotCallback[RawT, ProcessedT, BatchT, ModelOutputT](
-       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+class ConfigSnapshotCallback[RawT, ProcessedT, ModelOutputT](
+       Callback[RawT, ProcessedT, ModelOutputT]
 ):
     is_singleton = True
 

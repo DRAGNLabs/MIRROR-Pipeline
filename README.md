@@ -46,4 +46,6 @@
       device: cpu
       ```
 
-
+5. Weights & Biases tracking is enabled by default through `Trainer`.
+    - On SLURM compute nodes it defaults to offline mode and writes runs to `~/nobackup/autodelete/mirror_data/wandb`.
+    - Sync cached runs later from a login node with `wandb sync ~/nobackup/autodelete/mirror_data/wandb/offline-run-*`.

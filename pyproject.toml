@@ -16,6 +16,7 @@ dependencies = [
     "lightning==2.5.5",
     "transformers==5.2.0",
     "tqdm==4.67.1",
+    "wandb",
 ]
 
 [tool.setuptools.packages.find]
