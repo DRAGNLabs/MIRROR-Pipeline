@@ -27,7 +27,7 @@ class MirrorLlamaModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Atten
 
         if isinstance(initialization, LlamaConfig):
             self.hf_model = cast(LlamaForCausalLM, AutoModelForCausalLM.from_config(initialization))
-            self._preprocessor = MirrorLlamaPreprocessor(default_preprocessor_hf_name)
+            self._preprocessor = MirrorLlamaPreprocessor(default_tokenizer_hf_name)
         else:
             hf_model_name = f"meta-llama/Llama-{initialization}"
             self.hf_model = cast(LlamaForCausalLM, build_causal_lm(hf_model_name, weights="pretrained"))
