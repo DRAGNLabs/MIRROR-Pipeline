@@ -4,7 +4,7 @@ import torch
 from transformers import PreTrainedModel
 from transformers.utils.generic import TransformersKwargs
 
-from mirror.models.whitebox_transformers.whitebox_transformers import LossPresent, WhiteboxTransformer, WhiteboxTransformerOutput
+from mirror.models.whitebox_transformers.whitebox_transformers import AnyWhiteboxTransformerOutput, LossPresent, WhiteboxTransformer, WhiteboxTransformerOutput
 from mirror.types import AttentionMaskBatch, TokenBatch
 
 class HFTransformerInput(TransformersKwargs):
@@ -25,12 +25,18 @@ class HFWhiteboxTransformer(
     
     def include_loss(self, config: HFTransformerInput, labels: TokenBatch) -> HFTransformerInput:
         return HFTransformerInput({**config, 'labels': labels})
+     
+    def include_hidden_states(self, config: HFTransformerInput) -> HFTransformerInput:
+        return HFTransformerInput({**config, 'output_hidden_states': True})
+
+    def include_attentions(self, config: HFTransformerInput) -> HFTransformerInput:
+        return HFTransformerInput({**config, 'output_attentions': True})
     
     def run(
             self,
             batch: tuple[TokenBatch, AttentionMaskBatch],
             config: HFWhiteboxTransformerConfig
-    ) -> WhiteboxTransformerOutput[LossPresent | None]:
+    ) -> AnyWhiteboxTransformerOutput:
         return self.hf_model(
             input_ids=batch[0],
             attention_mask=batch[1],

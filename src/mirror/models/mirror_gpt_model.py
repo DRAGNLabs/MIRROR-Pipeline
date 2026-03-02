@@ -1,10 +1,11 @@
 import torch
 import torch.optim as optim
-from typing import Literal, TypedDict, Union, cast
+from typing import Literal, Union, cast
 
 from transformers import GPT2LMHeadModel
 
-from mirror.models.hf_model_utils.model_output_extraction import HFTransformerInput, HFWhiteboxTransformer, WhiteboxTransformerExecutor, fresh_executor
+from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhiteboxTransformer
+from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTransformerExecutor
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
