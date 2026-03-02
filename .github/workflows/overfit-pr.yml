@@ -1,0 +1,36 @@
+name: PR Overfit Check
+
+on:
+  pull_request:
+
+jobs:
+  overfit-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run overfit check
+        env:
+          WANDB_MODE: offline
+          HUGGINGFACE_HUB_TOKEN: ${{ secrets.HF_TOKEN }}
+          MIRROR_DATA_PATH: ${{ github.workspace }}/.mirror_data
+          MIRROR_PRINT_STEP_LOSS: "1"
+        run: |
+          python scripts/check_overfit.py \
+            --config overfit_test_config.yaml \
+            --min-relative-drop 0.5 \
+            --min-absolute-drop 1.0
