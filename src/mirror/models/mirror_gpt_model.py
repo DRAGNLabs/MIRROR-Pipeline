@@ -4,7 +4,7 @@ from typing import Literal, TypedDict, Union, cast
 
 from transformers import GPT2LMHeadModel
 
-from mirror.models.hf_model_utils.model_output_extraction import HFTransformerInput, fresh_executor
+from mirror.models.hf_model_utils.model_output_extraction import HFTransformerInput, HFWhiteboxTransformer, WhiteboxTransformerExecutor, fresh_executor
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
@@ -14,16 +14,18 @@ from mirror.row_types import TextRow
 
 hf_model_name = "openai-community/gpt2"
 
-class GPTDict(TypedDict):
-    labels: torch.LongTensor
-    input_ids: torch.Tensor
-    attention_mask: torch.Tensor
-
-class MirrorGPTModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]):
+class MirrorGPTModel(
+    MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]],
+    HFWhiteboxTransformer    
+):
     def __init__(self, weights: Literal["pretrained", "random"] = "pretrained") -> None:
         super().__init__()
-        self.hf_model = cast(GPT2LMHeadModel, build_causal_lm(hf_model_name, weights))
+        self._hf_model = cast(GPT2LMHeadModel, build_causal_lm(hf_model_name, weights))
         self._preprocessor = MirrorGPTPreprocessor()
+
+    @property
+    def hf_model(self) -> GPT2LMHeadModel:
+        return self._hf_model
 
     @property
     def preprocessor(self) -> MirrorGPTPreprocessor:
@@ -36,14 +38,7 @@ class MirrorGPTModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Attenti
             labels = labels.masked_fill(attention_mask == 0, IGNORE_ID) 
         labels = cast(torch.LongTensor, labels)
 
-        def run(kwargs: HFTransformerInput):
-            return assert_union_snd(self.hf_model.forward(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                **kwargs
-            ))
-
-        output = fresh_executor().include_loss(labels).execute(run)
+        output = WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute(batch)
         return output.loss
 
     def configure_optimizers(self):
