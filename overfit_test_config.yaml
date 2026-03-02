@@ -7,7 +7,6 @@ data:
 model:
   class_path: mirror.models.mirror_llama_model.MirrorLlamaModel
   init_args:
-    tokenizer_hf_model_name: openai-community/gpt2
     initialization:
       vocab_size: 128256 # Default: 128256
       hidden_size: 256 # Default: 4096
