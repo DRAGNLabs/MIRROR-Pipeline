@@ -16,6 +16,11 @@ HFWhiteboxTransformerConfig = HFTransformerInput
 class HFWhiteboxTransformer(
     WhiteboxTransformer[HFWhiteboxTransformerConfig, tuple[TokenBatch, AttentionMaskBatch]]
 ):
+    """
+    Inheriting from this class allows a model to be used with `WhiteboxTransformerExecutor`
+    (which allows for type-safe extraction of loss, hidden states, and attention)
+    """
+
     @property
     @abstractmethod
     def hf_model(self) -> PreTrainedModel: pass
