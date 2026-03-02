@@ -24,12 +24,11 @@ def main() -> int:
     combined_output = proc.stdout + proc.stderr
     print(combined_output, end="")
 
+    loss_pattern = r"(?:loss:\s*|Loss=)([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)"
+    losses = [float(match) for match in re.findall(loss_pattern, combined_output)]
     if proc.returncode != 0:
         print(f"Training command failed with exit code {proc.returncode}.", file=sys.stderr)
         return proc.returncode
-
-    loss_pattern = r"(?:loss:\s*|Loss=)([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)"
-    losses = [float(match) for match in re.findall(loss_pattern, combined_output)]
     if len(losses) < 2:
         print("Could not parse at least two loss values from training output.", file=sys.stderr)
         return 1

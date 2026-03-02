@@ -29,9 +29,6 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HUGGINGFACE_HUB_TOKEN: ${{ secrets.HF_TOKEN }}
           MIRROR_DATA_PATH: ${{ github.workspace }}/.mirror_data
-          MIRROR_PRINT_STEP_LOSS: "1"
+          MIRROR_PRINT_STEP_LOSS: "true"
         run: |
-          python scripts/check_overfit.py \
-            --config overfit_test_config.yaml \
-            --min-relative-drop 0.5 \
-            --min-absolute-drop 1.0
+          python scripts/check_overfit.py --config overfit_test_config.yaml

@@ -70,9 +70,6 @@ class WandbCallback[RawT, ProcessedT, ModelOutputT](
         self.run = None
 
     def _mode(self) -> WandbMode:
-        env_mode = os.getenv("WANDB_MODE")
-        if env_mode in ("online", "offline"):
-            return env_mode
         if get_config()["environment"] == RuntimeEnvironment.SLURM_COMPUTE:
             return "offline"
-        return "online"
+        return "offline" if os.getenv("WANDB_MODE") == "offline" else "online"

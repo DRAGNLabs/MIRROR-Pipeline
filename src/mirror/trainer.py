@@ -45,7 +45,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             ProgressCallback(),
             WandbCallback()
         ]
-        if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() in {"1", "true", "yes"}:
+        if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
             default_callbacks.append(PrintStepCallback())
         if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
             default_callbacks.append(RequeueCallback())
