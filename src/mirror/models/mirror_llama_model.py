@@ -22,15 +22,12 @@ class MirrorLlamaModel(
         initialization: Literal["3.2-1B", "3.2-1B-Instruct"] | LlamaConfig = "3.2-1B-Instruct"
     ) -> None:
         super().__init__()
-        default_tokenizer_hf_name = "meta-llama/Llama-3.2-1B-Instruct"
-
+        self._preprocessor = MirrorLlamaPreprocessor()
         if isinstance(initialization, LlamaConfig):
             self._hf_model = cast(LlamaForCausalLM, AutoModelForCausalLM.from_config(initialization))
-            self._preprocessor = MirrorLlamaPreprocessor(default_tokenizer_hf_name)
         else:
             hf_model_name = f"meta-llama/Llama-{initialization}"
             self._hf_model = cast(LlamaForCausalLM, build_causal_lm(hf_model_name, weights="pretrained"))
-            self._preprocessor = MirrorLlamaPreprocessor(hf_model_name)
 
     @property
     def hf_model(self) -> LlamaForCausalLM:
