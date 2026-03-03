@@ -1,6 +1,5 @@
 from __future__ import annotations
-from typing import Sized, Sequence
-from mirror.types import TokenTensor
+from typing import Callable, Sized, Sequence
 from torch.utils.data import Dataset
 from abc import abstractmethod
 from sys import stderr
@@ -11,9 +10,9 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
     def __getitem__(self, index: int) -> RawT:
         pass
     
-    def preprocess(self, preprocessor_function) -> Sequence[TokenTensor]:
+    def preprocess[ProcessedT](self, preprocessor_function: Callable[[RawT], ProcessedT]) -> Sequence[ProcessedT]:
         
-        def mappable_preprocessor_function(row: dict):
+        def mappable_preprocessor_function(row):
             row['input_ids'] = preprocessor_function(row)
             return row
 

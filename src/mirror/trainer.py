@@ -75,7 +75,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             checkpoint: CheckpointIdentifier | None = None, 
             epochs: int = 1, 
             batch_size: int = 1, 
-            should_preprocess: bool = False,
+            do_preprocess: bool = False,
             run_config_yaml: str = "",
     ):
         training_run_id = datetime.datetime.now().isoformat()
@@ -95,7 +95,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             }
             self.fabric.load(checkpoint.path, state)
         
-        if should_preprocess:
+        if do_preprocess:
             preprocessed_dataset = dataset.preprocess(model.preprocessor.preprocess_example)
         else:
             preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)

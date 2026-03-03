@@ -23,7 +23,7 @@ def fit(
     slurm: SlurmConfig = SlurmConfig(),
     epochs: int = 1,
     batch_size: int = 1,
-    should_preprocess: bool = False,
+    do_preprocess: bool = False,
     run_config_yaml: str = ''
 ):
     if slurm.submit and is_login_node():
@@ -42,7 +42,7 @@ def fit(
         checkpoint,
         epochs,
         batch_size,
-        should_preprocess,
+        do_preprocess,
         run_config_yaml,
     )
 

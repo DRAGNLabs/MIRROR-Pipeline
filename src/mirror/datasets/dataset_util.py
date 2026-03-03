@@ -32,10 +32,11 @@ def load_hf_dataset(
     dataset_path = datasets_path / hf_dataset_path / hf_dataset_name \
         if hf_dataset_name else datasets_path / hf_dataset_path
 
-    if not is_compute_node() and reset_cache:
-        shutil.rmtree(dataset_path, ignore_errors=True)
-    elif is_compute_node() and reset_cache:
-        print("The attempted cache reset was aborted because it was initiated on a compute node.", file=stderr)
+    if reset_cache:
+        if not is_compute_node():
+            shutil.rmtree(dataset_path, ignore_errors=True)
+        else:
+            print("The attempted cache reset was aborted because it was initiated on a compute node.", file=stderr)
 
     is_cached = os.path.exists(dataset_path)
 
