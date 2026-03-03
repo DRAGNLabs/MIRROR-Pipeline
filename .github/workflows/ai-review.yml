@@ -1,0 +1,65 @@
+name: AI PR Review
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: write
+
+on:
+  # 1. Trigger manually via the Actions tab
+  workflow_dispatch:
+  # 2. Trigger via comments (e.g., "/review")
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  pr_agent:
+    # Logic breakdown:
+    # 1. Allow manual trigger via button (workflow_dispatch) - implicitly restricted to write-access users
+    # OR
+    # 2. Allow comment trigger ONLY IF:
+    #    a. It is a PR
+    #    b. The comment contains '/'
+    #    c. The user is an Owner, Member, or Collaborator
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request &&
+        contains(github.event.comment.body, '/') &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        )
+      )
+    runs-on: ubuntu-latest
+    name: Run PR Agent
+    steps:
+      - name: PR Agent Action
+        uses: Codium-ai/pr-agent@main
+        env:
+          # --- OpenRouter Configuration ---
+          # We trick the agent into thinking it's OpenAI, but point it to OpenRouter
+          OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENAI_API_BASE: "https://openrouter.ai/api/v1"
+          
+          # Select your model (e.g., anthropic/claude-3.5-sonnet, google/gemini-pro-1.5)
+          CONFIG.MODEL: "anthropic/claude-3.5-sonnet"
+          
+          # --- Custom Instructions ---
+          # Add your repo-specific rules here
+          PR_REVIEWER.EXTRA_INSTRUCTIONS: |
+            Focus on the following repository rules:
+            1. We prefer functional style programming; suggest map/filter over loops.
+            2. Ensure all variable names are descriptive (no single letter variables).
+            3. If a database migration is included, check for backward compatibility.
+            4. Be concise. Do not compliment the code, just point out issues.
+          
+          # --- Formatting & Features ---
+          # Enable inline code comments (line-by-line)
+          PR_REVIEWER.REQUIRE_SCORE_REVIEW: "false"
+          PR_REVIEWER.REQUIRE_TESTS_REVIEW: "false"
+          PR_REVIEWER.INLINE_CODE_COMMENTS: "true"
+          
+          # GitHub token to post the comments
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
