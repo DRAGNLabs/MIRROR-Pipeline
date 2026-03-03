@@ -32,12 +32,14 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
     ) -> None:
         config = get_config()
         self.config = config
-        self.strategy = strategy
+        if config['device'] == "cpu" and isinstance(strategy, FSDPStrategy):
+            self.strategy = SingleDeviceStrategy(device="cpu")
+        else:
+            self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
         default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
-            CheckpointCallback(every_n_train_steps),
-            RequeueCallback(),
+            CheckpointCallback(), # every_n_train_steps
             ConfigSnapshotCallback(),
             ProgressCallback(devices, bar_refresh_interval),
         ]
@@ -51,7 +53,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         callbacks = [*singleton_cbs, *default_non_singleton_cbs, *input_non_singleton_cbs]
         self.callbacks = callbacks
-        self.fabric = self._make_fabric(strategy, config['device'])
+        self.fabric = self._make_fabric(self.strategy, config['device'])
 
     def launch(self):
         try:
@@ -85,11 +87,20 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             move_to_device=self.config['device'] == 'cuda'
         )
 
-        preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocess_example)
+        if checkpoint:
+            # models and optimizers are treated specially: they are populated via their load_state_dict
+            # methods internally to fabric.load. Anything else in the state dict is just set in place.
+            state = {
+                'model': model,
+                'optimizer': optimizer,
+            }
+            self.fabric.load(checkpoint.path, state)
+
+        preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
         dataloader = DataLoader(
             preprocessed_dataset, 
             batch_size=batch_size, 
-            collate_fn=model.collate, 
+            collate_fn=model.preprocessor.collate, 
             drop_last=False,
         )
 
@@ -157,7 +168,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             callbacks=self.callbacks,
             accelerator=accelerator,
         )
-
 
 def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
        callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]

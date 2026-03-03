@@ -1,4 +1,3 @@
-import torch
 from lightning import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
@@ -16,6 +15,7 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     def on_fit_start(
             self,
             *,
+            fabric: Fabric,
             n_batches: int,
             epochs: int,
             start_epoch: int,
@@ -28,9 +28,10 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     def on_train_batch_end(
             self,
             *,
+            fabric: Fabric,
             loss: float,
             **kwargs,
-    ):
-        if torch.distributed.get_rank() == 0 and self.progress_bar is not None:
-            self.progress_bar.set_postfix(Loss=f"{loss:.3f}")
-            self.progress_bar.update(self.devices)
+    ):      # I anticipate needed to change this to torch.distributed.get_rank() == 0
+        if fabric.is_global_zero and self.progress_bar is not None:
+            self.progress_bar.set_postfix(Loss=f"{loss:.3f}", refresh=False)
+            self.progress_bar.update(1)

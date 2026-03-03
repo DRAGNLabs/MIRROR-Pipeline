@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import Callable
-import torch
 from torch.utils.data import Dataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
@@ -19,5 +18,5 @@ class PreprocessedDataset[RawT, ProcessedT](Dataset[ProcessedT]):
         return len(self.raw_dataset)
 
     def __getitem__(self, index: int) -> ProcessedT:
-        # TODO: use cached preprocessed data
         return self.preprocess(self.raw_dataset[index])
+        
