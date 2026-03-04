@@ -9,7 +9,7 @@ class PlaceholderPreprocessor(
     MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
 ):
     def preprocess_example(self, example: TextRow) -> TokenTensor:
-        pass
+        return torch.tensor([1, 2, 3, 4], device=get_device())
     
     def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
         return pad_to_longest(examples, pad_token=self.pad_token_id)
