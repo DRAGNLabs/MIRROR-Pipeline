@@ -1,14 +1,9 @@
 import os
-from pathlib import Path
 
 from dotenv import load_dotenv
 from huggingface_hub import get_token, login
 
 from mirror.config import RuntimeEnvironment, get_config
-
-mirror_data_path = Path(
-    os.getenv("MIRROR_DATA_PATH", f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data")
-)
 
 
 def assert_can_download(item_name_to_download: str, *, require_hf_login: bool = False):

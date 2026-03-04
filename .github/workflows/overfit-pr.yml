@@ -2,11 +2,16 @@ name: PR Overfit Check
 
 on:
   pull_request:
+    types: [opened, ready_for_review]
 
 jobs:
   overfit-check:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    if: |
+      github.event.pull_request.author_association == 'OWNER' ||
+      github.event.pull_request.author_association == 'MEMBER' ||
+      github.event.pull_request.author_association == 'COLLABORATOR'
 
     steps:
       - name: Checkout repo
@@ -28,7 +33,6 @@ jobs:
           WANDB_MODE: offline
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HUGGINGFACE_HUB_TOKEN: ${{ secrets.HF_TOKEN }}
-          MIRROR_DATA_PATH: ${{ github.workspace }}/.mirror_data
           MIRROR_PRINT_STEP_LOSS: "true"
         run: |
           python scripts/check_overfit.py --config overfit_test_config.yaml
