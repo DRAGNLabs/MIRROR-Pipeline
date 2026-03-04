@@ -16,8 +16,18 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install pyright
-        run: pip install pyright
+      - name: Install pyright and project dependencies
+        run: |
+          python -m pip install --upgrade pip pyright
+          python - <<'PY'
+          import pathlib
+          import subprocess
+          import sys
+          import tomllib
+
+          deps = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"].get("dependencies", [])
+          subprocess.check_call([sys.executable, "-m", "pip", "install", *deps])
+          PY
 
       - name: Run pyright on base
         run: |
