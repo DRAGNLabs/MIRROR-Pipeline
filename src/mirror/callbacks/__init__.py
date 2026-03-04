@@ -5,3 +5,4 @@ from mirror.callbacks.print_step_callback import PrintStepCallback
 from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.requeue_callback import RequeueCallback
 from mirror.callbacks.test_callback import TestCallback
+from mirror.callbacks.wandb_callback import WandbCallback

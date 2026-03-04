@@ -26,7 +26,7 @@ def fit(
     do_preprocess: bool = False,
     run_config_yaml: str = ''
 ):
-    if slurm.submit and is_login_node():
+    if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
             python_args=sys.argv[1:],
             slurm=slurm,

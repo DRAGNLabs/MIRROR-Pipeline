@@ -65,7 +65,7 @@ def load_hf_config(
 def build_causal_lm(
         model_name: str,
         weights: Literal["pretrained", "random"] = "pretrained"
-) -> MirrorModel:
+) -> PreTrainedModel:
     match weights:
         case "pretrained":
             model = load_hf_model(

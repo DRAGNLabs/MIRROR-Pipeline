@@ -1,7 +1,7 @@
 import os
 import re
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Literal
 
 def get_job_id():
     array_job_id = os.getenv('SLURM_ARRAY_JOB_ID')
@@ -17,7 +17,7 @@ def get_job_id():
 
 @dataclass
 class SlurmConfig:
-    submit: bool = True
+    job_type: Literal["compute", "local", "local-download"] = "compute"
     time: str = "01:00:00"
     nodes: Optional[int] = None
     ntasks_per_node: Optional[int] = None
