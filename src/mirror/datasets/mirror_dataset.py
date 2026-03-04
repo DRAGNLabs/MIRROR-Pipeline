@@ -16,7 +16,7 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
             return {"input_ids": preprocessor_function(row)}
 
         self.ds = self.ds.map(mappable_preprocessor_function)
-        print("Tokenization complete.", file=stderr)
+        print("Preprocessing complete.", file=stderr)
         self.ds.set_format(type="torch", columns=["input_ids"])
 
         return self.ds["input_ids"]
