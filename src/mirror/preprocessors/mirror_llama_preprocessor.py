@@ -10,9 +10,9 @@ from mirror.row_types import TextRow
 class MirrorLlamaPreprocessor(
     MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
 ):
-    def __init__(self, hf_model_name: str) -> None:
-        self._hf_model_name = hf_model_name
-        self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(hf_model_name)
+    def __init__(self) -> None:
+        self._hf_model_name = "meta-llama/Llama-3.2-1B-Instruct"
+        self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(self._hf_model_name)
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
 
