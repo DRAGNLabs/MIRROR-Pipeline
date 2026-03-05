@@ -33,6 +33,7 @@ jobs:
           WANDB_MODE: offline
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HUGGINGFACE_HUB_TOKEN: ${{ secrets.HF_TOKEN }}
+          MIRROR_DATA_PATH: ${{ github.workspace }}/.mirror_data
           MIRROR_PRINT_STEP_LOSS: "true"
         run: |
           python scripts/check_overfit.py --config overfit_test_config.yaml

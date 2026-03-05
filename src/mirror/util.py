@@ -7,7 +7,9 @@ from mirror.config import RuntimeEnvironment, get_config
 from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
 
 
-mirror_data_path = Path(f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data")
+mirror_data_path = Path(
+    os.getenv("MIRROR_DATA_PATH", f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data")
+)
 
 def is_login_node() -> bool:
     return get_config()['environment'] == RuntimeEnvironment.SLURM_LOGIN

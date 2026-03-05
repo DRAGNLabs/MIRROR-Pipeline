@@ -6,8 +6,8 @@ from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, PreTrained
 from typing import Literal, Type
 
 from mirror.download_util import assert_can_download
-from mirror.util import mirror_data_path
 from mirror.models.mirror_model import MirrorModel
+from mirror.util import mirror_data_path
 
 IGNORE_ID = -100 
 
