@@ -4,3 +4,4 @@ slurm_logs/
 .ENV
 config.yaml
 mirror_pipeline.egg-info/
+.vscode/
