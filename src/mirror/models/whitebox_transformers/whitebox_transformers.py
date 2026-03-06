@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, cast
+from typing import cast
 
 import torch
 from transformers.modeling_outputs import CausalLMOutputWithPast, CausalLMOutputWithCrossAttentions
@@ -9,11 +9,11 @@ from transformers.modeling_outputs import CausalLMOutputWithPast, CausalLMOutput
 """
 The following types are assumptions and may need to be edited down the line
 """
-RawHFOutputTypes = CausalLMOutputWithPast | CausalLMOutputWithCrossAttentions
-Logits = torch.FloatTensor
-LossPresent = torch.FloatTensor
-HiddenStatesPresent = List[torch.FloatTensor]
-AttentionsPresent = List[torch.FloatTensor]
+type RawHFOutputTypes = CausalLMOutputWithPast | CausalLMOutputWithCrossAttentions
+type Logits = torch.FloatTensor
+type LossPresent = torch.FloatTensor
+type HiddenStatesPresent = list[torch.FloatTensor]
+type AttentionsPresent = list[torch.FloatTensor]
 
 @dataclass
 class WhiteboxTransformerOutput[LossT: LossPresent | None, HiddenStatesT: HiddenStatesPresent | None, AttentionsT: AttentionsPresent | None]:
