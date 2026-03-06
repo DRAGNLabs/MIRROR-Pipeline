@@ -47,7 +47,7 @@ def fit(
     )
 
 def preprocess(data: MirrorDataset, preprocessor: MirrorPreprocessor, slurm: SlurmConfig = SlurmConfig()) -> None:
-    if slurm.submit and is_login_node():
+    if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
             python_args=sys.argv[1:],
             slurm=slurm,
