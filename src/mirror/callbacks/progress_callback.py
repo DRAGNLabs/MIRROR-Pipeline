@@ -15,23 +15,21 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     def on_fit_start(
             self,
             *,
-            fabric: Fabric,
             n_batches: int,
             epochs: int,
             start_epoch: int,
             start_batch: int,
             **kwargs,
     ):
-        if torch.distributed.get_rank() == 0:
+        if Fabric.is_global_zero:
             self.progress_bar = tqdm(total=(epochs * n_batches), initial=(start_epoch*n_batches + start_batch), desc="Training", mininterval=self.bar_refresh_interval)
 
     def on_train_batch_end(
             self,
             *,
-            fabric: Fabric,
             loss: float,
             **kwargs,
-    ):      # I anticipate needed to change this to torch.distributed.get_rank() == 0
-        if fabric.is_global_zero and self.progress_bar is not None:
+    ):
+        if Fabric.is_global_zero and self.progress_bar is not None:
             self.progress_bar.set_postfix(Loss=f"{loss:.3f}", refresh=False)
             self.progress_bar.update(1)
