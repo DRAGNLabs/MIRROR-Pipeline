@@ -4,3 +4,4 @@ src/**/__pycache__/
 .ENV
 config.yaml
 mirror_pipeline.egg-info/
+.vscode/
