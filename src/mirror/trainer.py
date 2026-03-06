@@ -26,7 +26,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            every_n_train_steps: int | None = None,
             bar_refresh_interval: int = 5,
             callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
@@ -39,7 +38,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         self.devices = devices
         self.num_nodes = num_nodes
         default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
-            CheckpointCallback(), # every_n_train_steps
+            CheckpointCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(devices, bar_refresh_interval),
         ]
