@@ -12,6 +12,7 @@ from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
 from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.requeue_callback import RequeueCallback
+from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
@@ -26,8 +27,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            bar_refresh_interval: int = 5,
-            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
+            callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [],
     ) -> None:
         config = get_config()
         self.config = config
@@ -37,12 +37,13 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
+        default_callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [
             CheckpointCallback(),
             ConfigSnapshotCallback(),
-            ProgressCallback(devices, bar_refresh_interval),
+            ProgressCallback(),
+            WandbCallback()
         ]
-        if config['environment'] != RuntimeEnvironment.LOCAL:
+        if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
             default_callbacks.append(RequeueCallback())
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
@@ -168,11 +169,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             accelerator=accelerator,
         )
 
-def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
-       callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+def separate_singletons[RawT, ProcessedT, ModelOutputT](
+       callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]]
 ) -> tuple[
-   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
-   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+   List[Callback[RawT, ProcessedT, ModelOutputT]],
+   List[Callback[RawT, ProcessedT, ModelOutputT]]
 ]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
