@@ -1,4 +1,5 @@
 from typing import Literal
+import os
 
 import wandb
 
@@ -71,4 +72,4 @@ class WandbCallback[RawT, ProcessedT, ModelOutputT](
     def _mode(self) -> WandbMode:
         if get_config()["environment"] == RuntimeEnvironment.SLURM_COMPUTE:
             return "offline"
-        return "online"
+        return "offline" if os.getenv("WANDB_MODE") == "offline" else "online"

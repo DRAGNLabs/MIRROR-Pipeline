@@ -2,6 +2,7 @@ from lightning import Fabric
 from torch.utils.data import DataLoader
 from typing import List
 import datetime
+import os
 import torch
 
 from lightning.fabric.strategies.strategy import Strategy
@@ -14,6 +15,7 @@ from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.requeue_callback import RequeueCallback
 from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
+from mirror.callbacks.print_step_callback import PrintStepCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
@@ -43,6 +45,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             ProgressCallback(),
             WandbCallback()
         ]
+        if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
+            default_callbacks.append(PrintStepCallback())
         if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
             default_callbacks.append(RequeueCallback())
 
