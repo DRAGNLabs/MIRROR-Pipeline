@@ -10,6 +10,7 @@ from mirror.row_types import TextRow
 
 
 class MirrorGPTPreprocessor(MirrorPreprocessor):
+    
     def __init__(self) -> None:
         self._hf_model_name = "openai-community/gpt2"
         self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(self._hf_model_name)
