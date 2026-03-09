@@ -1,4 +1,6 @@
 from pathlib import Path
+from sys import stderr
+from typing import Callable, Sequence
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.row_types import TextRow
@@ -7,7 +9,7 @@ from mirror.row_types import TextRow
 class TxtDataset(MirrorDataset[TextRow]):
     def __init__(
             self,
-            file_path: str | Path, 
+            file_path: str | Path,
             head: int | None = None
     ):
         """
@@ -36,3 +38,8 @@ class TxtDataset(MirrorDataset[TextRow]):
 
     def __len__(self) -> int:
         return len(self._lines)
+
+    def preprocess[ProcessedT](self, preprocessor_function: Callable[[TextRow], ProcessedT]) -> Sequence[ProcessedT]:
+        results = [preprocessor_function(self[i]) for i in range(len(self))]
+        print("Preprocessing complete.", file=stderr)
+        return results
