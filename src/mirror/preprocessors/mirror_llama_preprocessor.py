@@ -4,7 +4,7 @@ from transformers import PreTrainedTokenizerBase
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import load_hf_tokenizer
 from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
-from mirror.util import get_device, pad_to_longest
+from mirror.util import get_device
 from mirror.row_types import TextRow
 
 class MirrorLlamaPreprocessor(MirrorPreprocessor):
@@ -25,7 +25,13 @@ class MirrorLlamaPreprocessor(MirrorPreprocessor):
         return self.encode(example['text'])
 
     def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
-        return pad_to_longest(examples, pad_token=self.pad_token_id)
+        device = get_device()
+        batch = self._tokenizer.pad(
+            {"input_ids": [e.tolist() for e in examples]},
+            padding=True,
+            return_tensors="pt",
+        )
+        return batch["input_ids"].to(device), batch["attention_mask"].to(device)
 
     @property
     def pad_token_id(self) -> int:
