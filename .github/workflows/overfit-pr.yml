@@ -2,22 +2,17 @@ name: PR Overfit Check
 
 on:
   pull_request:
-    # types: [opened, ready_for_review]
+    types: [opened, ready_for_review]
 
 jobs:
-  debug-author:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print author association
-        run: echo "author_association=${{ github.event.pull_request.author_association }}"
-
   overfit-check:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     if: |
       github.event.pull_request.author_association == 'OWNER' ||
       github.event.pull_request.author_association == 'MEMBER' ||
-      github.event.pull_request.author_association == 'COLLABORATOR'
+      github.event.pull_request.author_association == 'COLLABORATOR' ||
+      github.event.pull_request.author_association == 'CONTRIBUTOR' 
 
     steps:
       - name: Checkout repo
