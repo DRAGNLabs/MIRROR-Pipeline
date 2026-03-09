@@ -2,6 +2,7 @@ from lightning import Fabric
 from torch.utils.data import DataLoader
 from typing import List
 import datetime
+import os
 import torch
 
 from lightning.fabric.strategies.strategy import Strategy
@@ -14,9 +15,10 @@ from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.requeue_callback import RequeueCallback
 from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
+from mirror.callbacks.print_step_callback import PrintStepCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.preprocessed_dataset import PreprocessedDataset
+from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.config import RuntimeEnvironment, get_config
 
@@ -43,6 +45,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             ProgressCallback(),
             WandbCallback()
         ]
+        if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
+            default_callbacks.append(PrintStepCallback())
         if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
             default_callbacks.append(RequeueCallback())
 
@@ -77,7 +81,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             checkpoint: CheckpointIdentifier | None = None, 
             epochs: int = 1, 
             batch_size: int = 1, 
-            run_config_yaml: str = ""
+            do_preprocess: bool = False,
+            run_config_yaml: str = "",
     ):
         training_run_id = datetime.datetime.now().isoformat()
 
@@ -95,8 +100,12 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 'optimizer': optimizer,
             }
             self.fabric.load(checkpoint.path, state)
-
-        preprocessed_dataset = PreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
+        
+        if do_preprocess:
+            preprocessed_dataset = dataset.preprocess(model.preprocessor.preprocess_example)
+        else:
+            preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
+        
         dataloader = DataLoader(
             preprocessed_dataset, 
             batch_size=batch_size, 
@@ -132,7 +141,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             fabric=self.fabric,
             model=model, 
             optimizer=optimizer, 
-            training_run_id=training_run_id
+            training_run_id=training_run_id,
         )
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:

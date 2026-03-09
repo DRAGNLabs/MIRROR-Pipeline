@@ -1,10 +1,14 @@
 import os
 import shutil
-from typing import Callable
+from sys import stderr
+from typing import Callable, Sequence
+from pathlib import Path
 
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
+from mirror.util import is_compute_node
 
-from mirror.download_util import assert_can_download, mirror_data_path
+from mirror.download_util import assert_can_download
+from mirror.util import mirror_data_path
 
 datasets_path = mirror_data_path / 'datasets'
 
@@ -30,7 +34,10 @@ def load_hf_dataset(
         if hf_dataset_name else datasets_path / hf_dataset_path
 
     if reset_cache:
-        shutil.rmtree(dataset_path)
+        if not is_compute_node():
+            shutil.rmtree(dataset_path, ignore_errors=True)
+        else:
+            print("The attempted cache reset was aborted because it was initiated on a compute node.", file=stderr)
 
     is_cached = os.path.exists(dataset_path)
 

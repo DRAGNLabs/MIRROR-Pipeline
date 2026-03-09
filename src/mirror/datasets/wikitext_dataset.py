@@ -22,6 +22,7 @@ class WikitextDataset(MirrorDataset[TextRow]):
             split: which dataset split to use.
         """
         super().__init__()
+
         self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
             hf_dataset_name,
@@ -30,10 +31,6 @@ class WikitextDataset(MirrorDataset[TextRow]):
 
         if head: 
             self.ds = self.ds.select(range(head))
-
-    @property
-    def dataset_id(self) -> str:
-        return f'{hf_dataset_path}/{hf_dataset_name}'
 
     def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
         return ds.filter(lambda row: len(row['text']) > 0)

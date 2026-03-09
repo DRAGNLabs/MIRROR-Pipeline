@@ -1,4 +1,4 @@
-from typing import Literal, cast
+from typing import Literal, Sequence, cast
 
 from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
@@ -20,18 +20,14 @@ class ImdbDataset(MirrorDataset[TextRow]):
             split: which dataset split to use. 'unsupervised' is the union of
                 'train' and 'test'
         """
-
         super().__init__()
+
         self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
         ))[split]
 
         if head: 
             self.ds = self.ds.select(range(head))
-
-    @property
-    def dataset_id(self) -> str:
-        return hf_dataset_path
 
     def __getitem__(self, index: int) -> TextRow:
         return cast(TextRow, self.ds[index])

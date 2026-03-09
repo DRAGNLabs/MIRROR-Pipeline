@@ -19,7 +19,7 @@ class MirrorLlamaModel(
 ):
     def __init__(
         self,
-        initialization: Literal["3.2-1B", "3.2-1B-Instruct"] | LlamaConfig = "3.2-1B-Instruct"
+        initialization: Literal["3.2-1B", "3.2-1B-Instruct"] | LlamaConfig = "3.2-1B-Instruct",
     ) -> None:
         super().__init__()
         self._preprocessor = MirrorLlamaPreprocessor()
