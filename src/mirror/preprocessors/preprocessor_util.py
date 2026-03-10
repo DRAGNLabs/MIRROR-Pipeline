@@ -3,7 +3,8 @@ import shutil
 
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
-from mirror.download_util import assert_can_download, mirror_data_path
+from mirror.download_util import assert_can_download
+from mirror.util import mirror_data_path
 
 tokenizers_path = mirror_data_path / "tokenizers"
 
