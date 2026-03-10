@@ -8,7 +8,7 @@ from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 class MirrorModel[RawT, ProcessedT, BatchT](ABC, nn.Module):
     @property
     @abstractmethod
-    def preprocessor(self) -> MirrorPreprocessor:
+    def preprocessor(self) -> MirrorPreprocessor[RawT, ProcessedT, BatchT]:
         pass
 
     @abstractmethod
