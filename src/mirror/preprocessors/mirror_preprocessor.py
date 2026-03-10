@@ -10,7 +10,3 @@ class MirrorPreprocessor[RawT, ProcessedT, BatchT](ABC):
     def collate(self, examples: list[ProcessedT]) -> BatchT:
         pass
 
-    @property
-    @abstractmethod
-    def pad_token_id(self) -> int:
-        pass
