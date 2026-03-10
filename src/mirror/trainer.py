@@ -118,7 +118,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             # methods internally to fabric.load. Anything else in the state dict is just set in place.
             checkpoint_global_step = int(checkpoint.checkpoint_name)
             start_epoch = checkpoint_global_step // n_batches
-            start_batch = checkpoint_global_step % n_batches
+            start_batch = (checkpoint_global_step % n_batches) + 1
             state = {
                 'model': model,
                 'optimizer': optimizer,
