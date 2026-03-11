@@ -7,7 +7,8 @@ from pathlib import Path
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
 from mirror.util import is_compute_node
 
-from mirror.download_util import assert_can_download, mirror_data_path
+from mirror.download_util import assert_can_download
+from mirror.util import mirror_data_path
 
 datasets_path = mirror_data_path / 'datasets'
 
@@ -47,7 +48,7 @@ def load_hf_dataset(
         ds = load_dataset(
             hf_dataset_path,
             hf_dataset_name,
-            cache_dir=str(datasets_path / hf_dataset_path)
+            cache_dir=str(mirror_data_path / "hf_cache")
         )
         assert isinstance(ds, Dataset) or isinstance(ds, DatasetDict)
         if process:
