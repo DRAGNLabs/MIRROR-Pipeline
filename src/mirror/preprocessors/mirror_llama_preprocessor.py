@@ -1,6 +1,5 @@
 from typing import cast
 
-import torch
 from transformers import PreTrainedTokenizerBase
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
@@ -10,7 +9,7 @@ from mirror.util import get_device
 from mirror.row_types import TextRow
 
 class MirrorLlamaPreprocessor(
-    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
+    MirrorPreprocessor[TextRow, list[int], tuple[TokenBatch, AttentionMaskBatch]]
 ):
     def __init__(self) -> None:
         self._hf_model_name = "meta-llama/Llama-3.2-1B-Instruct"
@@ -27,10 +26,9 @@ class MirrorLlamaPreprocessor(
 
     def collate(self, examples: list[list[int]]) -> tuple[TokenBatch, AttentionMaskBatch]:
         device = get_device()
-        batch = self._tokenizer.pad({"input_ids": examples}, padding=True, return_tensors="pt")
-        tensors = cast(dict[str, torch.Tensor], batch)
-        tokens = cast(TokenBatch, tensors["input_ids"].to(device))
-        attention_mask = cast(AttentionMaskBatch, tensors["attention_mask"].to(device))
+        batch = self._tokenizer.pad({"input_ids": examples}, padding=True, return_tensors="pt").to(device)
+        tokens = cast(TokenBatch, batch["input_ids"])
+        attention_mask = cast(AttentionMaskBatch, batch["attention_mask"])
         return tokens, attention_mask
 
     @property

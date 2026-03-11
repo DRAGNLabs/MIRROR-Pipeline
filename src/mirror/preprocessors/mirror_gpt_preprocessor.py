@@ -1,6 +1,5 @@
 from typing import cast
 
-import torch
 from transformers import PreTrainedTokenizerBase
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
@@ -12,7 +11,7 @@ from mirror.row_types import TextRow
 
 
 class MirrorGPTPreprocessor(
-    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
+    MirrorPreprocessor[TextRow, list[int], tuple[TokenBatch, AttentionMaskBatch]]
 ):
     def __init__(self) -> None:
         self._hf_model_name = "openai-community/gpt2"
@@ -29,10 +28,9 @@ class MirrorGPTPreprocessor(
     
     def collate(self, examples: list[list[int]]) -> tuple[TokenBatch, AttentionMaskBatch]:
         device = get_device()
-        batch = self._tokenizer.pad({"input_ids": examples}, padding=True, return_tensors="pt")
-        tensors = cast(dict[str, torch.Tensor], batch)
-        tokens = cast(TokenBatch, tensors["input_ids"].to(device))
-        attention_mask = cast(AttentionMaskBatch, tensors["attention_mask"].to(device))
+        batch = self._tokenizer.pad({"input_ids": examples}, padding=True, return_tensors="pt").to(device)
+        tokens = cast(TokenBatch, batch["input_ids"])
+        attention_mask = cast(AttentionMaskBatch, batch["attention_mask"])
         return tokens, attention_mask
 
     @property
