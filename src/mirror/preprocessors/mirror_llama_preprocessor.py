@@ -3,9 +3,8 @@ from typing import cast
 from transformers import PreTrainedTokenizerBase
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.preprocessors.preprocessor_util import load_hf_tokenizer
+from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
 from mirror.types import TokenBatch, AttentionMaskBatch
-from mirror.util import get_device
 from mirror.row_types import TextRow
 
 class MirrorLlamaPreprocessor(
@@ -25,11 +24,7 @@ class MirrorLlamaPreprocessor(
         return cast(list[int], ids)
 
     def collate(self, examples: list[list[int]]) -> tuple[TokenBatch, AttentionMaskBatch]:
-        device = get_device()
-        batch = self._tokenizer.pad({"input_ids": examples}, padding=True, return_tensors="pt").to(device)
-        tokens = cast(TokenBatch, batch["input_ids"])
-        attention_mask = cast(AttentionMaskBatch, batch["attention_mask"])
-        return tokens, attention_mask
+        return collate_tokens(self._tokenizer, examples)
 
     @property
     def pad_token_id(self) -> int:
