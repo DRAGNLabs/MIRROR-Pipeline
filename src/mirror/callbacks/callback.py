@@ -28,6 +28,9 @@ class Callback[RawT, ProcessedT, ModelOutputT]:
             run_config_yaml: str,
             n_batches: int,
             epochs: int,
+            start_epoch: int,
+            start_batch: int,
+            devices: int,
     ):
         pass
 
@@ -49,6 +52,7 @@ class Callback[RawT, ProcessedT, ModelOutputT]:
             optimizer: Optimizer,
             loss: float,
             training_run_id: str,
+            epoch: int,
             batch_idx: int,
     ):
         pass
