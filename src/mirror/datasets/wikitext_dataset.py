@@ -12,9 +12,9 @@ hf_dataset_name = 'wikitext-2-raw-v1'
 
 class WikitextDataset(MirrorDataset[TextRow]):
     def __init__(
-            self,
-            head: int | None = None,
-            split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
+        self,
+        head: int | None = None,
+        split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
     ):
         """
         Args:

@@ -1,6 +1,7 @@
 from pathlib import Path
-from sys import stderr
-from typing import Callable, Sequence
+from typing import cast
+
+from datasets import Dataset, load_dataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.row_types import TextRow
@@ -18,28 +19,14 @@ class TxtDataset(MirrorDataset[TextRow]):
             head: how many examples to include. None includes the whole split.
         """
         super().__init__()
-        self._file_path = Path(file_path)
-        self._lines: list[str] = []
-
-        with open(self._file_path, "r", encoding="utf-8") as f:
-            for i, line in enumerate(f):
-                if head is not None and i >= head:
-                    break
-                stripped = line.rstrip("\n")
-                if stripped:
-                    self._lines.append(stripped)
-
-    @property
-    def dataset_id(self) -> str:
-        return str(self._file_path)
+        
+        self.ds: Dataset = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
+        self.ds = self.ds.filter(lambda row: len(row["text"]) > 0)
+        if head:
+            self.ds = self.ds.select(range(head))
 
     def __getitem__(self, index: int) -> TextRow:
-        return TextRow(text=self._lines[index])
+        return cast(TextRow, self.ds[index])
 
     def __len__(self) -> int:
-        return len(self._lines)
-
-    def preprocess[ProcessedT](self, preprocessor_function: Callable[[TextRow], ProcessedT]) -> Sequence[ProcessedT]:
-        results = [preprocessor_function(self[i]) for i in range(len(self))]
-        print("Preprocessing complete.", file=stderr)
-        return results
+        return len(self.ds)
