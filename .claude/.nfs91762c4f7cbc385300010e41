@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git rm -r --cached scripts/__pycache__/)",
-      "Bash(git commit:*)"
-    ]
-  }
-}
