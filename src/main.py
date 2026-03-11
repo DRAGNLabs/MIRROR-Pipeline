@@ -1,17 +1,15 @@
 from jsonargparse import ActionConfigFile, ArgumentParser
 from typing import Literal
-from inspect import signature
+
 import warnings
 import sys
 
 from lightning.fabric.utilities.warnings import PossibleUserWarning
 
 from mirror.config import init_config
-from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.models.model_util import instantiate_model
-from mirror.subcommands import SlurmConfig, fit, preprocess
+from mirror.subcommands import fit, preprocess
 from mirror.trainer import Trainer
 from mirror.util import is_login_node
 
@@ -71,17 +69,14 @@ def main(subcommand: Subcommand):
         case 'preprocess':
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_subclass_arguments(MirrorDataset, "data", required=True, instantiate=True)
-            parser.add_subclass_arguments(MirrorPreprocessor, "preprocessor", required=True, instantiate=True)
-            parser.add_class_arguments(SlurmConfig, "slurm")
+            parser.add_function_arguments(preprocess, as_positional=False)
             cfg = parser.parse_args(sys.argv[2:])
+
+            if hasattr(cfg, 'config'):
+                del cfg.config  # pyright: ignore
+                
             init = parser.instantiate_classes(cfg)
-
-            data = init.data
-            preprocessor = init.preprocessor
-            slurm = init.slurm
-
-            preprocess(data, preprocessor, slurm)
+            preprocess(**init)
             
         case _:
             print(f'unimplemented subcommand: {subcommand}')
