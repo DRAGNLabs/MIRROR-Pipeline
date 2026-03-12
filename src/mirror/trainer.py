@@ -21,7 +21,6 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.util import make_eval_dataloader, eval_loop
 
 
 class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
@@ -105,26 +104,15 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             }
             self.fabric.load(checkpoint.path, state)
 
-        if do_preprocess:
-            preprocessed_dataset = dataset.preprocess(model.preprocessor.preprocess_example)
-        else:
-            preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
-
-        dataloader = DataLoader(
-            preprocessed_dataset,  
-            batch_size=batch_size,
-            collate_fn=model.preprocessor.collate,
-            drop_last=False,
-        )
-        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
+        dataloader = self._make_dataloader(dataset, model, batch_size, do_preprocess)
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = make_eval_dataloader(val_dataset, model, batch_size, do_preprocess, self.fabric)
+            val_dataloader = self._make_dataloader(val_dataset, model, batch_size, do_preprocess)
 
         test_dataloader = None
         if test_dataset is not None:
-            test_dataloader = make_eval_dataloader(test_dataset, model, batch_size, do_preprocess, self.fabric)
+            test_dataloader = self._make_dataloader(test_dataset, model, batch_size, do_preprocess)
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
@@ -151,7 +139,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 )
 
             if val_dataloader is not None and (epoch + 1) >= next_val_epoch:
-                val_loss = eval_loop(model, val_dataloader)
+                val_loss = self._eval_loop(model, val_dataloader)
                 self.fabric.call(
                     'on_validation_epoch_end',
                     fabric=self.fabric,
@@ -164,7 +152,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 next_val_epoch = epoch + 1 + val_check_interval
 
         if test_dataloader is not None:
-            test_loss = eval_loop(model, test_dataloader)
+            test_loss = self._eval_loop(model, test_dataloader)
             self.fabric.call(
                 'on_test_epoch_end',
                 fabric=self.fabric,
@@ -181,6 +169,31 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             optimizer=optimizer,
             training_run_id=training_run_id,
         )
+
+    def _eval_loop(self, model, dataloader) -> float:
+        model.eval()
+        total_loss = 0.0
+        n_batches = 0
+        with torch.no_grad():
+            for batch in dataloader:
+                loss = model.training_step(batch)
+                total_loss += loss.item()
+                n_batches += 1
+        model.train()
+        return total_loss / n_batches if n_batches > 0 else 0.0
+
+    def _make_dataloader(self, dataset, model, batch_size, do_preprocess):
+        if do_preprocess:
+            preprocessed = dataset.preprocess(model.preprocessor.preprocess_example)
+        else:
+            preprocessed = OnDemandPreprocessedDataset(dataset, model.preprocessor.preprocess_example)
+        dataloader = DataLoader(
+            preprocessed,
+            batch_size=batch_size,
+            collate_fn=model.preprocessor.collate,
+            drop_last=False,
+        )
+        return self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
         return Fabric(

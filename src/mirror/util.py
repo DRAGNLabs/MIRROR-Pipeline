@@ -27,34 +27,6 @@ def get_device() -> str:
 def is_power_of_ten(n: int):
     return n > 0 and math.log10(n).is_integer()
 
-def make_eval_dataloader(dataset, model, batch_size: int, do_preprocess: bool, fabric):
-    from torch.utils.data import DataLoader
-    from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
-
-    if do_preprocess:
-        preprocessed = dataset.preprocess(model.preprocessor.preprocess_example)
-    else:
-        preprocessed = OnDemandPreprocessedDataset(dataset, model.preprocessor.preprocess_example)
-    dataloader = DataLoader(
-        preprocessed,
-        batch_size=batch_size,
-        collate_fn=model.preprocessor.collate,
-        drop_last=False,
-    )
-    return fabric.setup_dataloaders(dataloader, move_to_device=get_config()['device'] == 'cuda')
-
-
-def eval_loop(model, dataloader) -> float:
-    model.eval()
-    total_loss = 0.0
-    n_batches = 0
-    with torch.no_grad():
-        for batch in dataloader:
-            loss = model.training_step(batch)
-            total_loss += loss.item()
-            n_batches += 1
-    model.train()
-    return total_loss / n_batches if n_batches > 0 else 0.0
 
 
 def pad_to_longest(batch: list[TokenTensor], pad_token: int) -> tuple[TokenBatch, AttentionMaskBatch]:
