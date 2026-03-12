@@ -12,11 +12,13 @@ class ImdbDataset(MirrorDataset[TextRow]):
     def __init__(
         self,
         head: int | None = None,
+        skip: int | None = None,
         split: Literal['train'] | Literal['test'] | Literal['unsupervised'] = 'train',
     ):
         """
         Args:
             head: how many examples to include. None includes the whole split.
+            skip: how many examples to skip from the start.
             split: which dataset split to use. 'unsupervised' is the union of
                 'train' and 'test'
         """
@@ -26,7 +28,10 @@ class ImdbDataset(MirrorDataset[TextRow]):
             hf_dataset_path,
         ))[split]
 
-        if head: 
+        if skip:
+            self.ds = self.ds.select(range(skip, len(self.ds)))
+
+        if head:
             self.ds = self.ds.select(range(head))
 
     def __getitem__(self, index: int) -> TextRow:

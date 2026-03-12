@@ -62,6 +62,22 @@ class WandbCallback[RawT, ProcessedT, ModelOutputT](
         self.step += 1
         self.run.log({"train/loss": loss}, step=self.step)
 
+    def on_validation_epoch_end(
+        self,
+        *,
+        val_loss: float,
+        **kwargs,
+    ):
+        self.run.log({"val/loss": val_loss}, step=self.step)
+
+    def on_test_epoch_end(
+        self,
+        *,
+        test_loss: float,
+        **kwargs,
+    ):
+        self.run.log({"test/loss": test_loss}, step=self.step)
+
     def on_fit_end(
         self,
         **kwargs,

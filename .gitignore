@@ -2,6 +2,7 @@ slurm_logs/
 .env/
 **/__pycache__/
 .ENV
-config.yaml
+config*.yaml
 mirror_pipeline.egg-info/
 .vscode/
+.claude/*
