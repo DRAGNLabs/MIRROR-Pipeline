@@ -28,4 +28,4 @@ class MirrorLlamaPreprocessor(
 
     @property
     def pad_token_id(self) -> int:
-        return cast(int, self._tokenizer.pad_token_id)
+        return int(self._tokenizer.pad_token_id)  # type: ignore[arg-type]

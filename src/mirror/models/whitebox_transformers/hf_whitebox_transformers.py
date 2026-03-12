@@ -8,7 +8,7 @@ from mirror.models.whitebox_transformers.whitebox_transformers import AnyWhitebo
 from mirror.types import AttentionMaskBatch, TokenBatch
 
 class HFTransformerInput(TransformersKwargs):
-    labels: torch.LongTensor | None
+    labels: torch.Tensor | None
 
    
 HFWhiteboxTransformerConfig = HFTransformerInput
