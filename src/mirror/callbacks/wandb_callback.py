@@ -60,12 +60,14 @@ class WandbCallback[RawT, ProcessedT, ModelOutputT](
         **kwargs,
     ):
         self.step += 1
+        assert self.run is not None
         self.run.log({"train/loss": loss}, step=self.step)
 
     def on_fit_end(
         self,
         **kwargs,
     ):
+        assert self.run is not None
         self.run.finish()
         self.run = None
 
