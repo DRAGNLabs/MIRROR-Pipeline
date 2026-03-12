@@ -1,17 +1,17 @@
 from __future__ import annotations
-from typing import Callable, Sized
+from typing import Callable, Sequence, Sized
 from torch.utils.data import Dataset
 from abc import abstractmethod
 from sys import stderr
 
 class MirrorDataset[RawT](Dataset[RawT], Sized):
-    
+
     @abstractmethod
     def __getitem__(self, index: int) -> RawT:
         pass
-    
-    def preprocess[ProcessedT](self, preprocessor_function: Callable[[RawT], ProcessedT]) -> Dataset[ProcessedT]:
-        
+
+    def preprocess[ProcessedT](self, preprocessor_function: Callable[[RawT], ProcessedT]) -> Sequence[ProcessedT]:
+
         def mappable_preprocessor_function(row: RawT) -> dict[str, ProcessedT]:
             return {"input_ids": preprocessor_function(row)}
 
