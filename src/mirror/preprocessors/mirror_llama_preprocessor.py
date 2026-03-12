@@ -4,11 +4,11 @@ from transformers import PreTrainedTokenizerBase
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
-from mirror.types import TokenBatch, AttentionMaskBatch
+from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
 from mirror.row_types import TextRow
 
 class MirrorLlamaPreprocessor(
-    MirrorPreprocessor[TextRow, list[int], tuple[TokenBatch, AttentionMaskBatch]]
+    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
 ):
     def __init__(self) -> None:
         self._hf_model_name = "meta-llama/Llama-3.2-1B-Instruct"
@@ -16,14 +16,14 @@ class MirrorLlamaPreprocessor(
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
 
-    def preprocess_example(self, example: TextRow) -> list[int]:
+    def preprocess_example(self, example: TextRow) -> TokenTensor:
         ids = self._tokenizer.encode(example['text'], add_special_tokens=True)
         if len(ids) < 2:
             eos = self._tokenizer.eos_token_id
             ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
-        return cast(list[int], ids)
+        return cast(TokenTensor, ids)
 
-    def collate(self, examples: list[list[int]]) -> tuple[TokenBatch, AttentionMaskBatch]:
+    def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
         return collate_tokens(self._tokenizer, examples)
 
     @property

@@ -2,7 +2,7 @@ from jaxtyping import Int, Float
 from torch import FloatTensor, LongTensor, Tensor
 from dataclasses import dataclass
 
-TokenTensor = Int[LongTensor, "T"]
+TokenTensor = list[int]
 AttentionMask = Int[FloatTensor, "T"]
 
 TokenBatch = Int[LongTensor, "b t"]

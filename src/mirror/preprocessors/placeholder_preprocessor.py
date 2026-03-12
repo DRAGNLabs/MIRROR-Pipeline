@@ -11,7 +11,7 @@ class PlaceholderPreprocessor(
     MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
 ):
     def preprocess_example(self, example: TextRow) -> TokenTensor:
-        return torch.tensor([1, 2, 3, 4], device=get_device())
+        return [1, 2, 3, 4]
     
     def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
         tokens = cast(TokenBatch, torch.tensor([[1, 2, 3, 4]] * len(examples), device=get_device()))
