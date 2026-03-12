@@ -30,4 +30,4 @@ class MirrorGPTPreprocessor(
 
     @property
     def pad_token_id(self) -> int:
-        return self._tokenizer.pad_token_id
+        return int(self._tokenizer.pad_token_id)  # type: ignore[arg-type]

@@ -42,7 +42,7 @@ class MirrorLlamaModel(
         labels = input_ids
         if attention_mask is not None:
             labels = labels.masked_fill(attention_mask == 0, IGNORE_ID) 
-        labels = cast(torch.LongTensor, labels)
+        labels = cast(torch.Tensor, labels)
 
         output = WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute(batch)
         return output.loss
