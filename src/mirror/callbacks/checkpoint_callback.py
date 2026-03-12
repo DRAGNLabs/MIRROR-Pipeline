@@ -45,7 +45,7 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
             model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
-            epoch: int,
+            epoch_idx: int,
             batch_idx: int,
             **kwargs,
     ):
@@ -54,7 +54,7 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
                 fabric,
                 model,
                 optimizer,
-                CheckpointIdentifier(training_run_id, f"{epoch * self.n_batches + batch_idx:0{self.n_print_digits}d}")
+                CheckpointIdentifier(training_run_id, f"{epoch_idx * self.n_batches + batch_idx:0{self.n_print_digits}d}")
             )
 
     def _save_checkpoint(

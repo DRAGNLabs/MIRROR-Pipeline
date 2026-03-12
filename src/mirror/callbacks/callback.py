@@ -52,7 +52,7 @@ class Callback[RawT, ProcessedT, ModelOutputT]:
             optimizer: Optimizer,
             loss: float,
             training_run_id: str,
-            epoch: int,
+            epoch_idx: int,
             batch_idx: int,
     ):
         pass

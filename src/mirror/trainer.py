@@ -135,10 +135,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch, 
             start_batch=start_batch, devices=self.devices, run_config_yaml=run_config_yaml)
             
-        for epoch in range(start_epoch, epochs):
+        for epoch_idx in range(start_epoch, epochs):
             for batch_idx, batch in enumerate(dataloader):
                 
-                if epoch == start_epoch and batch_idx < start_batch:
+                if epoch_idx == start_epoch and batch_idx <= start_batch:
                     continue
 
                 batch: BatchT = batch
@@ -150,15 +150,15 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 optimizer.step()
 
                 self.fabric.call(
-                    'on_train_batch_end', 
-                    fabric=self.fabric, 
-                    model=model, 
-                    optimizer=optimizer, 
-                    loss=loss_value, 
-                    batch=batch, 
-                    epoch=epoch,
-                    training_run_id=training_run_id, 
-                    batch_idx=batch_idx
+                    'on_train_batch_end',
+                    fabric=self.fabric,
+                    model=model,
+                    optimizer=optimizer,
+                    loss=loss_value,
+                    batch=batch,
+                    training_run_id=training_run_id,
+                    epoch_idx=epoch_idx,
+                    batch_idx=batch_idx,
                 )
 
         self.fabric.call(
