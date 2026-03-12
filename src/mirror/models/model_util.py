@@ -14,7 +14,7 @@ IGNORE_ID = -100
 def load_hf_model(
         hf_model_name: str,
         reset_cache: bool = False,
-        model_cls: Type[PreTrainedModel] = AutoModel,
+        model_cls: Type[PreTrainedModel] = AutoModel,  # type: ignore[assignment]
 ) -> PreTrainedModel:
     """
     The first time this is called with a particular model, it will download
@@ -71,7 +71,7 @@ def build_causal_lm(
         case "pretrained":
             model = load_hf_model(
                 model_name,
-                model_cls=AutoModelForCausalLM,
+                model_cls=AutoModelForCausalLM,  # type: ignore[arg-type]
             )
         case "random":
             config = load_hf_config(model_name)

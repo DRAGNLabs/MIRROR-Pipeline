@@ -61,7 +61,7 @@ def pad_to_longest(batch: list[TokenTensor], pad_token: int) -> tuple[TokenBatch
     device = get_device()
     
     lens = torch.tensor([b.numel() for b in batch], device=device, dtype=torch.long)
-    max_len = lens.max().item()
+    max_len = int(lens.max().item())
     batch_size = len(batch)
 
     tokens = torch.full((batch_size, max_len), int(pad_token), dtype=torch.long, device=device)

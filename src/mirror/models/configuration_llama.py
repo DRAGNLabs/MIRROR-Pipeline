@@ -10,6 +10,6 @@ class LlamaConfig(TransformersLlamaConfig):
     ) -> None:
         super().__init__(
             vocab_size=vocab_size,
-            rms_norm_eps=rms_norm_eps,
+            rms_norm_eps=rms_norm_eps,  # type: ignore[arg-type]
             **kwargs,
         )

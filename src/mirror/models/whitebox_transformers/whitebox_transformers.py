@@ -10,10 +10,10 @@ from transformers.modeling_outputs import CausalLMOutputWithPast, CausalLMOutput
 The following types are assumptions and may need to be edited down the line
 """
 RawHFOutputTypes = CausalLMOutputWithPast | CausalLMOutputWithCrossAttentions
-Logits = torch.FloatTensor
-LossPresent = torch.FloatTensor
-HiddenStatesPresent = List[torch.FloatTensor]
-AttentionsPresent = List[torch.FloatTensor]
+Logits = torch.Tensor
+LossPresent = torch.Tensor
+HiddenStatesPresent = List[torch.Tensor]
+AttentionsPresent = List[torch.Tensor]
 
 @dataclass
 class WhiteboxTransformerOutput[LossT: LossPresent | None, HiddenStatesT: HiddenStatesPresent | None, AttentionsT: AttentionsPresent | None]:
@@ -45,7 +45,7 @@ class WhiteboxTransformer[ConfigT, BatchT](ABC):
         pass
 
     @abstractmethod
-    def include_loss(self, config: ConfigT, labels: torch.LongTensor) -> ConfigT:
+    def include_loss(self, config: ConfigT, labels: torch.Tensor) -> ConfigT:
         """
         Returns a modified config that indicates loss should be returned (calculated
         with respect to the labels).
@@ -81,7 +81,7 @@ class WhiteboxTransformerExecutor[LossT: LossPresent | None, HiddenStatesT: Hidd
     """
     This class aims to solve the problem that return types of models from various libraries
     tend to return outputs with optional members. For instance, `loss` on a model often has a
-    type something like `torch.FloatTensor | None`. This can get annoying with type checkers,
+    type something like `torch.Tensor | None`. This can get annoying with type checkers,
     since in most cases, it is statically known whether loss will be computed or not, but
     the type checker will still yell at you unless you explicitly check for `None`.
 
@@ -101,7 +101,7 @@ class WhiteboxTransformerExecutor[LossT: LossPresent | None, HiddenStatesT: Hidd
             self.transformer.run(batch, self.config)
         )
 
-    def include_loss(self, labels: torch.LongTensor) -> \
+    def include_loss(self, labels: torch.Tensor) -> \
             WhiteboxTransformerExecutor[LossPresent, HiddenStatesT, AttentionsT, ConfigT, BatchT, TransformerT]:
         return self._with_config(self.transformer.include_loss(self.config, labels))
     
