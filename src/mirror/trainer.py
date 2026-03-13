@@ -108,7 +108,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = self._make_dataloader(val_dataset, model, batch_size, do_preprocess)
+            val_dataloader = self._make_dataloader(val_dataset, mode1l, batch_size, do_preprocess)
 
         test_dataloader = None
         if test_dataset is not None:
@@ -188,7 +188,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         else:
             preprocessed = OnDemandPreprocessedDataset(dataset, model.preprocessor.preprocess_example)
         dataloader = DataLoader(
-            preprocessed,
+            preprocessed, 
             batch_size=batch_size,
             collate_fn=model.preprocessor.collate,
             drop_last=False,
