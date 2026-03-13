@@ -1,10 +1,12 @@
 import os
 import shutil
+from typing import cast
 
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from mirror.download_util import assert_can_download
-from mirror.util import mirror_data_path
+from mirror.types import TokenBatch, AttentionMaskBatch
+from mirror.util import get_device, mirror_data_path
 
 tokenizers_path = mirror_data_path / "tokenizers"
 
@@ -31,3 +33,14 @@ def load_hf_tokenizer(
         tokenizer.save_pretrained(tokenizer_path)
 
     return tokenizer
+
+
+def collate_tokens(
+    tokenizer: PreTrainedTokenizerBase,
+    examples: list[list[int]],
+) -> tuple[TokenBatch, AttentionMaskBatch]:
+    device = get_device()
+    batch = tokenizer.pad({"input_ids": examples}, padding=True, return_tensors="pt").to(device)
+    tokens = cast(TokenBatch, batch["input_ids"])
+    attention_mask = cast(AttentionMaskBatch, batch["attention_mask"])
+    return tokens, attention_mask

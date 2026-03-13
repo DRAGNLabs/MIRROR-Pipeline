@@ -5,4 +5,4 @@ slurm_logs/
 config*.yaml
 mirror_pipeline.egg-info/
 .vscode/
-.claude/*
+.claude/
