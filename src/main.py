@@ -7,6 +7,7 @@ import sys
 from lightning.fabric.utilities.warnings import PossibleUserWarning
 
 from mirror.config import init_config
+from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import instantiate_model
 from mirror.subcommands import fit, preprocess
@@ -36,9 +37,11 @@ def main(subcommand: Subcommand):
         case 'fit':
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_function_arguments(fit, as_positional=False, skip={"model", "trainer", "run_config_yaml"})
+            parser.add_function_arguments(fit, as_positional=False, skip={"model", "trainer", "run_config_yaml", "val_data", "test_data"})
             parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
             parser.add_subclass_arguments(Trainer, "trainer", required=False, instantiate=True)
+            parser.add_subclass_arguments(MirrorDataset, "val_data", required=False, instantiate=True)
+            parser.add_subclass_arguments(MirrorDataset, "test_data", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(sys.argv[2:])
             
