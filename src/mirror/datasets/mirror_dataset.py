@@ -1,11 +1,13 @@
 from __future__ import annotations
 from typing import Callable, Sequence, Sized
 from torch.utils.data import Dataset
+from datasets import Dataset as HFDataset
 from abc import abstractmethod
 from sys import stderr
 
 class MirrorDataset[RawT](Dataset[RawT], Sized):
-    
+    ds: HFDataset
+
     @abstractmethod
     def __getitem__(self, index: int) -> RawT:
         pass
