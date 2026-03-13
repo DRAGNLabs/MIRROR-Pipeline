@@ -30,7 +30,6 @@ class Callback[RawT, ProcessedT, ModelOutputT]:
             epochs: int,
             start_epoch: int,
             start_batch: int,
-            devices: int,
     ):
         pass
 

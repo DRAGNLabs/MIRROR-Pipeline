@@ -34,7 +34,8 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
             optimizer: Optimizer,
             training_run_id: str,
     ):
-        self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'end'))
+        if fabric.is_global_zero:
+            self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'end'))
 
     def on_train_batch_end(
             self,
@@ -47,7 +48,7 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
             batch_idx: int,
             **kwargs,
     ):
-        if self.every_n_train_steps and (batch_idx + 1) % (self.every_n_train_steps) == 0:
+        if fabric.is_global_zero and self.every_n_train_steps and (batch_idx + 1) % (self.every_n_train_steps) == 0:
             self._save_checkpoint(
                 fabric,
                 model,

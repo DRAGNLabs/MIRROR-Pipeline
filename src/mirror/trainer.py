@@ -115,7 +115,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         start_epoch = 0
         start_batch = 0
-        n_batches = len(dataloader) // self.devices
+        n_batches = len(dataloader) // self.num_nodes
 
         if checkpoint:
             # models and optimizers are treated specially: they are populated via their load_state_dict
@@ -133,7 +133,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, 
             training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch, 
-            start_batch=start_batch, devices=self.devices, run_config_yaml=run_config_yaml)
+            start_batch=start_batch, run_config_yaml=run_config_yaml)
             
         for epoch_idx in range(start_epoch, epochs):
             for batch_idx, batch in enumerate(dataloader):
@@ -155,7 +155,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     model=model,
                     optimizer=optimizer,
                     loss=loss_value,
-                    batch=batch,
                     training_run_id=training_run_id,
                     epoch_idx=epoch_idx,
                     batch_idx=batch_idx,
