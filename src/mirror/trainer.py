@@ -134,7 +134,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     model=model,
                     optimizer=optimizer,
                     loss=loss_value,
-                    batch=batch,
                     training_run_id=training_run_id,
                     batch_idx=batch_idx
                 )
