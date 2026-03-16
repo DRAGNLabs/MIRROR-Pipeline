@@ -29,7 +29,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [],
+            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
         config = get_config()
         self.config = config
@@ -39,7 +39,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [
+        default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
             CheckpointCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
@@ -108,7 +108,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = self._make_dataloader(val_dataset, mode1l, batch_size, do_preprocess)
+            val_dataloader = self._make_dataloader(val_dataset, model, batch_size, do_preprocess)
 
         test_dataloader = None
         if test_dataset is not None:
@@ -118,7 +118,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
 
         next_val_epoch = val_check_interval
-        for epoch in range(epochs):
+        for epoch_idx in range(epochs):
             for batch_idx, batch in enumerate(dataloader):
                 batch: BatchT = batch
 
@@ -134,11 +134,12 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     model=model,
                     optimizer=optimizer,
                     loss=loss_value,
+                    batch=batch,
                     training_run_id=training_run_id,
                     batch_idx=batch_idx
                 )
 
-            if val_dataloader is not None and (epoch + 1) >= next_val_epoch:
+            if val_dataloader is not None and (epoch_idx + 1) >= next_val_epoch:
                 val_loss = self._eval_loop(model, val_dataloader)
                 self.fabric.call(
                     'on_validation_epoch_end',
@@ -147,9 +148,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     optimizer=optimizer,
                     val_loss=val_loss,
                     training_run_id=training_run_id,
-                    epoch=epoch,
+                    epoch=epoch_idx,
                 )
-                next_val_epoch = epoch + 1 + val_check_interval
+                next_val_epoch = epoch_idx + 1 + val_check_interval
 
         if test_dataloader is not None:
             test_loss = self._eval_loop(model, test_dataloader)
@@ -204,11 +205,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             accelerator=accelerator,
         )
 
-def separate_singletons[RawT, ProcessedT, ModelOutputT](
-       callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]]
+def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
+       callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ) -> tuple[
-   List[Callback[RawT, ProcessedT, ModelOutputT]],
-   List[Callback[RawT, ProcessedT, ModelOutputT]]
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]

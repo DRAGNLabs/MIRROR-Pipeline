@@ -14,8 +14,8 @@ from wandb.sdk.wandb_run import Run as WandbRun
 WandbMode = Literal["online", "offline"]
 
 
-class WandbCallback[RawT, ProcessedT, ModelOutputT](
-    Callback[RawT, ProcessedT, ModelOutputT]
+class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+    Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(self) -> None:
         super().__init__(is_singleton=True)
