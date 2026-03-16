@@ -7,9 +7,9 @@ from mirror.models.mirror_model import MirrorModel
 class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
        Callback[RawT, ProcessedT, ModelOutputT]
 ):
-    def __init__(self, every_n_train_steps: int | None = None) -> None:
+    def __init__(self, every_n_training_steps: int | None = None) -> None:
         super().__init__(is_singleton=True)
-        self.every_n_train_steps = every_n_train_steps
+        self.every_n_training_steps = every_n_training_steps
 
     def on_fit_start(
             self,
@@ -48,7 +48,7 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
             batch_idx: int,
             **kwargs,
     ):
-        if fabric.is_global_zero and self.every_n_train_steps and (batch_idx + 1) % (self.every_n_train_steps) == 0:
+        if fabric.is_global_zero and self.every_n_training_steps and (batch_idx + 1) % (self.every_n_training_steps) == 0:
             self._save_checkpoint(
                 fabric,
                 model,
