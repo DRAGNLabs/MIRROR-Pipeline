@@ -23,8 +23,8 @@ def requeue_handoff_path():
 RequeueHandoff = Dict[Literal['previous_training_run_id'], str]
 
 
-class RequeueCallback[RawT, ProcessedT, BatchT, ModelOutputT](
-       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+class RequeueCallback[RawT, ProcessedT, ModelOutputT](
+       Callback[RawT, ProcessedT, ModelOutputT]
 ):
     def __init__(self, requeue_signal: int = signal.SIGHUP) -> None:
         super().__init__(is_singleton=True)
