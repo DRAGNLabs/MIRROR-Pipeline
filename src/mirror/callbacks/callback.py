@@ -4,7 +4,7 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 
 
-class Callback[RawT, ProcessedT, ModelOutputT]:
+class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
     """
     The names of the methods here are based on those of Lightning's 
     Callback class: https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.Callback.html#lightning.pytorch.callbacks.Callback
@@ -21,7 +21,7 @@ class Callback[RawT, ProcessedT, ModelOutputT]:
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             dataset: MirrorDataset[RawT],
             training_run_id: str,
@@ -37,7 +37,7 @@ class Callback[RawT, ProcessedT, ModelOutputT]:
         self, 
         *, 
         fabric: Fabric, 
-        model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
+        model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], 
         optimizer: Optimizer, 
         training_run_id: str
     ):
@@ -47,7 +47,7 @@ class Callback[RawT, ProcessedT, ModelOutputT]:
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             loss: float,
             training_run_id: str,

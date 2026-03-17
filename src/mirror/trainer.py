@@ -29,7 +29,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [],
+            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
         config = get_config()
         self.config = config
@@ -39,7 +39,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [
+        default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
             CheckpointCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
@@ -76,7 +76,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
     def fit(
             self, 
-            model: MirrorModel[RawT, ProcessedT, BatchT], 
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             dataset: MirrorDataset[RawT], 
             checkpoint: CheckpointIdentifier | None = None, 
             epochs: int = 1, 
@@ -145,9 +145,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 # batch: BatchT = batch
 
                 optimizer.zero_grad()
-                loss = model.training_step(batch)
-                loss_value = loss.item()
-                self.fabric.backward(loss)
+                train_step_output = model.training_step(batch)
+                loss_value = train_step_output.loss.item()
+                self.fabric.backward(train_step_output.loss)
                 optimizer.step()
 
                 self.fabric.call(
@@ -180,11 +180,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             accelerator=accelerator,
         )
 
-def separate_singletons[RawT, ProcessedT, ModelOutputT](
-       callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]]
+def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
+       callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ) -> tuple[
-   List[Callback[RawT, ProcessedT, ModelOutputT]],
-   List[Callback[RawT, ProcessedT, ModelOutputT]]
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]

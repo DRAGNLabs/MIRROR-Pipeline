@@ -23,8 +23,8 @@ def requeue_handoff_path():
 RequeueHandoff = Dict[Literal['previous_training_run_id'], str]
 
 
-class RequeueCallback[RawT, ProcessedT, ModelOutputT](
-       Callback[RawT, ProcessedT, ModelOutputT]
+class RequeueCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(self, requeue_signal: int = signal.SIGHUP) -> None:
         super().__init__(is_singleton=True)
@@ -39,7 +39,7 @@ class RequeueCallback[RawT, ProcessedT, ModelOutputT](
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             **kwargs,
     ):
@@ -52,7 +52,7 @@ class RequeueCallback[RawT, ProcessedT, ModelOutputT](
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
             **kwargs,
@@ -68,7 +68,7 @@ class RequeueCallback[RawT, ProcessedT, ModelOutputT](
     def _load_requeue_checkpoint_if_present(
             self, 
             fabric: Fabric, 
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], 
             optimizer: Optimizer
     ):
         path = requeue_handoff_path()
@@ -98,7 +98,7 @@ class RequeueCallback[RawT, ProcessedT, ModelOutputT](
     def _save_checkpoint(
             self, 
             fabric: Fabric, 
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], 
             optimizer: Optimizer,
             training_run_id: str,
     ):
