@@ -59,6 +59,11 @@ def preprocess(data: MirrorDataset, preprocessor: MirrorPreprocessor, slurm: Slu
     
     data.preprocess(preprocessor.preprocess_example)
 
+    total_tokens = 0
+    for item in data:
+        total_tokens += len(item)
+    print("total_tokens:", total_tokens)
+
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
     # Prevent recursion: job run should not submit again
     args = [a for a in python_args if not a.startswith("--slurm.submit")]
