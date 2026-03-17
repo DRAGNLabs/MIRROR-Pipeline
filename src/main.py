@@ -11,7 +11,8 @@ from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import instantiate_model
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.subcommands import fit, preprocess
-from mirror.trainer import Trainer
+from mirror.trainer_constructor import TrainerConstructor
+# from mirror.trainer import Trainer
 from mirror.util import is_login_node
 
 # These are required so that their items can be found easily by jsonargparse without
@@ -40,7 +41,7 @@ def main(subcommand: Subcommand):
             parser.add_function_arguments(fit, as_positional=False, skip={"model", "trainer", "preprocessor", "run_config_yaml"})
             parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
             parser.add_subclass_arguments(MirrorPreprocessor, "preprocessor", required=False)
-            parser.add_subclass_arguments(Trainer, "trainer", required=False, instantiate=True)
+            parser.add_subclass_arguments(TrainerConstructor, "trainer", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(sys.argv[2:])
             
@@ -52,8 +53,10 @@ def main(subcommand: Subcommand):
             init_config(cfg.device)
             init_cfg = cfg.clone()
             init = parser.instantiate_classes(init_cfg)
-            trainer = init.trainer or Trainer()
+            trainer = init.trainer or TrainerConstructor()
             model = init.model
+
+            trainer = trainer.construct_trainer()
 
             trainer.launch()
             if not (is_login_node() and init.slurm.job_type == "compute"):
