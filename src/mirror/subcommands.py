@@ -40,12 +40,12 @@ def fit(
     trainer.fit(
         model,
         data,
-        preprocessor=preprocessor,
-        checkpoint=checkpoint,
-        epochs=epochs,
-        batch_size=batch_size,
-        do_preprocess=do_preprocess,
-        run_config_yaml=run_config_yaml,
+        preprocessor,
+        checkpoint,
+        epochs,
+        batch_size,
+        do_preprocess,
+        run_config_yaml,
     )
 
 def preprocess(
