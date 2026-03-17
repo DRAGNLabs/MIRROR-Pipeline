@@ -107,9 +107,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
         
         dataloader = DataLoader(
-            preprocessed_dataset, 
-            batch_size=batch_size, 
-            collate_fn=model.preprocessor.collate, 
+            preprocessed_dataset,  # type: ignore[arg-type]
+            batch_size=batch_size,
+            collate_fn=model.preprocessor.collate,
             drop_last=False,
         )
 

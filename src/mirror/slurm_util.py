@@ -27,3 +27,4 @@ class SlurmConfig:
     open_mode: str = "append"
     signal: str = "SIGHUP@90"
     requeue: bool = True
+    qos: Optional[str] = None

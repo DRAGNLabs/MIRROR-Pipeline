@@ -1,12 +1,12 @@
 from jaxtyping import Int, Float
-from torch import FloatTensor, LongTensor, Tensor
+from torch import Tensor
 from dataclasses import dataclass
 
-TokenTensor = Int[LongTensor, "T"]
-AttentionMask = Int[FloatTensor, "T"]
+TokenTensor = list[int]
+AttentionMask = Int[Tensor, "T"]
 
-TokenBatch = Int[LongTensor, "b t"]
-AttentionMaskBatch = Int[FloatTensor, "b t"]
+TokenBatch = Int[Tensor, "b t"]
+AttentionMaskBatch = Int[Tensor, "b t"]
 Loss = Float[Tensor, ""]
 
 @dataclass
