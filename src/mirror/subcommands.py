@@ -16,15 +16,16 @@ from mirror.util import is_login_node
 
 
 def fit(
-    data: MirrorDataset,
-    model: MirrorModel,
-    trainer: Trainer,
-    checkpoint: CheckpointIdentifier | None = None,
-    slurm: SlurmConfig = SlurmConfig(),
-    epochs: int = 1,
-    batch_size: int = 1,
-    do_preprocess: bool = False,
-    run_config_yaml: str = ''
+        data: MirrorDataset,
+        model: MirrorModel,
+        trainer: Trainer,
+        preprocessor: MirrorPreprocessor | None = None,
+        checkpoint: CheckpointIdentifier | None = None,
+        slurm: SlurmConfig = SlurmConfig(),
+        epochs: int = 1,
+        batch_size: int = 1,
+        do_preprocess: bool = False,
+        run_config_yaml: str = ''
 ):
     if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
@@ -39,14 +40,19 @@ def fit(
     trainer.fit(
         model,
         data,
-        checkpoint,
-        epochs,
-        batch_size,
-        do_preprocess,
-        run_config_yaml,
+        preprocessor=preprocessor,
+        checkpoint=checkpoint,
+        epochs=epochs,
+        batch_size=batch_size,
+        do_preprocess=do_preprocess,
+        run_config_yaml=run_config_yaml,
     )
 
-def preprocess(data: MirrorDataset, preprocessor: MirrorPreprocessor, slurm: SlurmConfig = SlurmConfig()) -> None:
+def preprocess(
+        data: MirrorDataset, 
+        preprocessor: MirrorPreprocessor, 
+        slurm: SlurmConfig = SlurmConfig()
+) -> None:
     if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
             python_args=sys.argv[1:],
@@ -59,7 +65,13 @@ def preprocess(data: MirrorDataset, preprocessor: MirrorPreprocessor, slurm: Slu
     
     data.preprocess(preprocessor.preprocess_example)
 
-def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
+def _submit_slurm_job(
+        *, 
+        python_args: list[str], 
+        slurm: SlurmConfig, 
+        num_nodes: int,
+        devices: int
+) -> str:
     # Prevent recursion: job run should not submit again
     args = [a for a in python_args if not a.startswith("--slurm.submit")]
     args.append("--slurm.submit=false")
