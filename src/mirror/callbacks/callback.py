@@ -51,6 +51,8 @@ class Callback[RawT, ProcessedT, ModelOutputT]:
             optimizer: Optimizer,
             loss: float,
             training_run_id: str,
+            epochs: int,
+            n_batches: int,
             epoch_idx: int,
             batch_idx: int,
     ):

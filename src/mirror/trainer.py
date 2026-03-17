@@ -136,12 +136,13 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             start_batch=start_batch, run_config_yaml=run_config_yaml)
             
         for epoch_idx in range(start_epoch, epochs):
-            for batch_idx, batch in enumerate(dataloader):
-                
-                if epoch_idx == start_epoch and batch_idx <= start_batch:
-                    continue
+            # for batch_idx, batch in enumerate(dataloader):
+            for batch_idx in range(start_batch, len(dataloader)):
+                batch: BatchT = dataloader[batch_idx]
+                # if epoch_idx == start_epoch and batch_idx <= start_batch:
+                #     continue
 
-                batch: BatchT = batch
+                # batch: BatchT = batch
 
                 optimizer.zero_grad()
                 loss = model.training_step(batch)
@@ -156,6 +157,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     optimizer=optimizer,
                     loss=loss_value,
                     training_run_id=training_run_id,
+                    epochs=epochs,
+                    n_batches=n_batches,
                     epoch_idx=epoch_idx,
                     batch_idx=batch_idx,
                 )

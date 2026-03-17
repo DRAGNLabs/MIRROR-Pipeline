@@ -18,12 +18,8 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
             model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
-            epochs: int,
-            n_batches: int,
             **kwargs,
     ):
-        self.n_print_digits = len(str(epochs*n_batches)) + 1
-        self.n_batches = n_batches
         self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'start'))
 
     def on_fit_end(
@@ -44,10 +40,14 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
             model: MirrorModel[RawT, ProcessedT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
+            epochs: int,
+            n_batches: int,
             epoch_idx: int,
             batch_idx: int,
             **kwargs,
     ):
+        self.n_print_digits = len(str(epochs*n_batches)) + 1
+        self.n_batches = n_batches
         if fabric.is_global_zero and self.every_n_training_steps and (batch_idx + 1) % (self.every_n_training_steps) == 0:
             self._save_checkpoint(
                 fabric,
