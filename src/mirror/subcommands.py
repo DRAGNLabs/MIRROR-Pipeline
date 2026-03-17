@@ -61,7 +61,8 @@ def preprocess(data: MirrorDataset, preprocessor: MirrorPreprocessor, slurm: Slu
 
     total_tokens = 0
     for item in data:
-        total_tokens += len(item)
+        total_tokens += item['input_ids'].numel()
+    
     print("total_tokens:", total_tokens)
 
 def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: int, devices: int) -> str:
