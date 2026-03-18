@@ -37,11 +37,9 @@ def main(subcommand: Subcommand):
         case 'fit':
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_function_arguments(fit, as_positional=False, skip={"model", "trainer", "run_config_yaml", "val_data", "test_data"})
+            parser.add_function_arguments(fit, as_positional=False, skip={"model", "trainer", "run_config_yaml"})
             parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
             parser.add_subclass_arguments(Trainer, "trainer", required=False, instantiate=True)
-            parser.add_subclass_arguments(MirrorDataset, "val_data", required=False, instantiate=True)
-            parser.add_subclass_arguments(MirrorDataset, "test_data", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(sys.argv[2:])
             

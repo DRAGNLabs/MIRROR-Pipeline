@@ -3,6 +3,7 @@ from torch.utils.data import DataLoader
 from typing import List
 import datetime
 import os
+import warnings
 import torch
 
 from lightning.fabric.strategies.strategy import Strategy
@@ -180,7 +181,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 total_loss += loss.item()
                 n_batches += 1
         model.train()
-        return total_loss / n_batches if n_batches > 0 else 0.0
+        if n_batches == 0:
+            warnings.warn("Validation dataloader yielded 0 batches; returning loss 0.0")
+            return 0.0
+        return total_loss / n_batches
 
     def _make_dataloader(self, dataset, model, batch_size, do_preprocess):
         if do_preprocess:
