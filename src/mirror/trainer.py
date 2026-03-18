@@ -86,7 +86,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             run_config_yaml: str = "",
             val_dataset: MirrorDataset[RawT] | None = None,
             test_dataset: MirrorDataset[RawT] | None = None,
-            val_check_interval: float = 1.0,
+            val_check_interval: int = 1,
     ):
         training_run_id = datetime.datetime.now().isoformat()
 
@@ -115,10 +115,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         if test_dataset is not None:
             test_dataloader = self._make_dataloader(test_dataset, model, batch_size, do_preprocess)
 
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
-            training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, 
+                         dataset=dataset, training_run_id=training_run_id, n_batches=len(dataloader), 
+                         epochs=epochs, run_config_yaml=run_config_yaml)
 
-        next_val_epoch = val_check_interval
         for epoch_idx in range(epochs):
             for batch_idx, batch in enumerate(dataloader):
                 batch: BatchT = batch
@@ -129,47 +129,22 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 self.fabric.backward(train_step_output.loss)
                 optimizer.step()
 
-                self.fabric.call(
-                    'on_train_batch_end',
-                    fabric=self.fabric,
-                    model=model,
-                    optimizer=optimizer,
-                    loss=loss_value,
-                    training_run_id=training_run_id,
-                    batch_idx=batch_idx
-                )
+                self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, 
+                                 loss=loss_value, training_run_id=training_run_id, batch_idx=batch_idx)
 
-            if val_dataloader is not None and (epoch_idx + 1) >= next_val_epoch:
+            if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                 val_loss = self._eval_loop(model, val_dataloader)
-                self.fabric.call(
-                    'on_validation_epoch_end',
-                    fabric=self.fabric,
-                    model=model,
-                    optimizer=optimizer,
-                    val_loss=val_loss,
-                    training_run_id=training_run_id,
-                    epoch=epoch_idx,
-                )
-                next_val_epoch = epoch_idx + 1 + val_check_interval
+
+                self.fabric.call('on_validation_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer, 
+                                 val_loss=val_loss, training_run_id=training_run_id, epoch=epoch_idx)
 
         if test_dataloader is not None:
             test_loss = self._eval_loop(model, test_dataloader)
-            self.fabric.call(
-                'on_test_epoch_end',
-                fabric=self.fabric,
-                model=model,
-                optimizer=optimizer,
-                test_loss=test_loss,
-                training_run_id=training_run_id,
-            )
+            self.fabric.call('on_test_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer, 
+                             test_loss=test_loss, training_run_id=training_run_id)
 
-        self.fabric.call(
-            'on_fit_end',
-            fabric=self.fabric,
-            model=model,
-            optimizer=optimizer,
-            training_run_id=training_run_id,
-        )
+        self.fabric.call('on_fit_end', fabric=self.fabric, model=model, 
+                         optimizer=optimizer, training_run_id=training_run_id)
 
     def _eval_loop(self, model, dataloader) -> float:
         model.eval()
@@ -182,7 +157,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 n_batches += 1
         model.train()
         if n_batches == 0:
-            warnings.warn("Validation dataloader yielded 0 batches; returning loss 0.0")
+            warnings.warn("Dataloader yielded 0 batches; returning loss 0.0")
             return 0.0
         return total_loss / n_batches
 
