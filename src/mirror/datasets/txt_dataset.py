@@ -8,6 +8,14 @@ from mirror.row_types import TextRow
 
 
 class TxtDataset(MirrorDataset[TextRow]):
+    @property
+    def ds(self) -> Dataset:
+        return self._ds
+
+    @ds.setter
+    def ds(self, value: Dataset):
+        self._ds = value
+
     def __init__(
             self,
             file_path: str | Path,
@@ -19,8 +27,8 @@ class TxtDataset(MirrorDataset[TextRow]):
             head: how many examples to include. None includes the whole split.
         """
         super().__init__()
-        
-        self.ds: Dataset = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
+
+        self.ds = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
         self.ds = self.ds.filter(lambda row: len(row["text"]) > 0)
         if head:
             self.ds = self.ds.select(range(head))

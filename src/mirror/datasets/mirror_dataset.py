@@ -6,7 +6,15 @@ from abc import abstractmethod
 from sys import stderr
 
 class MirrorDataset[RawT](Dataset[RawT], Sized):
-    ds: HFDataset
+    @property
+    @abstractmethod
+    def ds(self) -> HFDataset:
+        pass
+
+    @ds.setter
+    @abstractmethod
+    def ds(self, value: HFDataset) -> None:
+        pass
 
     @abstractmethod
     def __getitem__(self, index: int) -> RawT:

@@ -11,6 +11,14 @@ hf_dataset_name = 'wikitext-2-raw-v1'
 
 
 class WikitextDataset(MirrorDataset[TextRow]):
+    @property
+    def ds(self) -> Dataset:
+        return self._ds
+
+    @ds.setter
+    def ds(self, value: Dataset):
+        self._ds = value
+
     def __init__(
         self,
         head: int | None = None,
@@ -23,7 +31,7 @@ class WikitextDataset(MirrorDataset[TextRow]):
         """
         super().__init__()
 
-        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
+        self.ds = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
             hf_dataset_name,
             self._process,
