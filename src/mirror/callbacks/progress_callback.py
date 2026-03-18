@@ -34,10 +34,11 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             self.progress_bar.update(1)
 
     def on_fit_end(
-            self, 
+            self,
             **kwargs,
     ):
         if self.progress_bar is not None:
+            self.progress_bar.refresh()
             self.progress_bar.disable = True
             self.progress_bar.close()
             self.progress_bar = None
