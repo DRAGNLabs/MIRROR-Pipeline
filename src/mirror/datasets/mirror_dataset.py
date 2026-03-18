@@ -11,11 +11,6 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
     def ds(self) -> HFDataset:
         pass
 
-    @ds.setter
-    @abstractmethod
-    def ds(self, value: HFDataset) -> None:
-        pass
-
     @abstractmethod
     def __getitem__(self, index: int) -> RawT:
         pass
@@ -25,9 +20,9 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
         def mappable_preprocessor_function(row: RawT) -> dict[str, ProcessedT]:
             return {"input_ids": preprocessor_function(row)}
 
-        self.ds = self.ds.map(mappable_preprocessor_function)
+        mapped = self.ds.map(mappable_preprocessor_function)
         print("Preprocessing complete.", file=stderr)
-        self.ds.set_format(type="torch", columns=["input_ids"])
+        mapped.set_format(type="torch", columns=["input_ids"])
 
-        return self.ds["input_ids"]
+        return mapped["input_ids"]
     

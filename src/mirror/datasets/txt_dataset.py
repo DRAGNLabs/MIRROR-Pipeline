@@ -12,10 +12,6 @@ class TxtDataset(MirrorDataset[TextRow]):
     def ds(self) -> Dataset:
         return self._ds
 
-    @ds.setter
-    def ds(self, value: Dataset):
-        self._ds = value
-
     def __init__(
             self,
             file_path: str | Path,
@@ -28,10 +24,10 @@ class TxtDataset(MirrorDataset[TextRow]):
         """
         super().__init__()
 
-        self.ds = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
-        self.ds = self.ds.filter(lambda row: len(row["text"]) > 0)
+        self._ds = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
+        self._ds = self._ds.filter(lambda row: len(row["text"]) > 0)
         if head:
-            self.ds = self.ds.select(range(head))
+            self._ds = self._ds.select(range(head))
 
     def __getitem__(self, index: int) -> TextRow:
         return cast(TextRow, self.ds[index])

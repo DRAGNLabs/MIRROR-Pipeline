@@ -13,10 +13,6 @@ class ImdbDataset(MirrorDataset[TextRow]):
     def ds(self) -> Dataset:
         return self._ds
 
-    @ds.setter
-    def ds(self, value: Dataset):
-        self._ds = value
-
     def __init__(
         self,
         head: int | None = None,
@@ -30,12 +26,9 @@ class ImdbDataset(MirrorDataset[TextRow]):
         """
         super().__init__()
 
-        self.ds = cast(DatasetDict, load_hf_dataset(
-            hf_dataset_path,
-        ))[split]
-
-        if head: 
-            self.ds = self.ds.select(range(head))
+        self._ds = cast(DatasetDict, load_hf_dataset(hf_dataset_path))[split]
+        if head:
+            self._ds = self._ds.select(range(head))
 
     def __getitem__(self, index: int) -> TextRow:
         return cast(TextRow, self.ds[index])
