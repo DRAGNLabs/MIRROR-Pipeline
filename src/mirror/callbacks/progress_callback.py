@@ -33,8 +33,29 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             self.progress_bar.set_postfix(Loss=f"{loss:.3f}", refresh=False)
             self.progress_bar.update(1)
 
+    def on_validation_epoch_end(
+            self,
+            *,
+            fabric: Fabric,
+            val_loss,
+            epoch,
+            **kwargs,
+    ):
+        if fabric.is_global_zero and self.progress_bar is not None:
+            self.progress_bar.set_postfix(Val_Loss=f"{val_loss:.3f}", Epoch=epoch, refresh=False)
+
+    def on_test_epoch_end(
+            self,
+            *,
+            fabric: Fabric,
+            test_loss,
+            **kwargs,
+    ):
+        if fabric.is_global_zero and self.progress_bar is not None:
+            self.progress_bar.set_postfix(Test_Loss=f"{test_loss:.3f}", refresh=False)
+
     def on_fit_end(
-            self, 
+            self,
             **kwargs,
     ):
         if self.progress_bar is not None:

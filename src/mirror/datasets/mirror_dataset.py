@@ -5,7 +5,6 @@ from abc import abstractmethod
 from sys import stderr
 
 class MirrorDataset[RawT](Dataset[RawT], Sized):
-
     @abstractmethod
     def __getitem__(self, index: int) -> RawT:
         pass
