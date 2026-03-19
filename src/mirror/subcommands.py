@@ -27,7 +27,7 @@ def fit(
     run_config_yaml: str = '',
     val_data: MirrorDataset | None = None,
     test_data: MirrorDataset | None = None,
-    val_check_interval: float = 1.0,
+    val_check_interval: int = 1,
 ):
     if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
@@ -47,9 +47,9 @@ def fit(
         batch_size,
         do_preprocess,
         run_config_yaml,
-        val_dataset=val_data,
-        test_dataset=test_data,
-        val_check_interval=val_check_interval,
+        val_data,
+        test_data,
+        val_check_interval
     )
 
 def preprocess(data: MirrorDataset, preprocessor: MirrorPreprocessor, slurm: SlurmConfig = SlurmConfig()) -> None:
