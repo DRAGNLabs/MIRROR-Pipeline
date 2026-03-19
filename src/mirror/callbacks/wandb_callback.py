@@ -59,17 +59,17 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         loss: float,
         **kwargs,
     ):
-        self.step += 1
-        assert self.run is not None
-        self.run.log({"train/loss": loss}, step=self.step)
+        if self.run:
+            self.step += 1
+            self.run.log({"train/loss": loss}, step=self.step)
 
     def on_fit_end(
         self,
         **kwargs,
     ):
-        assert self.run is not None
-        self.run.finish()
-        self.run = None
+        if self.run:
+            self.run.finish()
+            self.run = None
 
     def _mode(self) -> WandbMode:
         if get_config()["environment"] == RuntimeEnvironment.SLURM_COMPUTE:
