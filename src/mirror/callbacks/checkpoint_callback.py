@@ -7,9 +7,9 @@ from mirror.models.mirror_model import MirrorModel
 class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
        Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
-    def __init__(self, every_n_train_steps: float | None = None) -> None:
+    def __init__(self, every_n_training_steps: int | None = None) -> None:
         super().__init__(is_singleton=True)
-        self.every_n_train_steps = every_n_train_steps
+        self.every_n_training_steps = every_n_training_steps
 
     def on_fit_start(
             self,
@@ -18,19 +18,22 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
+            epochs: int,
             **kwargs,
     ):
-        self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'start'))
+        self.epochs = epochs,
+        self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'start'), 0)
 
     def on_fit_end(
-            self, 
+            self,
             *,
-            fabric: Fabric, 
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], 
-            optimizer: Optimizer, 
-            training_run_id: str
+            fabric: Fabric,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            training_run_id: str,
     ):
-        self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'end'))
+        if fabric.is_global_zero:
+            self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'end'), None)
 
     def on_train_batch_end(
             self,
@@ -39,15 +42,20 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
-            batch_idx: int,
+            epochs: int,
+            n_batches: int,
+            global_step: int,
             **kwargs,
     ):
-        if self.every_n_train_steps and batch_idx % self.every_n_train_steps == 0:
+        n_print_digits = len(str(epochs*n_batches)) + 1
+
+        if fabric.is_global_zero and self.every_n_training_steps and (global_step + 1) % (self.every_n_training_steps) == 0:
             self._save_checkpoint(
                 fabric,
                 model,
                 optimizer,
-                CheckpointIdentifier(training_run_id, str(batch_idx))
+                CheckpointIdentifier(training_run_id, f"{global_step:0{n_print_digits}d}"),
+                global_step,
             )
 
     def _save_checkpoint(
@@ -56,9 +64,11 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             checkpoint_identifier: CheckpointIdentifier,
+            global_step: int | None,
     ):
         state = {
             'model': model,
             'optimizer': optimizer,
+            'global_step': global_step,
         }
         fabric.save(checkpoint_identifier.path, state)

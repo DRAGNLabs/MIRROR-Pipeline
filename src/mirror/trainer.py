@@ -4,6 +4,7 @@ from typing import List
 import datetime
 import os
 import torch
+from itertools import islice
 
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
@@ -91,15 +92,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             model.configure_optimizers(),
             move_to_device=self.config['device'] == 'cuda'
         )
-
-        if checkpoint:
-            # models and optimizers are treated specially: they are populated via their load_state_dict
-            # methods internally to fabric.load. Anything else in the state dict is just set in place.
-            state = {
-                'model': model,
-                'optimizer': optimizer,
-            }
-            self.fabric.load(checkpoint.path, state)
         
         if do_preprocess:
             preprocessed_dataset = dataset.preprocess(model.preprocessor.preprocess_example)
@@ -112,12 +104,44 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             collate_fn=model.preprocessor.collate,
             drop_last=False,
         )
-        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
-            training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
 
-        for _ in range(epochs):
-            for batch_idx, batch in enumerate(dataloader):
+        start_epoch = 0
+        start_batch = 0
+        n_batches = len(dataloader) // self.num_nodes
+
+        if checkpoint:
+            # models and optimizers are treated specially: they are populated via their load_state_dict
+            # methods internally to fabric.load. Anything else in the state dict is just set in place.
+            
+            state = {
+                'model': model,
+                'optimizer': optimizer,
+                'global_step': 0,
+            }
+            self.fabric.load(checkpoint.path, state)
+
+            checkpoint_global_step = state['global_step']
+            if checkpoint_global_step is None:
+                raise RuntimeError(
+                    "checkpoint_global_step cannot be None. " 
+                    f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
+                    )
+            start_epoch = checkpoint_global_step // n_batches
+            start_batch = (checkpoint_global_step % n_batches) + 1
+
+        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
+
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, 
+            training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch, 
+            start_batch=start_batch, run_config_yaml=run_config_yaml)
+            
+        for epoch_idx in range(start_epoch, epochs):
+
+            skip_batches = start_batch if epoch_idx == start_epoch else 0
+            batch_iter = islice(enumerate(dataloader), skip_batches, None)
+
+            for batch_idx, batch in batch_iter:
+
                 batch: BatchT = batch
 
                 optimizer.zero_grad()
@@ -126,14 +150,19 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 self.fabric.backward(train_step_output.loss)
                 optimizer.step()
 
+                global_step = epoch_idx * n_batches + batch_idx
+
                 self.fabric.call(
-                    'on_train_batch_end', 
-                    fabric=self.fabric, 
-                    model=model, 
-                    optimizer=optimizer, 
+                    'on_train_batch_end',
+                    fabric=self.fabric,
+                    model=model,
+                    optimizer=optimizer,
                     loss=loss_value,
-                    training_run_id=training_run_id, 
-                    batch_idx=batch_idx
+                    training_run_id=training_run_id,
+                    epochs=epochs,
+                    n_batches=n_batches,
+                    batch_idx=batch_idx,
+                    global_step = global_step,
                 )
 
         self.fabric.call(
