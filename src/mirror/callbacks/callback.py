@@ -53,7 +53,7 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             training_run_id: str,
             epochs: int,
             n_batches: int,
-            epoch_idx: int,
             batch_idx: int,
+            global_step: int,
     ):
         pass

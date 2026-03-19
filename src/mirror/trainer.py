@@ -150,6 +150,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 self.fabric.backward(train_step_output.loss)
                 optimizer.step()
 
+                global_step = epoch_idx * n_batches + batch_idx
+
                 self.fabric.call(
                     'on_train_batch_end',
                     fabric=self.fabric,
@@ -159,8 +161,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     training_run_id=training_run_id,
                     epochs=epochs,
                     n_batches=n_batches,
-                    epoch_idx=epoch_idx,
                     batch_idx=batch_idx,
+                    global_step = global_step,
                 )
 
         self.fabric.call(
