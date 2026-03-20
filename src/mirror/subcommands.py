@@ -70,11 +70,8 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
     args = [a for a in python_args if not a.startswith("--slurm.submit")]
     args.append("--slurm.submit=false")
 
-    repo_root = Path(__file__).resolve().parents[1]
-    templates_dir = repo_root / "mirror" / "templates"
-
     env = Environment(
-        loader=FileSystemLoader(str(templates_dir)),
+        loader=FileSystemLoader(Path(__file__).parent / "templates"),
         undefined=StrictUndefined,
         trim_blocks=True,
         lstrip_blocks=True,
@@ -94,9 +91,9 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
 
     context = {
         **slurm_ctx,
-        "chdir": str(repo_root),
+        "chdir": str(Path.cwd()),
         "activate_cmd": "mamba activate ./.env",
-        "run_cmd": f"srun python src/main.py {shlex.join(python_args)}",
+        "run_cmd": f"srun python {sys.argv[0]} {shlex.join(python_args)}",
     }
 
     script = template.render(**context)
