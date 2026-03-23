@@ -9,6 +9,10 @@ hf_dataset_path = 'stanfordnlp/imdb'
 
 
 class ImdbDataset(MirrorDataset[TextRow]):
+    @property
+    def ds(self) -> Dataset:
+        return self._ds
+
     def __init__(
         self,
         head: int | None = None,
@@ -24,15 +28,11 @@ class ImdbDataset(MirrorDataset[TextRow]):
         """
         super().__init__()
 
-        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
-            hf_dataset_path,
-        ))[split]
-
+        self._ds = cast(DatasetDict, load_hf_dataset(hf_dataset_path))[split]
         if skip:
-            self.ds = self.ds.select(range(skip, len(self.ds)))
-
+            self._ds = self._ds.select(range(skip, len(self._ds)))
         if head:
-            self.ds = self.ds.select(range(head))
+            self._ds = self._ds.select(range(head))
 
     def __getitem__(self, index: int) -> TextRow:
         return cast(TextRow, self.ds[index])

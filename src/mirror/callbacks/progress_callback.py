@@ -59,6 +59,7 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             **kwargs,
     ):
         if self.progress_bar is not None:
+            self.progress_bar.refresh()
             self.progress_bar.disable = True
             self.progress_bar.close()
             self.progress_bar = None
