@@ -16,11 +16,12 @@ class BabblePreprocessor(
 ):
     def __init__(self, path_to_txt_ds: str, vocab_size: int) -> None:
         tokenizer_path = f"{mirror_data_path}/tokenizers/babble_tokenizer/"
-        vocab_file = f"{tokenizer_path}/babble-{vocab_size}-vocab.json"
-        merges_file = f"{tokenizer_path}/babble-{vocab_size}-merges.txt"
+        os.makedirs(tokenizer_path, exist_ok=True)
 
-        if os.path.exists(vocab_file) and os.path.exists(merges_file):
-            self._tokenizer = ByteLevelBPETokenizer.from_file(vocab=vocab_file, merges=merges_file)
+        tokenizer_file = tokenizer_path + f"tokenizer-{vocab_size}.json"
+
+        if os.path.exists(tokenizer_file):
+            self._tokenizer = ByteLevelBPETokenizer.from_file(tokenizer_path)
         else:
             self._tokenizer = ByteLevelBPETokenizer()
             self._tokenizer.train(
@@ -29,7 +30,7 @@ class BabblePreprocessor(
                 min_frequency=5,
                 special_tokens=["<unk>", "<s>", "</s>", "<pad>"]
             )
-            self._tokenizer.save_model(tokenizer_path, prefix=f"babble-{vocab_size}")
+            self._tokenizer.save(tokenizer_file)
         
         self._tokenizer.enable_padding(pad_token="<pad>", pad_id=self._tokenizer.token_to_id("<pad>"))
 
