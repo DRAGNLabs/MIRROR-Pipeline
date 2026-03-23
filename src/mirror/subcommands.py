@@ -98,6 +98,10 @@ def _submit_slurm_job(*, python_args: list[str], slurm: SlurmConfig, num_nodes: 
 
     script = template.render(**context)
     
-    res = subprocess.run(["sbatch"], input=script, text=True, capture_output=True, check=True)
+    res = subprocess.run(["sbatch"], input=script, text=True, capture_output=True)
+    if res.returncode != 0:
+        raise RuntimeError(
+            f"sbatch failed (exit {res.returncode}):\n{res.stderr}\n\nGenerated script:\n{script}"
+        )
     return res.stdout.strip().split()[-1]
 
