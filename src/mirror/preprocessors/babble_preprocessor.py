@@ -1,7 +1,7 @@
 import os
 from typing import cast
 
-from tokenizers import ByteLevelBPETokenizer
+from tokenizers import ByteLevelBPETokenizer, Tokenizer
 from transformers import PreTrainedTokenizerFast
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
@@ -21,7 +21,7 @@ class BabblePreprocessor(
         tokenizer_file = tokenizer_path + f"tokenizer-{vocab_size}.json"
 
         if os.path.exists(tokenizer_file):
-            self._tokenizer = ByteLevelBPETokenizer.from_file(tokenizer_path)
+            self._tokenizer = Tokenizer.from_file(tokenizer_file)
         else:
             self._tokenizer = ByteLevelBPETokenizer()
             self._tokenizer.train(
