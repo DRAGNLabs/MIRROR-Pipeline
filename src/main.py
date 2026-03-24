@@ -1,10 +1,14 @@
 from jsonargparse import ActionConfigFile, ArgumentParser
 from typing import Literal
 
+from mirror.util import is_login_node, set_ds_cache_path
+set_ds_cache_path()
+
 import warnings
 import sys
 
 from lightning.fabric.utilities.warnings import PossibleUserWarning
+import datasets
 
 from mirror.config import init_config
 from mirror.models.mirror_model import MirrorModel
@@ -12,7 +16,6 @@ from mirror.models.model_util import instantiate_model
 from mirror.subcommands import fit, preprocess
 from mirror.trainer_constructor import TrainerConstructor
 # from mirror.trainer import Trainer
-from mirror.util import is_login_node
 
 # These are required so that their items can be found easily by jsonargparse without
 # having to give the full classpath

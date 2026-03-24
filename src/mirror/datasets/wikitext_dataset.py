@@ -1,6 +1,6 @@
 from typing import Literal, cast
 
-from datasets import Dataset, DatasetDict
+from datasets import Dataset, DatasetDict, config
 
 from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset

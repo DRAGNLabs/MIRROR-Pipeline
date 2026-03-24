@@ -1,7 +1,7 @@
 import math
 import os
 from pathlib import Path
-
+import datasets
 from mirror.config import RuntimeEnvironment, get_config
 
 
@@ -24,3 +24,8 @@ def get_device() -> str:
 
 def is_power_of_ten(n: int):
     return n > 0 and math.log10(n).is_integer()
+
+def set_ds_cache_path():
+    hf_cache_path =  mirror_data_path / "hf_cache"
+    hf_cache_path.mkdir(exist_ok=True)
+    datasets.config.HF_DATASETS_CACHE = hf_cache_path
