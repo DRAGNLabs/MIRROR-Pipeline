@@ -8,7 +8,6 @@ import warnings
 import sys
 
 from lightning.fabric.utilities.warnings import PossibleUserWarning
-import datasets
 
 from mirror.config import init_config
 from mirror.models.mirror_model import MirrorModel
