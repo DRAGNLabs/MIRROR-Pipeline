@@ -21,6 +21,7 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
+from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.config import RuntimeEnvironment, get_config
 
 
@@ -76,32 +77,34 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             raise
 
     def fit(
-            self, 
+            self,
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
-            dataset: MirrorDataset[RawT], 
-            checkpoint: CheckpointIdentifier | None = None, 
-            epochs: int = 1, 
-            batch_size: int = 1, 
+            dataset: MirrorDataset[RawT],
+            preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT] | None = None,
+            checkpoint: CheckpointIdentifier | None = None,
+            epochs: int = 1,
+            batch_size: int = 1,
             do_preprocess: bool = False,
             run_config_yaml: str = "",
     ):
         training_run_id = datetime.datetime.now().isoformat()
+        preprocessor = preprocessor or model.preprocessor
 
         model, optimizer = self.fabric.setup(
             model,
             model.configure_optimizers(),
             move_to_device=self.config['device'] == 'cuda'
         )
-        
+
         if do_preprocess:
-            preprocessed_dataset = dataset.preprocess(model.preprocessor.preprocess_example)
+            preprocessed_dataset = dataset.preprocess(preprocessor.preprocess_example)
         else:
-            preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
-        
+            preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, preprocessor.preprocess_example)
+
         dataloader = DataLoader(
             preprocessed_dataset,  # type: ignore[arg-type]
             batch_size=batch_size,
-            collate_fn=model.preprocessor.collate,
+            collate_fn=preprocessor.collate,
             drop_last=False,
         )
 
