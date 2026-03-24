@@ -18,11 +18,13 @@ class WikitextDataset(MirrorDataset[TextRow]):
     def __init__(
         self,
         head: int | None = None,
+        skip: int | None = None,
         split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
     ):
         """
         Args:
             head: how many examples to include. None includes the whole split.
+            skip: how many examples to skip from the start.
             split: which dataset split to use.
         """
         super().__init__()
@@ -32,6 +34,9 @@ class WikitextDataset(MirrorDataset[TextRow]):
             hf_dataset_name,
             self._process,
         ))[split]
+
+        if skip:
+            self._ds = self._ds.select(range(skip, len(self._ds)))
 
         if head:
             self._ds = self._ds.select(range(head))

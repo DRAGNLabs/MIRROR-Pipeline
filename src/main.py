@@ -7,6 +7,7 @@ import sys
 from lightning.fabric.utilities.warnings import PossibleUserWarning
 
 from mirror.config import init_config
+from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import instantiate_model
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
