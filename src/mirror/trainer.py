@@ -108,21 +108,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             }
             self.fabric.load(checkpoint.path, state)
 
-        if do_preprocess:
-            preprocessed_dataset = dataset.preprocess(preprocessor.preprocess_example)
-        else:
-            preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, preprocessor.preprocess_example)
-
-        dataloader = DataLoader(
-            preprocessed_dataset,  # type: ignore[arg-type]
-            batch_size=batch_size,
-            collate_fn=preprocessor.collate,
-            drop_last=False,
-        )
-        dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
-            training_run_id=training_run_id, n_batches=len(dataloader), epochs=epochs, run_config_yaml=run_config_yaml)
-
         dataloader = self._make_dataloader(dataset, model, batch_size, do_preprocess)
 
         val_dataloader = None
