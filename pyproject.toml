@@ -19,5 +19,19 @@ dependencies = [
     "wandb",
 ]
 
+[project.optional-dependencies]
+dev = ["ruff", "pyright"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+src = ["src"]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]  # basic errors, pyflakes, isort, warnings
+ignore = ["E501"]               # skip line-length (handled by formatter)
+
+[tool.ruff.lint.isort]
+known-first-party = ["mirror"]
