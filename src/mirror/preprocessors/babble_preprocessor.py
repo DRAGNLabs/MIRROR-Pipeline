@@ -14,7 +14,7 @@ from mirror.util import mirror_data_path
 class BabblePreprocessor(
     MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
 ):
-    def __init__(self, path_to_txt_ds: str, vocab_size: int) -> None:
+    def __init__(self, file_path: str, vocab_size: int) -> None:
         tokenizer_path = f"{mirror_data_path}/tokenizers/babble_tokenizer/"
         os.makedirs(tokenizer_path, exist_ok=True)
 
@@ -25,7 +25,7 @@ class BabblePreprocessor(
         else:
             self._tokenizer = ByteLevelBPETokenizer()
             self._tokenizer.train(
-                files=[path_to_txt_ds],
+                files=[file_path],
                 vocab_size=vocab_size,
                 min_frequency=5,
                 special_tokens=["<unk>", "<s>", "</s>", "<pad>"]
