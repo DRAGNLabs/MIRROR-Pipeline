@@ -2,8 +2,8 @@ from lightning import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
 
-class ProgressCallback[RawT, ProcessedT, ModelOutputT](
-       Callback[RawT, ProcessedT, ModelOutputT]
+class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(self, bar_refresh_interval = 5) -> None:
         super().__init__(is_singleton=True)
@@ -34,10 +34,11 @@ class ProgressCallback[RawT, ProcessedT, ModelOutputT](
             self.progress_bar.update(1)
 
     def on_fit_end(
-            self, 
+            self,
             **kwargs,
     ):
         if self.progress_bar is not None:
+            self.progress_bar.refresh()
             self.progress_bar.disable = True
             self.progress_bar.close()
             self.progress_bar = None

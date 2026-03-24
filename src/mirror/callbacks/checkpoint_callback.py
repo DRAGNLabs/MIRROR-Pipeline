@@ -4,8 +4,8 @@ from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.models.mirror_model import MirrorModel
 
-class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
-       Callback[RawT, ProcessedT, ModelOutputT]
+class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(self, every_n_train_steps: float | None = None) -> None:
         super().__init__(is_singleton=True)
@@ -15,7 +15,7 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
             **kwargs,
@@ -26,7 +26,7 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
             self, 
             *,
             fabric: Fabric, 
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT], 
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], 
             optimizer: Optimizer, 
             training_run_id: str
     ):
@@ -36,7 +36,7 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
             batch_idx: int,
@@ -53,7 +53,7 @@ class CheckpointCallback[RawT, ProcessedT,ModelOutputT](
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, ModelOutputT],
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             checkpoint_identifier: CheckpointIdentifier,
     ):

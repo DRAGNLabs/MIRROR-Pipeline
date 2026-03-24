@@ -20,6 +20,7 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
+from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.config import RuntimeEnvironment, get_config
 
 
@@ -29,7 +30,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             strategy: Strategy = FSDPStrategy(),
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [],
+            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
         config = get_config()
         self.config = config
@@ -39,7 +40,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]] = [
+        default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
             CheckpointCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
@@ -75,16 +76,18 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             raise
 
     def fit(
-            self, 
-            model: MirrorModel[RawT, ProcessedT, BatchT], 
-            dataset: MirrorDataset[RawT], 
-            checkpoint: CheckpointIdentifier | None = None, 
-            epochs: int = 1, 
-            batch_size: int = 1, 
+            self,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            dataset: MirrorDataset[RawT],
+            preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT] | None = None,
+            checkpoint: CheckpointIdentifier | None = None,
+            epochs: int = 1,
+            batch_size: int = 1,
             do_preprocess: bool = False,
             run_config_yaml: str = "",
     ):
         training_run_id = datetime.datetime.now().isoformat()
+        preprocessor = preprocessor or model.preprocessor
 
         model, optimizer = self.fabric.setup(
             model,
@@ -100,16 +103,16 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 'optimizer': optimizer,
             }
             self.fabric.load(checkpoint.path, state)
-        
+
         if do_preprocess:
-            preprocessed_dataset = dataset.preprocess(model.preprocessor.preprocess_example)
+            preprocessed_dataset = dataset.preprocess(preprocessor.preprocess_example)
         else:
-            preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, model.preprocessor.preprocess_example)
-        
+            preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, preprocessor.preprocess_example)
+
         dataloader = DataLoader(
             preprocessed_dataset,  # type: ignore[arg-type]
             batch_size=batch_size,
-            collate_fn=model.preprocessor.collate,
+            collate_fn=preprocessor.collate,
             drop_last=False,
         )
         dataloader = self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
@@ -121,9 +124,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 batch: BatchT = batch
 
                 optimizer.zero_grad()
-                loss = model.training_step(batch)
-                loss_value = loss.item()
-                self.fabric.backward(loss)
+                train_step_output = model.training_step(batch)
+                loss_value = train_step_output.loss.item()
+                self.fabric.backward(train_step_output.loss)
                 optimizer.step()
 
                 self.fabric.call(
@@ -153,11 +156,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             accelerator=accelerator,
         )
 
-def separate_singletons[RawT, ProcessedT, ModelOutputT](
-       callbacks: List[Callback[RawT, ProcessedT, ModelOutputT]]
+def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
+       callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ) -> tuple[
-   List[Callback[RawT, ProcessedT, ModelOutputT]],
-   List[Callback[RawT, ProcessedT, ModelOutputT]]
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
+   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
