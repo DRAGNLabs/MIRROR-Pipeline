@@ -105,7 +105,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         start_epoch = 0
         start_batch = 0
-        n_batches = len(dataloader)
+        n_batches = len(dataloader) // self.num_nodes
 
         if checkpoint:
             # models and optimizers are treated specially: they are populated via their load_state_dict
