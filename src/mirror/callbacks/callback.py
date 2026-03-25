@@ -57,3 +57,26 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             global_step: int,
     ):
         pass
+
+    def on_validation_epoch_end(
+            self,
+            *,
+            fabric: Fabric,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            val_loss: float,
+            training_run_id: str,
+            epoch: int,
+    ):
+        pass
+
+    def on_test_epoch_end(
+            self,
+            *,
+            fabric: Fabric,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            test_loss: float,
+            training_run_id: str,
+    ):
+        pass
