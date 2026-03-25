@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.optim as optim
 from transformers import AutoModelForCausalLM, LlamaForCausalLM
 from typing import Literal, cast
@@ -49,3 +50,6 @@ class MirrorLlamaModel(
 
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())
+
+    def mlp_modules(self) -> list[nn.Module]:
+        return [cast(nn.Module, layer.mlp) for layer in self._hf_model.model.layers]
