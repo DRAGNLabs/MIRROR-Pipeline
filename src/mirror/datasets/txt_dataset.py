@@ -17,6 +17,8 @@ class TxtDataset(MirrorDataset[TextRow]):
             file_path: str | Path | dict[str, str | Path],
             head: int | None = None,
             split: Literal['train', 'validation', 'test'] = 'train',
+            start_fraction: float = 0.0,
+            end_fraction: float = 1.0,
     ):
         """
         Args:
@@ -25,6 +27,8 @@ class TxtDataset(MirrorDataset[TextRow]):
                 (e.g. {"train": "train.txt", "validation": "val.txt", "test": "test.txt"}).
             head: how many examples to include. None includes the whole split.
             split: which dataset split to use.
+            start_fraction: start of the slice as a fraction of the dataset (0.0–1.0).
+            end_fraction: end of the slice as a fraction of the dataset (0.0–1.0).
         """
         super().__init__()
 
@@ -36,6 +40,13 @@ class TxtDataset(MirrorDataset[TextRow]):
         ds = cast(DatasetDict, load_dataset("text", data_files=data_files))
         ds = ds.filter(lambda row: len(row["text"]) > 0)
         self._ds = ds[split]
+
+        if start_fraction != 0.0 or end_fraction != 1.0:
+            n = len(self._ds)
+            start_idx = int(n * start_fraction)
+            end_idx = int(n * end_fraction)
+            self._ds = self._ds.select(range(start_idx, end_idx))
+
         if head:
             self._ds = self._ds.select(range(head))
 
