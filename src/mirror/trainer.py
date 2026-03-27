@@ -189,8 +189,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         n_batches = 0
         with torch.no_grad():
             for batch in dataloader:
-                loss = model.training_step(batch)
-                total_loss += loss.item()
+                output = model.training_step(batch)
+                total_loss += output.loss.item()
                 n_batches += 1
         model.train()
         if n_batches == 0:
