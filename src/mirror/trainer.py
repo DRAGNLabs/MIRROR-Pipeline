@@ -105,7 +105,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             self.fabric.load(checkpoint.path, state)
 
         if do_preprocess:
-            preprocessed_dataset = dataset.preprocess(preprocessor.preprocess_example)
+            preprocessed_dataset = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
         else:
             preprocessed_dataset = OnDemandPreprocessedDataset[RawT, ProcessedT](dataset, preprocessor.preprocess_example)
 
