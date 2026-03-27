@@ -63,44 +63,33 @@ This is where specific model implementations lie. Each extends the `MirrorModel`
 
 Available models:
 
-- **MirrorGPTModel** — GPT-2 implementation using HuggingFace's `GPT2LMHeadModel`. Supports `"pretrained"` or `"random"` weight initialization.
+- **MirrorGPTModel** — GPT-2 implementation. Supports `"pretrained"` or `"random"` weight initialization.
 - **MirrorLlamaModel** — Llama implementation supporting Llama-3.2-1B and 3.2-1B-Instruct (pretrained), or custom `LlamaConfig` for random initialization.
 
 Models are downloaded and cached similarly to datasets.
 
-The models module also includes a `Whitebox Transformers` subsystem — a type-safe abstraction for extracting optional outputs (loss, hidden states, attentions) from HuggingFace models using a fluent builder pattern (e.g., `.fresh(model).include_loss(labels).execute(batch)`).
+The models module also includes a `Whitebox Transformers` subsystem, which provides a type-safe way to extract optional outputs (loss, hidden states, attentions) from HuggingFace models by chaining method calls together (e.g., `.fresh(model).include_loss(labels).execute(batch)`).
 
 #### Preprocessors
 
-Preprocessors convert raw text into tokenized batches suitable for model training. They extend `MirrorPreprocessor`, which defines two methods: `preprocess_example(example)` (converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together with padding).
+Preprocessors convert raw text into tokenized batches suitable for model training. They extend `MirrorPreprocessor`, which defines two methods: `preprocess_example(example)` (converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together with padding). Available preprocessors include GPT2's `MirrorGPTPreprocessor`, Llama-3.2-1B's `MirrorLlamaPreprocessor`, and our custom `BabblePreprocessor` designed for use with the Church Text Dataset. Preprocessors can be mixed and matched with models, but the vocab sizes must match. For example, to use `MirrorLlamaModel` with `MirrorGPTPreprocessor`, since the GPT preprocessor's vocab size is 50257, you must use a custom config of `MirrorLlamaModel` with the vocab size set to 50257, rather than its default of 128256.
 
-Available preprocessors:
-
-- **MirrorGPTPreprocessor** — Uses OpenAI's GPT-2 tokenizer. Encodes text to token IDs, ensures a minimum length of 2 tokens, and pads sequences to the max length within each batch.
-- **MirrorLlamaPreprocessor** — Uses the Llama-3.2-1B-Instruct tokenizer. Same preprocessing and collation logic as the GPT preprocessor, with pad_token set to eos_token.
-- **PlaceholderPreprocessor** — A dummy preprocessor returning a fixed token sequence `[1, 2, 3, 4]` for testing.
-
-Collation produces a tuple of `(TokenBatch, AttentionMaskBatch)` — both are integer tensors with shape `(batch, sequence_length)`. Tokenizers are cached under `mirror_data/tokenizers/`.
+Tokenizers are downloaded/cached just like models and datasets.
 
 #### Templates
 
-The templates directory contains Jinja2 templates used for generating scripts. Currently it holds:
-
-- **slurm.jinja** — A template for generating SBATCH submission scripts. It accepts variables for SLURM directives (time, nodes, ntasks-per-node, gpus-per-node, mem-per-cpu, output path, signal handling) as well as the conda/mamba activation command and the training run command. Optional directives like `--requeue` and `--qos` are conditionally included.
+The templates directory contains `slurm.jinja`, a Jinja2 template for generating SBATCH submission scripts to send training jobs to the supercomputer. It accepts variables for SLURM directives (time, nodes, ntasks-per-node, gpus-per-node, mem-per-cpu, output path, signal handling), plus options like `--requeue` and `--qos`.
 
 This template is rendered by `subcommands.py` when submitting jobs from a login node.
 
-#### Tokenizers
-
-The tokenizers module is a placeholder directory. Tokenizer loading and caching is handled through the `preprocessor_util` module, which provides `load_hf_tokenizer` for downloading and caching HuggingFace tokenizers.
-
 #### subcommands.py
 
-This module implements the CLI subcommands that the pipeline supports:
+This module implements the CLI subcommands that the pipeline supports. 
 
-- **fit()** — The main training subcommand. Accepts configuration for data, model, trainer, preprocessor, checkpoint, SLURM settings, epochs, batch size, and more. If running on a login node with `job_type=compute`, it submits an SBATCH job via `_submit_slurm_job()`. Otherwise it executes training directly via `trainer.fit()`.
-- **preprocess()** — A standalone preprocessing subcommand that applies a preprocessor to a dataset and caches the result, without running training.
-- **_submit_slurm_job()** — An internal helper that renders the `slurm.jinja` template with the current configuration, submits the job via the `sbatch` command, and returns the job ID. It prevents infinite recursion by stripping the `--slurm.submit` flag from the resubmitted command.
+The two main subcommands: 
+- `fit()` — The main training subcommand. Accepts configuration for data, model, trainer, preprocessor, checkpoint, SLURM settings, epochs, batch size, and more. If running on a login node with `job_type=compute`, it submits an SBATCH job via `_submit_slurm_job()`. Otherwise it executes training directly via `trainer.fit()`. 
+- `preprocess()` — A standalone preprocessing subcommand that applies a preprocessor to a dataset and caches the result, without running training.
+- `_submit_slurm_job()` — An internal helper that renders the `slurm.jinja` template with the current configuration, submits the job via the `sbatch` command, and returns the job ID. It prevents infinite recursion by stripping the `--slurm.submit` flag from the resubmitted command.
 
 #### trainer.py
 
@@ -114,7 +103,7 @@ The Trainer class is the core training loop orchestrator, built on top of PyTorc
 
 **Key methods:**
 - `launch()` — Initializes the Fabric launcher. Falls back to CPU with `SingleDeviceStrategy` if CUDA is unavailable.
-- `fit()` — Runs the full training loop: sets up the model and optimizer with Fabric, optionally loads a checkpoint, creates dataloaders, and iterates over epochs and batches (zero_grad → forward → backward → step). Calls callback hooks at each stage (`on_fit_start`, `on_train_batch_end`, `on_validation_epoch_end`, `on_test_epoch_end`, `on_fit_end`). Supports validation at configurable intervals via `val_check_interval`.
+- `fit()` — Runs the full training loop: sets up the model and optimizer with Fabric, optionally loads a checkpoint, creates dataloaders, and iterates over epochs and batches. Calls callback hooks at each stage.
 - `_eval_loop()` — Runs validation or test evaluation with gradients disabled.
 - `_make_dataloader()` — Creates a PyTorch DataLoader, optionally wrapping the dataset with `OnDemandPreprocessedDataset` for lazy preprocessing.
 
@@ -140,18 +129,54 @@ data:
     split: train
     head: 100
 
-model:
-  class_path: MirrorLlamaModel
+val_data:
+  class_path: WikitextDataset
   init_args:
-    initialization: 3.2-1B-Instruct
+    split: validation
+    head: 10
+
+val_check_interval: 1.0
+
+test_data:
+  class_path: WikitextDataset
+  init_args:
+    split: test
+    head: 10
+
+do_preprocess: True
+
+preprocessor: 
+  class_path: MirrorLlamaPreprocessor
+
+model:
+  class_path: mirror.models.mirror_llama_model.MirrorLlamaModel
+  init_args:
+    initialization:
+      # Pretrained weights:
+      # 3.2-1B
+
+      # Custom configuration:
+      vocab_size: 128256
+      hidden_size: 128
+      intermediate_size: 340
+      num_hidden_layers: 6
+      num_attention_heads: 4 
+      num_key_value_heads: null
 
 slurm:
-  submit: true
+  job_type: "compute" 
   time: "01:00:00"
-  gpus_per_node: "h200:1"
+  gpus_per_node: p100:1 
+  nodes: null
+  mem_per_cpu: "128G"
+  output: "slurm_logs/%j.out"
+  open_mode: "append"
+  signal: "SIGHUP@90"
+  requeue: true
 
 epochs: 1
-batch_size: 8
+batch_size: 1
+device: cpu
 ```
  
 ## Pipeline Developer Information
