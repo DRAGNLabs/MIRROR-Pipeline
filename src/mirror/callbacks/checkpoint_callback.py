@@ -30,8 +30,7 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             optimizer: Optimizer,
             training_run_id: str,
     ):
-        if fabric.is_global_zero:
-            self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'end'), None)
+        self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'end'), None)
 
     def on_train_batch_end(
             self,
@@ -47,7 +46,7 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     ):
         n_print_digits = len(str(epochs*n_batches)) + 1
 
-        if fabric.is_global_zero and self.every_n_training_steps and (global_step + 1) % (self.every_n_training_steps) == 0:
+        if self.every_n_training_steps and (global_step + 1) % (self.every_n_training_steps) == 0:
             self._save_checkpoint(
                 fabric,
                 model,
