@@ -1,5 +1,7 @@
 import math
 import os
+from collections.abc import Generator
+from contextlib import contextmanager
 from pathlib import Path
 from datasets import config
 from mirror.config import RuntimeEnvironment, get_config
@@ -25,8 +27,14 @@ def get_device() -> str:
 def is_power_of_ten(n: int):
     return n > 0 and math.log10(n).is_integer()
 
-def set_ds_cache_path():
-    hf_cache_path =  mirror_data_path / "hf_cache"
+@contextmanager
+def _ds_cache_path_context() -> Generator[None, None, None]:
+    hf_cache_path = mirror_data_path / "hf_cache"
     hf_cache_path.mkdir(exist_ok=True)
+    original = config.HF_DATASETS_CACHE
     config.HF_DATASETS_CACHE = str(hf_cache_path)
+    try:
+        yield
+    finally:
+        config.HF_DATASETS_CACHE = original
     

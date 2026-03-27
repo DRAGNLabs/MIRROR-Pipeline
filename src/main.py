@@ -1,7 +1,7 @@
 from jsonargparse import ActionConfigFile, ArgumentParser
 from typing import Literal
 
-from mirror.util import is_login_node, set_ds_cache_path
+from mirror.util import is_login_node
 
 import warnings
 import sys
@@ -22,8 +22,6 @@ import mirror.callbacks
 import mirror.datasets
 import mirror.models
 import mirror.preprocessors
-
-set_ds_cache_path()
 
 Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
 

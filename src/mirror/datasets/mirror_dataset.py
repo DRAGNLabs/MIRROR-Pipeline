@@ -3,6 +3,7 @@ from typing import Callable, Sequence, Sized
 from torch.utils.data import Dataset
 from abc import abstractmethod
 from sys import stderr
+from mirror.util import _ds_cache_path_context
 
 class MirrorDataset[RawT](Dataset[RawT], Sized):
 
@@ -15,7 +16,8 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
         def mappable_preprocessor_function(row: RawT) -> dict[str, ProcessedT]:
             return {"input_ids": preprocessor_function(row)}
 
-        self.ds = self.ds.map(mappable_preprocessor_function)
+        with _ds_cache_path_context():
+            self.ds = self.ds.map(mappable_preprocessor_function)
         print("Preprocessing complete.", file=stderr)
         self.ds.set_format(type="torch", columns=["input_ids"])
 
