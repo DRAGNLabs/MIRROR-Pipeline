@@ -7,6 +7,7 @@ import sys
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
@@ -29,6 +30,7 @@ def fit(
         val_data: MirrorDataset | None = None,
         test_data: MirrorDataset | None = None,
         val_check_interval: int = 1,
+        configure_scheduler: ConfigureScheduler | None = None,
 ):
     if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
@@ -52,6 +54,7 @@ def fit(
         val_data,
         test_data,
         val_check_interval,
+        configure_scheduler,
     )
 
 def preprocess(
