@@ -69,8 +69,8 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         val_loss: float,
         **kwargs,
     ):
-        assert self.run is not None
-        self.run.log({"val/loss": val_loss}, step=self.step)
+        if self.run:
+            self.run.log({"val/loss": val_loss}, step=self.step)
 
     def on_test_epoch_end(
         self,
@@ -78,8 +78,8 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         test_loss: float,
         **kwargs,
     ):
-        assert self.run is not None
-        self.run.log({"test/loss": test_loss}, step=self.step)
+        if self.run:
+            self.run.log({"test/loss": test_loss}, step=self.step)
 
     def on_fit_end(
         self,
