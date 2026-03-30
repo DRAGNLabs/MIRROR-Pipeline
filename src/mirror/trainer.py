@@ -18,6 +18,7 @@ from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.callbacks.print_step_callback import PrintStepCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
@@ -89,6 +90,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             val_dataset: MirrorDataset[RawT] | None = None,
             test_dataset: MirrorDataset[RawT] | None = None,
             val_check_interval: int = 1,
+            configure_scheduler: ConfigureScheduler | None = None,
     ):
         training_run_id = datetime.datetime.now().isoformat()
         preprocessor = preprocessor or model.preprocessor
@@ -109,6 +111,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             self.fabric.load(checkpoint.path, state)
 
         dataloader = self._make_dataloader(dataset, model, batch_size, do_preprocess)
+
+        scheduler = None
+        if configure_scheduler is not None:
+            total_training_steps = epochs * len(dataloader)
+            scheduler = configure_scheduler(optimizer, total_training_steps)
 
         val_dataloader = None
         if val_dataset is not None:
@@ -131,6 +138,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 loss_value = train_step_output.loss.item()
                 self.fabric.backward(train_step_output.loss)
                 optimizer.step()
+                if scheduler is not None:
+                    scheduler.step()
 
                 self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, 
                                  loss=loss_value, training_run_id=training_run_id, batch_idx=batch_idx)
