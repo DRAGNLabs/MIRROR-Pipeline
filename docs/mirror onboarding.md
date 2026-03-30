@@ -41,6 +41,7 @@
 
 - `mamba activate ./.env`: Activate the project's conda environment
     - This loads the Python version and dependencies needed for the MIRROR Pipeline
+    - Must be run in the MIRROR Pipeline directory
 
 ### Terminal
 
@@ -94,6 +95,8 @@
 
 ### Vim
 
+Vim is the default editor for commit message files (e.g. git merge).
+
 - `vim filename.py`: Open a file in Vim
     - If the file doesn't exist, Vim will create it when you save
 
@@ -106,19 +109,7 @@
 - `:q`: Quit Vim
     - Use `:q!` to quit without saving changes
     - Use `:wq` to save and quit at the same time
-
-- `dd`: Delete the entire line your cursor is on
-    - Use `5dd` to delete 5 lines starting from your cursor
-
-- `u`: Undo the last change
-    - Press multiple times to keep undoing
-
-- `/search-term`: Search for text in the file
-    - Press `n` to jump to the next match, `N` for the previous match
-
-- `yy`: Copy (yank) the current line
-    - Use `p` to paste it below your cursor
-
+    
 ### Slurm
 
 - `squeue -u $USER`: Check the status of your submitted jobs
