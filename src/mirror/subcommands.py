@@ -7,7 +7,7 @@ import sys
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.configure_scheduler import ConfigureScheduler
+from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
