@@ -121,68 +121,12 @@ This is the CLI entry point for the entire pipeline. It parses command-line argu
 3. `init_config(device)` is called to detect the runtime environment (local, SLURM login, or SLURM compute).
 4. On login nodes with a compute job type, it downloads the model and tokenizer, then returns (the actual training happens after SBATCH submission). On compute nodes, it calls `fit()` to execute training.
 
-**Example YAML config:**
-```yaml
-data:
-  class_path: WikitextDataset
-  init_args:
-    split: train
-    head: 100
+An example YAML config can be found in `config-example.md`.
 
-val_data:
-  class_path: WikitextDataset
-  init_args:
-    split: validation
-    head: 10
-
-val_check_interval: 1.0
-
-test_data:
-  class_path: WikitextDataset
-  init_args:
-    split: test
-    head: 10
-
-do_preprocess: True
-
-preprocessor: 
-  class_path: MirrorLlamaPreprocessor
-
-model:
-  class_path: mirror.models.mirror_llama_model.MirrorLlamaModel
-  init_args:
-    initialization:
-      # Pretrained weights:
-      # 3.2-1B
-
-      # Custom configuration:
-      vocab_size: 128256
-      hidden_size: 128
-      intermediate_size: 340
-      num_hidden_layers: 6
-      num_attention_heads: 4 
-      num_key_value_heads: null
-
-slurm:
-  job_type: "compute" 
-  time: "01:00:00"
-  gpus_per_node: p100:1 
-  nodes: null
-  mem_per_cpu: "128G"
-  output: "slurm_logs/%j.out"
-  open_mode: "append"
-  signal: "SIGHUP@90"
-  requeue: true
-
-epochs: 1
-batch_size: 1
-device: cpu
-```
- 
 ## Pipeline Developer Information
 
 ### Pre-Pull Request Checklist
 [specific test runs, formatting checks they must run locally before opening a Pull Request]
- 
+
 ### Ticket 5: New Ticket Kickoff Checklist
 [administrative steps required for assigning yourself a new ticket (move the card, assign yourself, create a branch, etc.), and also for writing a new ticket]
