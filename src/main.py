@@ -1,6 +1,8 @@
 from jsonargparse import ActionConfigFile, ArgumentParser
 from typing import Literal
 
+from mirror.util import is_login_node
+
 import warnings
 import sys
 
@@ -14,7 +16,6 @@ from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.subcommands import fit, preprocess
 from mirror.trainer_constructor import TrainerConstructor
 # from mirror.trainer import Trainer
-from mirror.util import is_login_node
 
 # These are required so that their items can be found easily by jsonargparse without
 # having to give the full classpath
