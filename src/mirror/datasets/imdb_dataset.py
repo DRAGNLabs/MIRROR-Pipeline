@@ -9,25 +9,30 @@ hf_dataset_path = 'stanfordnlp/imdb'
 
 
 class ImdbDataset(MirrorDataset[TextRow]):
+    @property
+    def ds(self) -> Dataset:
+        return self._ds
+
     def __init__(
         self,
         head: int | None = None,
+        skip: int | None = None,
         split: Literal['train'] | Literal['test'] | Literal['unsupervised'] = 'train',
     ):
         """
         Args:
             head: how many examples to include. None includes the whole split.
+            skip: how many examples to skip from the start.
             split: which dataset split to use. 'unsupervised' is the union of
                 'train' and 'test'
         """
         super().__init__()
 
-        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
-            hf_dataset_path,
-        ))[split]
-
-        if head: 
-            self.ds = self.ds.select(range(head))
+        self._ds = cast(DatasetDict, load_hf_dataset(hf_dataset_path))[split]
+        if skip:
+            self._ds = self._ds.select(range(skip, len(self._ds)))
+        if head:
+            self._ds = self._ds.select(range(head))
 
     def __getitem__(self, index: int) -> TextRow:
         return cast(TextRow, self.ds[index])

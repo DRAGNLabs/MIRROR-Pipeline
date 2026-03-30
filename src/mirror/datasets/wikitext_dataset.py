@@ -11,26 +11,35 @@ hf_dataset_name = 'wikitext-2-raw-v1'
 
 
 class WikitextDataset(MirrorDataset[TextRow]):
+    @property
+    def ds(self) -> Dataset:
+        return self._ds
+
     def __init__(
         self,
         head: int | None = None,
+        skip: int | None = None,
         split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
     ):
         """
         Args:
             head: how many examples to include. None includes the whole split.
+            skip: how many examples to skip from the start.
             split: which dataset split to use.
         """
         super().__init__()
 
-        self.ds: Dataset = cast(DatasetDict, load_hf_dataset(
+        self._ds = cast(DatasetDict, load_hf_dataset(
             hf_dataset_path,
             hf_dataset_name,
             self._process,
         ))[split]
 
-        if head: 
-            self.ds = self.ds.select(range(head))
+        if skip:
+            self._ds = self._ds.select(range(skip, len(self._ds)))
+
+        if head:
+            self._ds = self._ds.select(range(head))
 
     def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
         return ds.filter(lambda row: len(row['text']) > 0)

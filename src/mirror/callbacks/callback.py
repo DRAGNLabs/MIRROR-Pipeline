@@ -28,6 +28,8 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             run_config_yaml: str,
             n_batches: int,
             epochs: int,
+            start_epoch: int,
+            start_batch: int,
     ):
         pass
 
@@ -49,6 +51,32 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             optimizer: Optimizer,
             loss: float,
             training_run_id: str,
+            epochs: int,
+            n_batches: int,
             batch_idx: int,
+            global_step: int,
+    ):
+        pass
+
+    def on_validation_epoch_end(
+            self,
+            *,
+            fabric: Fabric,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            val_loss: float,
+            training_run_id: str,
+            epoch: int,
+    ):
+        pass
+
+    def on_test_epoch_end(
+            self,
+            *,
+            fabric: Fabric,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            test_loss: float,
+            training_run_id: str,
     ):
         pass
