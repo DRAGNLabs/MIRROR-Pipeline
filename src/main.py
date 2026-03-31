@@ -59,8 +59,8 @@ def main(subcommand: Subcommand):
 
             trainer = trainer.construct_trainer()
 
-            trainer.launch()
             if not (is_login_node() and init.slurm.job_type == "compute"):
+                trainer.launch()
                 model = instantiate_model(model, fabric=trainer.fabric)
 
             if is_login_node() and init.slurm.job_type == "local-download":
