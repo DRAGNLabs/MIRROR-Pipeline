@@ -1,7 +1,10 @@
-**Example YAML config:**
+**Example YAML config**
+
+Note that each class' sub-arguments in a config file are determined by that class' constructor parameters.
+
 ```yaml
 data:                           # Training dataset (required)
-  class_path: WikitextDataset   # Dataset class: WikitextDataset | ImdbDataset | TxtDataset
+  class_path: WikitextDataset   # Dataset class: WikitextDataset | ImdbDataset | TxtDataset (doesn't support split)
   init_args:
     split: train                # Which split to use: "train" | "validation" | "test"
     head: 100                   # Max examples to load (null = all)
@@ -69,12 +72,10 @@ trainer:
 
     - class_path: ConfigSnapshotCallback # Snapshot the config file alongside each checkpoint
     - class_path: ProgressCallback       # Print live loss / progress to stdout
-    - class_path: WandbCallback          # Log metrics to Weights & Biases
-    # - class_path: RequeueCallback      # Auto-requeue job on SLURM preemption (added automatically on SLURM)
 
 # checkpoint:
 #   training_run_id: "20240101_120000"   # ID of the run to resume from
-#   checkpoint_name: "end"               # Checkpoint to load: "start" | "end" | step number e.g. "0100"
+#   checkpoint_name: "start"               # Checkpoint to load: "start" | "end" | step number e.g. "0100"
 
 slurm:
   job_type: "compute"     # "compute" (submit to SLURM) | "local" | "local-download" (download only)

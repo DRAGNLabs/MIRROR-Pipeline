@@ -28,53 +28,33 @@ main.py (CLI entry point)
 
 On SLURM clusters, the pipeline detects whether it is running on a login node or a compute node. On a login node it downloads required assets (like tokenizers/models) and submits an SBATCH job; on a compute node it executes the actual training.
 
-#### Callbacks
-
-Callbacks allow Fabric to execute custom functions at specific points during the training process. Each callback implementation extends the `Callback` base class, which defines methods like `on_fit_start`, `on_fit_end`, `on_train_batch_end`, `on_validation_epoch_end`, and `on_test_epoch_end`. For example, `self.fabric.call("on_fit_start", ...)` will call the `on_fit_start` method with the provided parameters on each callback that implements that method.
-
-Available callbacks:
-
-- `CheckpointCallback` — Stores model and optimizer state at training start, end, and optionally every N steps.
-- `ConfigSnapshotCallback` — Records training configuration metadata at the start of a run.
-- `ProgressCallback` — Displays a tqdm progress bar with real-time loss updates during training.
-- `PrintStepCallback` — Prints loss values per iteration and per validation epoch.
-- `WandbCallback` — Integrates Weights & Biases for experiment tracking. Logs training loss, validation loss, and test loss. 
-- `RequeueCallback` — Handles SLURM job preemption by saving a checkpoint on SIGHUP, creating a "requeue handoff" file, and resubmitting the job so training can resume.
- 
-
-#### Datasets
-
-Datasets provide a unified interface for loading text data. They all extend `MirrorDataset`, a generic typed class built on top of PyTorch's `Dataset`. 
-
-Key features:
-- The `ds` property returns the underlying HuggingFace Dataset
-- The `preprocess` method maps a preprocessor function over the entire dataset
-- The `split` parameter specifies whether the dataset will be used for `train`, `validation`, or `test`
-
-Available datasets include the HuggingFace datasets `ImdbDataset` and `WikitextDataset`, which must be downloaded once using HuggingFace credentials, and thereafter will be automatically cached locally. `TxtDataset` allows plain text files, such as the Church Text Dataset, to be used as datasets as well. `OnDemandPreprocessedDataset` is a wrapper that supports "lazily" preprocessing a dataset on-the-fly rather than upfront (useful for memory efficiency).
-
-#### Interventions
-
-Interventions allow for modifications to the architecture of base models - e.g., mirror neuron capabilities. Future model interventions will be implemented in this module.
-
 #### Models
 
-This is where specific model implementations lie. Each extends the `MirrorModel` class, requiring a `preprocessor` property, a `training_step(batch)` method that returns a `TrainStepOutput` (containing loss), and a `configure_optimizers()` method.
-
-Available models:
-
-- **MirrorGPTModel** — GPT-2 implementation. Supports `"pretrained"` or `"random"` weight initialization.
-- **MirrorLlamaModel** — Llama implementation supporting Llama-3.2-1B and 3.2-1B-Instruct (pretrained), or custom `LlamaConfig` for random initialization.
+This is where specific model implementations lie. Each extends the `MirrorModel` class, requiring a `preprocessor` property, a `training_step(batch)` method that returns a loss and a `configure_optimizers()` method.
 
 Models are downloaded and cached similarly to datasets.
 
 The models module also includes a `Whitebox Transformers` subsystem, which provides a type-safe way to extract optional outputs (loss, hidden states, attentions) from HuggingFace models by chaining method calls together (e.g., `.fresh(model).include_loss(labels).execute(batch)`).
 
+#### Datasets
+
+Datasets provide a unified interface for loading data, such as text rows, or other tpyes of data (e.g., the MCQA repository uses McqaRows). They all extend `MirrorDataset`, a generic typed class built on top of PyTorch's `Dataset`. 
+
+Available datasets include the HuggingFace datasets `ImdbDataset` and `WikitextDataset`, which must be downloaded once using HuggingFace credentials, and thereafter will be automatically cached locally. `TxtDataset` allows plain text files, such as the Church Text Dataset, to be used as datasets as well. `OnDemandPreprocessedDataset` is a wrapper that supports "lazily" preprocessing a dataset on-the-fly rather than upfront (useful for memory efficiency).
+
 #### Preprocessors
 
-Preprocessors convert raw text into tokenized batches suitable for model training. They extend `MirrorPreprocessor`, which defines two methods: `preprocess_example(example)` (converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together with padding). Available preprocessors include GPT2's `MirrorGPTPreprocessor`, Llama-3.2-1B's `MirrorLlamaPreprocessor`, and our custom `BabblePreprocessor` designed for use with the Church Text Dataset. Preprocessors can be mixed and matched with models, but the vocab sizes must match. For example, to use `MirrorLlamaModel` with `MirrorGPTPreprocessor`, since the GPT preprocessor's vocab size is 50257, you must use a custom config of `MirrorLlamaModel` with the vocab size set to 50257, rather than its default of 128256.
+Preprocessors convert raw data into tokenized batches suitable for model training. They extend `MirrorPreprocessor`, which defines two methods: `preprocess_example(example)` (usually converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together into a single object; usually combines token tensors into a batched tensor with padding). Available preprocessors include GPT2's `MirrorGPTPreprocessor`, Llama-3.2-1B's `MirrorLlamaPreprocessor`, and our custom `BabblePreprocessor` designed for use with the Church Text Dataset. Preprocessors can be mixed and matched with models, but the vocab sizes must match. For example, to use `MirrorLlamaModel` with `MirrorGPTPreprocessor`, since the GPT preprocessor's vocab size is 50257, you must use a custom config of `MirrorLlamaModel` with the vocab size set to 50257, rather than its default of 128256.
 
 Tokenizers are downloaded/cached just like models and datasets.
+
+#### Callbacks
+
+Callbacks allow Fabric to execute custom functions at specific points during the training process. Each callback implementation extends the `Callback` base class, which defines methods like `on_fit_start`, `on_fit_end`, `on_train_batch_end`, `on_validation_epoch_end`, and `on_test_epoch_end`. For example, `self.fabric.call("on_fit_start", ...)` will call the `on_fit_start` method with the provided parameters on each callback that implements that method.
+
+#### Interventions
+
+Interventions allow for modifications to the architecture of base models - e.g., mirror neuron capabilities. Future model interventions will be implemented in this module.
 
 #### Templates
 
@@ -97,7 +77,7 @@ The Trainer class is the core training loop orchestrator, built on top of PyTorc
 
 **Constructor parameters:**
 - `strategy` — Lightning Strategy (defaults to `FSDPStrategy` for distributed training)
-- `devices` — Number of devices per node
+- `devices` — Number of gpus per node
 - `num_nodes` — Number of compute nodes
 - `callbacks` — List of Callback instances
 
@@ -121,7 +101,7 @@ This is the CLI entry point for the entire pipeline. It parses command-line argu
 3. `init_config(device)` is called to detect the runtime environment (local, SLURM login, or SLURM compute).
 4. On login nodes with a compute job type, it downloads the model and tokenizer, then returns (the actual training happens after SBATCH submission). On compute nodes, it calls `fit()` to execute training.
 
-An example YAML config can be found in `config-example.md`.
+An example YAML config can be found in `[[config-example.md]]`. 
 
 ## Pipeline Developer Information
 
