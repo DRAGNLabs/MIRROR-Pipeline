@@ -21,7 +21,7 @@
 ### Pre-Pull Request Checklist
 [specific test runs, formatting checks they must run locally before opening a Pull Request]
  
-### Ticket 5: New Ticket Kickoff Checklist
+### New Ticket Kickoff Checklist
 
 #### Starting work on an existing ticket
 
