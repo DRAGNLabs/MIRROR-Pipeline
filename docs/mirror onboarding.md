@@ -8,7 +8,27 @@
 
 ### Things to do every time you log in
 
-[Add Content Here]
+1. Log in to the supercomputer
+
+    If you have a VSCode window already open to the MIRROR Pipeline, this will simply consist of logging in again with your password and authentication code. Otherwise, go to the Remote Explorer tab (fifth icon down), hover over the MIRROR-Pipeline, and click the arrow icon, then log in. 
+
+2. (If necessary) Run `source /etc/profile`
+
+    If your terminal initially only shows something like `bash-5.1$`, rather than `username@login0X:~MIRROR-Pipeline$`, run `source /etc/profile/` to load system-wide environment settings and paths.
+
+3. Activate mamba environment
+
+    To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have created the environment first, of course.) 
+
+4. Ensure you're on the correct branch
+
+    Run `git status` to see what branch you're currently checked out to. Make sure that this matches the branch you're intending to work on. If it doesn't, run `git checkout [branch_name]` to switch to the correct branch. 
+
+5. Update with any new changes
+
+    Run `git fetch origin` to check for any new changes to the main branch from other branches getting merged, then `git merge main` to integrate these changes into your local branch. If there are merge conflicts, resolve them as needed. 
+
+    If you're working on a branch with someone else, run `git pull` to check for any changes they may have pushed and integrate them locally. 
  
 ### General MIRROR Pipeline Architecture
 
