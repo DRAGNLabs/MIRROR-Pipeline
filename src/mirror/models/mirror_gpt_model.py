@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import torch.optim as optim
 from typing import Literal, Union, cast
 
@@ -44,6 +45,9 @@ class MirrorGPTModel(
 
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())
+
+    def mlp_modules(self) -> list[nn.Module]:
+        return [cast(nn.Module, block.mlp) for block in self._hf_model.transformer.h]
 
 def assert_union_snd[A, B](union: Union[A, B]) -> A:
     return union #pyright: ignore
