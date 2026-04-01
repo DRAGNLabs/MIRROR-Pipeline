@@ -74,7 +74,7 @@ def preprocess(
 
     total_tokens = 0
     for item in preprocessed:
-        total_tokens += item['input_ids'].numel()
+        total_tokens += item.numel()
     
     print("total_tokens:", total_tokens)
 
