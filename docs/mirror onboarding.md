@@ -14,8 +14,8 @@
 
 2. (If necessary) Run `source /etc/profile`
 
-    If your terminal initially only shows something like `bash-5.1$`, rather than `username@login0X:~MIRROR-Pipeline$`, run `source /etc/profile/` to load system-wide environment settings and paths.
-
+    If you logged in to the supercomputer strictly by ssh'ing through the terminal, this will automatically have been done for you. Otherwise (e.g. using VSCode to log in to the supercomputer), run `source /etc/profile/` to load system-wide environment settings and paths. 
+    
 3. Activate mamba environment
 
     To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have created the environment first, of course.) 
