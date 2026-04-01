@@ -70,10 +70,10 @@ def preprocess(
         print(f"Submitted batch job {job_id}")
         return
     
-    data.preprocess(preprocessor.preprocess_example, n_nodes)
+    preprocessed = data.preprocess(preprocessor.preprocess_example, n_nodes)
 
     total_tokens = 0
-    for item in data:
+    for item in preprocessed:
         total_tokens += item['input_ids'].numel()
     
     print("total_tokens:", total_tokens)

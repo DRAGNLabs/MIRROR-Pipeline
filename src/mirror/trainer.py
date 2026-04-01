@@ -108,15 +108,15 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             }
             self.fabric.load(checkpoint.path, state)
 
-        dataloader = self._make_dataloader(dataset, model, batch_size, do_preprocess)
+        dataloader = self._make_dataloader(dataset, preprocessor, batch_size, do_preprocess)
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = self._make_dataloader(val_dataset, model, batch_size, do_preprocess)
+            val_dataloader = self._make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess)
 
         test_dataloader = None
         if test_dataset is not None:
-            test_dataloader = self._make_dataloader(test_dataset, model, batch_size, do_preprocess)
+            test_dataloader = self._make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess)
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, 
                          dataset=dataset, training_run_id=training_run_id, n_batches=len(dataloader), 
@@ -164,15 +164,15 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             return 0.0
         return total_loss / n_batches
 
-    def _make_dataloader(self, dataset, model, batch_size, do_preprocess):
+    def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess):
         if do_preprocess:
-            preprocessed = dataset.preprocess(model.preprocessor.preprocess_example)
+            preprocessed = dataset.preprocess(preprocessor.preprocess_example)
         else:
-            preprocessed = OnDemandPreprocessedDataset(dataset, model.preprocessor.preprocess_example)
+            preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
         dataloader = DataLoader(
-            preprocessed, 
+            preprocessed,
             batch_size=batch_size,
-            collate_fn=model.preprocessor.collate,
+            collate_fn=preprocessor.collate,
             drop_last=False,
         )
         return self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
