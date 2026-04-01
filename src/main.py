@@ -1,6 +1,8 @@
 from jsonargparse import ActionConfigFile, ArgumentParser
 from typing import Literal
 
+from mirror.util import is_login_node
+
 import warnings
 import sys
 
@@ -14,7 +16,6 @@ from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.subcommands import fit, preprocess
 from mirror.trainer_constructor import TrainerConstructor
 # from mirror.trainer import Trainer
-from mirror.util import is_login_node
 
 # These are required so that their items can be found easily by jsonargparse without
 # having to give the full classpath
@@ -23,6 +24,7 @@ import mirror.callbacks
 import mirror.datasets
 import mirror.models
 import mirror.preprocessors
+import mirror.interventions
 
 Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
 
@@ -44,7 +46,7 @@ def main(subcommand: Subcommand):
             parser.add_subclass_arguments(TrainerConstructor, "trainer", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(sys.argv[2:])
-            
+
             run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
 
             if hasattr(cfg, 'config'):
@@ -65,7 +67,7 @@ def main(subcommand: Subcommand):
             if is_login_node() and init.slurm.job_type == "local-download":
                 print("Model downloaded/cached. Re-run on a compute node.")
                 return
-                
+
             del init.model # pyright: ignore
             del init.device # pyright: ignore
 

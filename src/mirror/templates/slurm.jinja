@@ -7,8 +7,12 @@
 #SBATCH --output={{ output }}
 #SBATCH --open-mode=append
 #SBATCH --signal={{ signal }}
-{% if requeue %}#SBATCH --requeue{% endif %}
-{% if qos %}#SBATCH --qos={{ qos }}{% endif %}
+{% if requeue %}
+#SBATCH --requeue
+{% endif %}
+{% if qos %}
+#SBATCH --qos={{ qos }}
+{% endif %}
 #SBATCH --chdir={{ chdir }}
 
 {{ activate_cmd }}

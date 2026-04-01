@@ -5,6 +5,7 @@ import datetime
 import os
 import warnings
 import torch
+from itertools import islice
 
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
@@ -99,31 +100,52 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             move_to_device=self.config['device'] == 'cuda'
         )
 
+
+        dataloader = self._make_dataloader(dataset, preprocessor, batch_size, do_preprocess)
+
+        start_epoch = 0
+        start_batch = 0
+        n_batches = len(dataloader)
+
         if checkpoint:
             # models and optimizers are treated specially: they are populated via their load_state_dict
             # methods internally to fabric.load. Anything else in the state dict is just set in place.
+            
             state = {
                 'model': model,
                 'optimizer': optimizer,
+                'global_step': 0,
             }
             self.fabric.load(checkpoint.path, state)
 
-        dataloader = self._make_dataloader(dataset, model, batch_size, do_preprocess)
+            checkpoint_global_step = state['global_step']
+            if checkpoint_global_step is None:
+                raise RuntimeError(
+                    "checkpoint_global_step cannot be None. " 
+                    f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
+                    )
+            start_epoch = checkpoint_global_step // n_batches
+            start_batch = (checkpoint_global_step % n_batches) + 1
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = self._make_dataloader(val_dataset, model, batch_size, do_preprocess)
+            val_dataloader = self._make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess)
 
         test_dataloader = None
         if test_dataset is not None:
-            test_dataloader = self._make_dataloader(test_dataset, model, batch_size, do_preprocess)
+            test_dataloader = self._make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess)
+        
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, 
+            training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch, 
+            start_batch=start_batch, run_config_yaml=run_config_yaml)
 
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, 
-                         dataset=dataset, training_run_id=training_run_id, n_batches=len(dataloader), 
-                         epochs=epochs, run_config_yaml=run_config_yaml)
+        for epoch_idx in range(start_epoch, epochs):
 
-        for epoch_idx in range(epochs):
-            for batch_idx, batch in enumerate(dataloader):
+            skip_batches = start_batch if epoch_idx == start_epoch else 0
+            batch_iter = islice(enumerate(dataloader), skip_batches, None)
+
+            for batch_idx, batch in batch_iter:
+
                 batch: BatchT = batch
 
                 optimizer.zero_grad()
@@ -132,8 +154,20 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 self.fabric.backward(train_step_output.loss)
                 optimizer.step()
 
-                self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer, 
-                                 loss=loss_value, training_run_id=training_run_id, batch_idx=batch_idx)
+                global_step = epoch_idx * n_batches + batch_idx
+
+                self.fabric.call(
+                    'on_train_batch_end',
+                    fabric=self.fabric,
+                    model=model,
+                    optimizer=optimizer,
+                    loss=loss_value,
+                    training_run_id=training_run_id,
+                    epochs=epochs,
+                    n_batches=n_batches,
+                    batch_idx=batch_idx,
+                    global_step = global_step,
+                )
 
             if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                 val_loss = self._eval_loop(model, val_dataloader)
@@ -155,8 +189,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         n_batches = 0
         with torch.no_grad():
             for batch in dataloader:
-                loss = model.training_step(batch)
-                total_loss += loss.item()
+                output = model.training_step(batch)
+                total_loss += output.loss.item()
                 n_batches += 1
         model.train()
         if n_batches == 0:
@@ -164,15 +198,15 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             return 0.0
         return total_loss / n_batches
 
-    def _make_dataloader(self, dataset, model, batch_size, do_preprocess):
+    def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess):
         if do_preprocess:
-            preprocessed = dataset.preprocess(model.preprocessor.preprocess_example)
+            preprocessed = dataset.preprocess(preprocessor.preprocess_example)
         else:
-            preprocessed = OnDemandPreprocessedDataset(dataset, model.preprocessor.preprocess_example)
+            preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
         dataloader = DataLoader(
-            preprocessed, 
+            preprocessed,
             batch_size=batch_size,
-            collate_fn=model.preprocessor.collate,
+            collate_fn=preprocessor.collate,
             drop_last=False,
         )
         return self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')

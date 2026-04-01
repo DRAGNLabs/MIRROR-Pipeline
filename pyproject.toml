@@ -25,6 +25,9 @@ dev = ["ruff", "pyright"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+mirror = ["templates/*.jinja"]
+
 [tool.ruff]
 src = ["src"]
 line-length = 120
