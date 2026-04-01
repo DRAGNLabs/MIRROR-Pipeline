@@ -51,7 +51,7 @@ def fit(
         run_config_yaml,
         val_data,
         test_data,
-        val_check_interval
+        val_check_interval,
     )
 
 def preprocess(
@@ -89,11 +89,8 @@ def _submit_slurm_job(
     args = [a for a in python_args if not a.startswith("--slurm.submit")]
     args.append("--slurm.submit=false")
 
-    repo_root = Path(__file__).resolve().parents[1]
-    templates_dir = repo_root / "mirror" / "templates"
-
     env = Environment(
-        loader=FileSystemLoader(str(templates_dir)),
+        loader=FileSystemLoader(Path(__file__).parent / "templates"),
         undefined=StrictUndefined,
         trim_blocks=True,
         lstrip_blocks=True,
@@ -113,13 +110,17 @@ def _submit_slurm_job(
 
     context = {
         **slurm_ctx,
-        "chdir": str(repo_root),
+        "chdir": str(Path.cwd()),
         "activate_cmd": "mamba activate ./.env",
-        "run_cmd": f"srun python src/main.py {shlex.join(python_args)}",
+        "run_cmd": f"srun python {sys.argv[0]} {shlex.join(python_args)}",
     }
 
     script = template.render(**context)
     
-    res = subprocess.run(["sbatch"], input=script, text=True, capture_output=True, check=True)
+    res = subprocess.run(["sbatch"], input=script, text=True, capture_output=True)
+    if res.returncode != 0:
+        raise RuntimeError(
+            f"sbatch failed (exit {res.returncode}):\n{res.stderr}\n\nGenerated script:\n{script}"
+        )
     return res.stdout.strip().split()[-1]
 
