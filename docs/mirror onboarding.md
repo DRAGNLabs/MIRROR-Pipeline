@@ -132,6 +132,83 @@ Vim is the default editor for commit message files (e.g. git merge).
     - Useful for preparing data separately before running a training job
     - Requires `--data` and `--preprocessor` to be specified (either in the config file or as command-line arguments)
 
+## How to use the MIRROR Pipeline
+
+It's highly recommended to use YAML config files rather than passing in arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline through the lens of creating this config file.
+
+First, select your model:
+```yaml
+model:
+    class_path: MirrorLlamaModel # or MirrorGPTModel, etc
+    init_args: # If using Llama: 
+        initialization:
+            # Pretrained weights:
+            <model_spec> # 3.2-1B | 3.2-1B-Instruct
+            # OR custom config:
+            vocab_size: <vocab_size>
+            hidden_size: <hidden_size> # etc
+
+        # If using GPT2:
+        weights: <weights> # pretrained | random
+    # Etc/as appropriate for other models
+```
+
+Next, decide how the data will be preprocessed. The model's own preprocessor will be used by default, but it can be overridden (see Mirror Architecture/Preprocessors):
+
+```yaml
+preprocessor:
+    class_path: <class_path> # e.g. MirrorLlamaPreprocessor
+```
+
+To preprocess "lazily"/on-the-fly (slower, saves memory):
+
+```yaml
+do_preprocess: True # False by default
+``` 
+
+Now pick your dataset and how it will be used:
+
+```yaml
+data: # Training set 
+  class_path: WikitextDataset
+  init_args:
+    split: train # Use the dataset's `train` portion
+    skip: <i> # Optionally, skip the first <i> examples from the selected split 
+    head: <j> # Use the first <j> examples (after skipping)
+    # OR
+    # start_fraction: 0.0
+    # end_fraction: 0.8 # Use the first 80% of the selected dataset/split
+
+val_data: # Validation set
+  class_path: WikitextDataset
+  init_args:
+    split: validation # Use the dataset's `validation` portion
+    ... # etc
+
+val_check_interval: <k> # Perform validation every <k> epochs
+
+test_data: # Test set
+  class_path: WikitextDataset
+  init_args:
+    split: test # Use the dataset's `test` portion
+    ... # etc
+```
+
+Next, pick your SLURM/job type settings. 
+
+```yaml
+slurm:
+  job_type: "compute" # "local" "local-download"
+  time: "01:00:00" # Timeout limit 
+  gpus_per_node: <gpu_type>:<num_gpus> # GPUs, low->high capability: p100 | a200 (dw87 cluster) | h200  
+  nodes: null
+  mem_per_cpu: "128G"
+  output: "slurm_logs/%j.out"
+  open_mode: "append"
+  signal: "SIGHUP@90"
+  requeue: true
+  qos: <cluster> # Specific GPU cluster
+```
 
 ### Pre-Pull Request Checklist
 [specific test runs, formatting checks they must run locally before opening a Pull Request]
