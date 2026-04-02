@@ -11,6 +11,7 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.slurm_util import SlurmConfig
+from mirror.predictor import Predictor
 from mirror.trainer import Trainer
 from mirror.util import is_login_node
 
@@ -78,6 +79,29 @@ def preprocess(
     
     print("total_tokens:", total_tokens)
 
+def infer(
+        model: MirrorModel,
+        checkpoint_path: Path,
+        text: str,
+        num_tokens: int,
+        slurm: SlurmConfig = SlurmConfig()
+) -> None:
+    
+    if slurm.job_type == "compute" and is_login_node():
+        job_id = _submit_slurm_job(
+            python_args=sys.argv[1:],
+            slurm=slurm,
+            num_nodes=slurm.nodes or 1,
+            devices=slurm.ntasks_per_node or 1,
+        )
+        print(f"Submitted batch job {job_id}")
+        return
+    
+    print("Beginning inference...")
+    result = Predictor().predict(model, checkpoint_path, text, num_tokens)
+    print(result)
+
+
 def _submit_slurm_job(
         *, 
         python_args: list[str], 
@@ -123,4 +147,3 @@ def _submit_slurm_job(
             f"sbatch failed (exit {res.returncode}):\n{res.stderr}\n\nGenerated script:\n{script}"
         )
     return res.stdout.strip().split()[-1]
-
