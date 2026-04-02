@@ -194,21 +194,32 @@ test_data: # Test set
     ... # etc
 ```
 
-Next, pick your SLURM/job type settings. 
+Next, pick your SLURM job/training run settings. 
 
 ```yaml
 slurm:
   job_type: "compute" # "local" "local-download"
   time: "01:00:00" # Timeout limit 
-  gpus_per_node: <gpu_type>:<num_gpus> # GPUs, low->high capability: p100 | a200 (dw87 cluster) | h200  
-  nodes: null
-  mem_per_cpu: "128G"
-  output: "slurm_logs/%j.out"
-  open_mode: "append"
-  signal: "SIGHUP@90"
-  requeue: true
-  qos: <cluster> # Specific GPU cluster
+  gpus_per_node: <gpu_type>:<num_gpus> # GPUs, low -> high capability: p100 | a100 (dw87 cluster) | h200  
+  nodes: 1 # Number of nodes to allocate
+  mem_per_cpu: "128G" # Memory allocated per CPU core
+  output: "slurm_logs/%j.out" # Path for job stdout log (%j = job ID)
+  open_mode: "append" # Append to log file instead of overwriting
+  signal: "SIGHUP@90" # Send SIGHUP signal 90 seconds before timeout to allow graceful shutdown
+  requeue: true # Automatically requeue job if it is preempted
+  qos: <cluster> # Specific GPU cluster/config, e.g. dw87, test
+
+epochs: 1 # Num of passes through the training dataset
+batch_size: 1 # Num of samples in each batch 
+device: cuda # `cuda` for GPU, `cpu` for CPU
 ```
+
+Now submit the training job by running the following command:
+
+`python src/main.py fit --config <configfilename>.yaml`
+
+Replace `fit` with `preprocess` if you are just trying to do a preprocessing run. It's smart to make a separate config file for preprocessing, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your preprocessing config file for preprocessing runs.
+
 
 ### Pre-Pull Request Checklist
 [specific test runs, formatting checks they must run locally before opening a Pull Request]
