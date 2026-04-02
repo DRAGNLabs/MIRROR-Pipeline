@@ -24,6 +24,7 @@ import mirror.callbacks
 import mirror.datasets
 import mirror.models
 import mirror.preprocessors
+import mirror.interventions
 
 Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess'] | Literal['infer']
 
@@ -45,7 +46,7 @@ def main(subcommand: Subcommand):
             parser.add_subclass_arguments(TrainerConstructor, "trainer", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(sys.argv[2:])
-            
+
             run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
 
             if hasattr(cfg, 'config'):
@@ -59,14 +60,14 @@ def main(subcommand: Subcommand):
 
             trainer = trainer.construct_trainer()
 
-            trainer.launch()
             if not (is_login_node() and init.slurm.job_type == "compute"):
+                trainer.launch()
                 model = instantiate_model(model, fabric=trainer.fabric)
 
             if is_login_node() and init.slurm.job_type == "local-download":
                 print("Model downloaded/cached. Re-run on a compute node.")
                 return
-                
+
             del init.model # pyright: ignore
             del init.device # pyright: ignore
 
