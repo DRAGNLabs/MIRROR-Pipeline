@@ -58,7 +58,7 @@ Available datasets include the HuggingFace datasets `ImdbDataset` and `WikitextD
 
 ### Preprocessors
 
-Preprocessors convert raw data into tokenized batches suitable for model training. They extend `MirrorPreprocessor`, which defines two methods: `preprocess_example(example)` (usually converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together into a single object).
+Preprocessors convert raw data into a format suitable for model training. They extend `MirrorPreprocessor`, which defines two methods: `preprocess_example(example)` (usually converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together into a single object).
 
 Each model has its own preprocessor because each model architecture uses a distinct tokenizer and vocab size. For example, GPT-2 has `vocab_size = 50257` while Llama 3.2-1B has `vocab_size = 128256`, so they each have their own preprocessor with the correct vocab size. However, preprocessors can be mixed and matched as long as the vocab sizes match — for example, you could use a custom Llama config with `vocab_size = 50257` and pair it with `MirrorGPTPreprocessor` instead.
 
