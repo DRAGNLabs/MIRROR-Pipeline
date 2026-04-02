@@ -34,5 +34,7 @@ class Predictor:
             device=device,
         )
 
+        print(pipe.device)
+
         result = pipe(text, max_new_tokens=num_tokens, do_sample=False)
         return result[0]['generated_text']

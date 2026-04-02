@@ -98,6 +98,7 @@ def infer(
         return
     
     print("Beginning inference...")
+    # to_cuda() # function somewhere
     result = Predictor().predict(model, checkpoint_path, text, num_tokens)
     print(result)
 
