@@ -55,11 +55,12 @@ class RequeueCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
+            global_step: int,
             **kwargs,
     ):
         self._warn_if_iteration_too_long(fabric)
         if self.requeue_signal_recieved:
-            self._save_checkpoint(fabric, model, optimizer, training_run_id)
+            self._save_checkpoint(fabric, model, optimizer, training_run_id, global_step)
             if fabric.is_global_zero:
                 self._create_requeue_handoff(training_run_id)
                 self._requeue(fabric)
@@ -101,12 +102,14 @@ class RequeueCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], 
             optimizer: Optimizer,
             training_run_id: str,
+            global_step: int,
     ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')
         checkpoint_id = self._requeue_checkpoint_id(training_run_id)
         fabric.save(checkpoint_id.path, {
             'model': model,
             'optimizer': optimizer,
+            'global_step': global_step,
         })
 
     def _create_requeue_handoff(
