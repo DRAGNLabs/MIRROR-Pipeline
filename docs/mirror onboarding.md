@@ -48,9 +48,7 @@ The `Trainer` class drives the training loop, built on top of PyTorch Lightning 
 
 The `fit()` method is the most important part of the class. It accepts a model, dataset, preprocessor, optional checkpoint, and training hyperparameters (epochs, batch size, etc.), as well as optional validation and test datasets. It begins by setting up the model and optimizer with Fabric, then builds the training dataloader (and optionally validation/test dataloaders). If a checkpoint is provided, it resumes training from that checkpoint. 
 
-(( `note to self work on these more /\ \/` ))
-
-The core loop iterates over epochs and batches: for each batch it zeroes gradients, calls `model.training_step(batch)` to get the loss, backpropagates via Fabric, and steps the optimizer — firing `on_train_batch_end` callbacks after each step. At the end of each epoch (subject to `val_check_interval`), it runs a validation pass and fires `on_validation_epoch_end`. After all epochs, it optionally runs a test pass and fires `on_test_epoch_end`, then fires `on_fit_end` to wrap up.
+The core loop iterates over epochs and batches: for each batch it zeroes gradients, calls `model.training_step(batch)` to get the loss, backpropagates via Fabric, and steps the optimizer.
 
 ### Datasets
 
