@@ -78,6 +78,17 @@ def preprocess(
     
     print("total_tokens:", total_tokens)
 
+def infer(
+        model: MirrorModel,
+        checkpoint_path: Path,
+        text: str,
+        num_tokens: int,
+) -> None:
+    from mirror.predictor import Predictor
+    result = Predictor().predict(model, checkpoint_path, text, num_tokens)
+    print(result)
+
+
 def _submit_slurm_job(
         *, 
         python_args: list[str], 
