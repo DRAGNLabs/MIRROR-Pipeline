@@ -134,4 +134,3 @@ def _submit_slurm_job(
             f"sbatch failed (exit {res.returncode}):\n{res.stderr}\n\nGenerated script:\n{script}"
         )
     return res.stdout.strip().split()[-1]
-
