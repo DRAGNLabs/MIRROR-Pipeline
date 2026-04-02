@@ -97,6 +97,7 @@ def infer(
         print(f"Submitted batch job {job_id}")
         return
     
+    print("beginning inference")
     result = Predictor().predict(model, checkpoint_path, text, num_tokens)
     print(result)
 
