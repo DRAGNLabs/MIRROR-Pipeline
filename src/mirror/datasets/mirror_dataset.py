@@ -1,10 +1,12 @@
 from __future__ import annotations
-from typing import Callable, Sequence, Sized
-from torch.utils.data import Dataset
-from datasets import Dataset as HFDataset
 from abc import abstractmethod
 from sys import stderr
+from typing import TYPE_CHECKING, Callable, Sequence, Sized
+from torch.utils.data import Dataset
 from mirror.util import _ds_cache_path_context
+
+if TYPE_CHECKING:
+    from datasets import Dataset as HFDataset
 
 class MirrorDataset[RawT](Dataset[RawT], Sized):
     @property

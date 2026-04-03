@@ -1,15 +1,14 @@
-from typing import Literal
+from __future__ import annotations
+
 import os
-
-import wandb
-
-from lightning import Fabric
+from typing import TYPE_CHECKING, Literal
 
 from mirror.callbacks.callback import Callback
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.util import mirror_data_path
 
-from wandb.sdk.wandb_run import Run as WandbRun
+if TYPE_CHECKING:
+    from lightning import Fabric
+    from wandb.sdk.wandb_run import Run as WandbRun
 
 WandbMode = Literal["online", "offline"]
 
@@ -32,6 +31,9 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         epochs: int,
         **kwargs,
     ):
+        import wandb
+        from mirror.util import mirror_data_path
+
         if not fabric.is_global_zero:
             return
 
@@ -52,7 +54,7 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             "n_batches": n_batches,
             "run_config_yaml": run_config_yaml,
         })
-        
+
     def on_train_batch_end(
         self,
         *,

@@ -1,5 +1,6 @@
 slurm_logs/
 .env/
+.venv/
 **/__pycache__/
 .ENV
 config*.yaml
