@@ -10,7 +10,7 @@
 
 1. Log in to the supercomputer
 
-    If you have a VSCode window already open to the MIRROR Pipeline, this will simply consist of logging in again with your password and authentication code. Otherwise, go to the Remote Explorer tab (fifth icon down), hover over the MIRROR-Pipeline, and click the arrow icon, then log in. 
+    If you have a VSCode window already open to the MIRROR Pipeline, this will simply consist of logging in again with your password and authentication code. Otherwise, go to the Remote Explorer tab (computer monitor icon), hover over the MIRROR-Pipeline, and click the arrow icon, then log in. 
 
 2. (If necessary) Run `source /etc/profile`
 
@@ -18,11 +18,11 @@
     
 3. Activate mamba environment
 
-    To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have created the environment first, of course.) 
+    To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have [created the environment first](#initial-access-setup), of course.) 
 
 4. Ensure you're on the correct branch
 
-    Run `git status` to see what branch you're currently checked out to. Make sure that this matches the branch you're intending to work on. If it doesn't, run `git checkout [branch_name]` to switch to the correct branch. 
+    Run `git status` to see what branch you're currently checked out to. Make sure that this matches the branch you're intending to work on. If it doesn't, run `git checkout <branch_name>` to switch to the correct branch. 
 
 5. Update with any new changes
 
