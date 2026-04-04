@@ -84,9 +84,10 @@ def infer(
         checkpoint_path: Path,
         text: str,
         num_tokens: int,
+        preprocessor: MirrorPreprocessor | None = None,
         slurm: SlurmConfig = SlurmConfig()
 ) -> None:
-    
+
     if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
             python_args=sys.argv[1:],
@@ -96,10 +97,9 @@ def infer(
         )
         print(f"Submitted batch job {job_id}")
         return
-    
+
     print("Beginning inference...")
-    # to_cuda() # function somewhere
-    result = Predictor().predict(model, checkpoint_path, text, num_tokens)
+    result = Predictor().predict(model, checkpoint_path, text, num_tokens, preprocessor)
     print(result)
 
 
