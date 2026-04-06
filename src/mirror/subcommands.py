@@ -85,6 +85,10 @@ def infer(
         text: str,
         num_tokens: int,
         preprocessor: MirrorPreprocessor | None = None,
+        temperature: float = 1.0,
+        top_p: float | None = None,
+        top_k: int | None = None,
+        repetition_penalty: float = 1.0,
         slurm: SlurmConfig = SlurmConfig()
 ) -> None:
 
@@ -99,7 +103,13 @@ def infer(
         return
 
     print("Beginning inference...")
-    result = Predictor().predict(model, checkpoint_path, text, num_tokens, preprocessor)
+    result = Predictor().predict(
+        model, checkpoint_path, text, num_tokens, preprocessor,
+        temperature=temperature,
+        top_p=top_p,
+        top_k=top_k,
+        repetition_penalty=repetition_penalty,
+    )
     print(result)
 
 

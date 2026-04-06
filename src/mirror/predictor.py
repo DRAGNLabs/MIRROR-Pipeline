@@ -17,6 +17,10 @@ class Predictor:
             text: str,
             num_tokens: int,
             preprocessor: MirrorPreprocessor | None = None,
+            temperature: float = 1.0,
+            top_p: float | None = None,
+            top_k: int | None = None,
+            repetition_penalty: float = 1.0,
     ) -> str:
         if not isinstance(model, HFWhiteboxTransformer):
             raise ValueError(
@@ -44,5 +48,17 @@ class Predictor:
             device=device,
         )
 
-        result = pipe(text, max_new_tokens=num_tokens, do_sample=False)
+        do_sample = temperature != 1.0 or top_p is not None or top_k is not None
+        generation_kwargs: dict = dict(
+            max_new_tokens=num_tokens,
+            do_sample=do_sample,
+            temperature=temperature,
+            repetition_penalty=repetition_penalty,
+        )
+        if top_p is not None:
+            generation_kwargs['top_p'] = top_p
+        if top_k is not None:
+            generation_kwargs['top_k'] = top_k
+
+        result = pipe(text, **generation_kwargs)
         return result[0]['generated_text']
