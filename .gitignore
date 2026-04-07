@@ -7,3 +7,4 @@ mirror_pipeline.egg-info/
 .vscode/
 .claude/
 src/mirror/models/baby_babble/
+uv.lock
