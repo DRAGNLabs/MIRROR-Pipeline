@@ -100,7 +100,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             move_to_device=self.config['device'] == 'cuda'
         )
 
-
         dataloader = self._make_dataloader(dataset, preprocessor, batch_size, do_preprocess)
 
         start_epoch = 0
@@ -156,18 +155,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
                 global_step = epoch_idx * n_batches + batch_idx
 
-                self.fabric.call(
-                    'on_train_batch_end',
-                    fabric=self.fabric,
-                    model=model,
-                    optimizer=optimizer,
-                    loss=loss_value,
-                    training_run_id=training_run_id,
-                    epochs=epochs,
-                    n_batches=n_batches,
-                    batch_idx=batch_idx,
-                    global_step = global_step,
-                )
+                self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer,
+                                 loss=loss_value, training_run_id=training_run_id, epochs=epochs, 
+                                 n_batches=n_batches, batch_idx=batch_idx, global_step = global_step)
 
             if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                 val_loss = self._eval_loop(model, val_dataloader)
