@@ -160,7 +160,7 @@ preprocessor:
     class_path: <class_path> # e.g. MirrorLlamaPreprocessor
 ```
 
-To preprocess "lazily"/on-the-fly (slower, saves memory):
+To preprocess up front rather than on-the-fly:
 
 ```yaml
 do_preprocess: True # False by default
@@ -199,7 +199,7 @@ Next, pick your SLURM job/training run settings.
 ```yaml
 slurm:
   job_type: "compute" # "local" "local-download"
-  time: "01:00:00" # Timeout limit 
+  time: "01:00:00" # Timeout limit - note that the requeue callback will continue the job if the time limit is reached by submitting another SLURM job
   gpus_per_node: <gpu_type>:<num_gpus> # GPUs, low -> high capability: p100 | a100 (dw87 cluster) | h200  
   nodes: 1 # Number of nodes to allocate
   mem_per_cpu: "128G" # Memory allocated per CPU core
