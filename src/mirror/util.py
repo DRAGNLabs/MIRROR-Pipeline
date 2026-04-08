@@ -7,6 +7,24 @@ from datasets import config
 from mirror.config import RuntimeEnvironment, get_config
 
 
+_CONFIGS_DIR = Path(__file__).parent.parent.parent / 'configs'
+
+def resolve_config_args(args: list[str]) -> list[str]:
+    """Resolve --config values against the configs/ folder when the path doesn't exist as-is."""
+    result = []
+    i = 0
+    while i < len(args):
+        result.append(args[i])
+        if args[i] == '--config' and i + 1 < len(args):
+            i += 1
+            path = Path(args[i])
+            if not path.exists() and (_CONFIGS_DIR / path).exists():
+                result.append(str(_CONFIGS_DIR / path))
+            else:
+                result.append(args[i])
+        i += 1
+    return result
+
 mirror_data_path = Path(
     os.getenv("MIRROR_DATA_PATH", f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data")
 )
