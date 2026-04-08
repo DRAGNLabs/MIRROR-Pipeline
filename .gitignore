@@ -3,6 +3,9 @@ slurm_logs/
 **/__pycache__/
 .ENV
 config*.yaml
+configs/
 mirror_pipeline.egg-info/
+src/mirror/models/baby_babble/*
 .vscode/
 .claude/
+uv.lock

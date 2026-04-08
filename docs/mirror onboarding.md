@@ -213,7 +213,7 @@ Vim is the default editor for commit message files (e.g. git merge).
 
 - `python src/main.py fit --config <config-file>`: Train a model using settings from a config file
     - The config file specifies the dataset, model, preprocessor, training parameters, and SLURM settings
-        - Config files should be local and user-specific; start your config file(s) names with "config" so that the `.gitignore` knows not to track them
+        - Config files should be local and user-specific; to avoid Git tracking these files, either start their filename with 'config' or place them in the `configs` folder, where they will be parsed automatically in the same way
     - You can also pass arguments directly, e.g. `python src/main.py fit --data.class_path WikitextDataset --model.class_path MirrorLlamaModel --epochs 1 --batch_size 1`
 
 - `python src/main.py preprocess --config <config-file>`: Preprocess a dataset without training
