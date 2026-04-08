@@ -45,7 +45,7 @@ def main(subcommand: Subcommand):
             parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
             parser.add_subclass_arguments(TrainerConstructor, "trainer", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
-            cfg = parser.parse_args(_resolve_config_args(sys.argv[2:]))
+            cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
             run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
 
@@ -77,7 +77,7 @@ def main(subcommand: Subcommand):
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
             parser.add_function_arguments(preprocess, as_positional=False)
-            cfg = parser.parse_args(_resolve_config_args(sys.argv[2:]))
+            cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
             if hasattr(cfg, 'config'):
                 del cfg.config  # pyright: ignore

@@ -10,7 +10,6 @@ from mirror.config import RuntimeEnvironment, get_config
 _CONFIGS_DIR = Path(__file__).parent.parent.parent / 'configs'
 
 def resolve_config_args(args: list[str]) -> list[str]:
-    """Resolve --config values against the configs/ folder when the path doesn't exist as-is."""
     result = []
     i = 0
     while i < len(args):
