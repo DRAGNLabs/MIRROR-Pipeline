@@ -124,6 +124,13 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             start_epoch = checkpoint_global_step // n_batches
             start_batch = (checkpoint_global_step % n_batches) + 1
 
+        requeue_cb = next((cb for cb in self.callbacks if isinstance(cb, RequeueCallback)), None)
+        if requeue_cb is not None:
+            requeue_cb.load_requeue_checkpoint_if_present(self.fabric, model, optimizer)
+            if requeue_cb.requeue_global_step is not None:
+                start_epoch = requeue_cb.requeue_global_step // n_batches
+                start_batch = (requeue_cb.requeue_global_step % n_batches) + 1
+
         val_dataloader = None
         if val_dataset is not None:
             val_dataloader = self._make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess)
@@ -145,11 +152,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             start_batch=start_batch,
             run_config_yaml=run_config_yaml,
         )
-
-        requeue_cb = next((cb for cb in self.callbacks if isinstance(cb, RequeueCallback)), None)
-        if requeue_cb is not None and requeue_cb.requeue_global_step is not None:
-            start_epoch = requeue_cb.requeue_global_step // n_batches
-            start_batch = (requeue_cb.requeue_global_step % n_batches) + 1
 
         for epoch_idx in range(start_epoch, epochs):
             skip_batches = start_batch if epoch_idx == start_epoch else 0

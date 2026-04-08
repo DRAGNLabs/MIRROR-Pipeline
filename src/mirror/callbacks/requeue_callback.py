@@ -47,8 +47,6 @@ class RequeueCallback[RawT, ProcessedT, BatchT, ModelOutputT](Callback[RawT, Pro
         rank_zero_log(fabric, f"setting up requeue handler on signal {self.requeue_signal}")
         signal.signal(self.requeue_signal, self._make_requeue_handler(fabric))
 
-        self._load_requeue_checkpoint_if_present(fabric, model, optimizer)
-
     def on_train_batch_end(
         self,
         *,
@@ -67,7 +65,7 @@ class RequeueCallback[RawT, ProcessedT, BatchT, ModelOutputT](Callback[RawT, Pro
                 self._requeue(fabric)
             exit()
 
-    def _load_requeue_checkpoint_if_present(
+    def load_requeue_checkpoint_if_present(
         self, fabric: Fabric, model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], optimizer: Optimizer
     ):
         path = requeue_handoff_path()
