@@ -175,7 +175,10 @@ data: # Training set
     split: train # Use the dataset's `train` portion
     skip: <i> # Optionally, skip the first <i> examples from the selected split 
     head: <j> # Use the first <j> examples (after skipping)
-
+    # OR
+    # # start_fraction: 0.0
+    # end_fraction: 0.8 # Use the first 80% of the selected dataset/split
+    
 val_data: # Validation set
   class_path: WikitextDataset
   init_args:
