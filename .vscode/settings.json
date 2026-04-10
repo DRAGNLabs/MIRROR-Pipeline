@@ -1,9 +1,4 @@
 {
-  "[python]": {
-    "editor.defaultFormatter": "charliermarsh.ruff",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
-    }
-  }
+  "python.defaultInterpreterPath": "${workspaceFolder}/.env/bin/python",
+  "python.terminal.activateEnvironment": false
 }
