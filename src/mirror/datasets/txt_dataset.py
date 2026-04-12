@@ -29,8 +29,5 @@ class TxtDataset(MirrorDataset[TextRow]):
         if head:
             self._ds = self._ds.select(range(head))
 
-    def __getitem__(self, index: int) -> TextRow:
-        return cast(TextRow, self.ds[index])
-
     def __len__(self) -> int:
         return len(self.ds)
