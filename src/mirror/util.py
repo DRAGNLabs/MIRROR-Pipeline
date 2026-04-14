@@ -10,18 +10,12 @@ from mirror.config import RuntimeEnvironment, get_config
 _CONFIGS_DIR = Path(__file__).parent.parent.parent / 'configs'
 
 def resolve_config_args(args: list[str]) -> list[str]:
-    result = []
-    i = 0
-    while i < len(args):
-        result.append(args[i])
-        if args[i] == '--config' and i + 1 < len(args):
-            i += 1
-            path = Path(args[i])
+    result = list(args)
+    for i, arg in enumerate(result[:-1]):
+        if arg == '--config':
+            path = Path(result[i + 1])
             if not path.exists() and (_CONFIGS_DIR / path).exists():
-                result.append(str(_CONFIGS_DIR / path))
-            else:
-                result.append(args[i])
-        i += 1
+                result[i + 1] = str(_CONFIGS_DIR / path)
     return result
 
 mirror_data_path = Path(
