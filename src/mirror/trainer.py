@@ -14,7 +14,6 @@ from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
 from mirror.callbacks.progress_callback import ProgressCallback
-from mirror.callbacks.requeue_callback import RequeueCallback
 from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.callbacks.print_step_callback import PrintStepCallback
@@ -24,6 +23,7 @@ from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedD
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.config import RuntimeEnvironment, get_config
+from mirror.requeue_monitor import RequeueMonitor
 
 
 class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
@@ -50,8 +50,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         ]
         if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
             default_callbacks.append(PrintStepCallback())
+
+        self.requeue_monitor: RequeueMonitor | None = None
         if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
-            default_callbacks.append(RequeueCallback())
+            self.requeue_monitor = RequeueMonitor()
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
         input_singleton_cbs, input_non_singleton_cbs = separate_singletons(callbacks)
@@ -107,10 +109,14 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         start_batch = 0
         n_batches = len(dataloader)
 
+        requeue_global_step: int | None = None
+        if self.requeue_monitor:
+            requeue_global_step = self.requeue_monitor.setup(self.fabric, model, optimizer)
+
         if checkpoint:
             # models and optimizers are treated specially: they are populated via their load_state_dict
             # methods internally to fabric.load. Anything else in the state dict is just set in place.
-            
+
             state = {
                 'model': model,
                 'optimizer': optimizer,
@@ -121,11 +127,14 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             checkpoint_global_step = state['global_step']
             if checkpoint_global_step is None:
                 raise RuntimeError(
-                    "checkpoint_global_step cannot be None. " 
+                    "checkpoint_global_step cannot be None. "
                     f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
                     )
             start_epoch = checkpoint_global_step // n_batches
             start_batch = (checkpoint_global_step % n_batches) + 1
+        elif requeue_global_step is not None:
+            start_epoch = requeue_global_step // n_batches
+            start_batch = (requeue_global_step % n_batches) + 1
 
         val_dataloader = None
         if val_dataset is not None:
@@ -166,8 +175,17 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     epochs=epochs,
                     n_batches=n_batches,
                     batch_idx=batch_idx,
-                    global_step = global_step,
+                    global_step=global_step,
                 )
+
+                if self.requeue_monitor:
+                    self.requeue_monitor.on_train_batch_end(
+                        fabric=self.fabric,
+                        model=model,
+                        optimizer=optimizer,
+                        training_run_id=training_run_id,
+                        global_step=global_step,
+                    )
 
             if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                 val_loss = self._eval_loop(model, val_dataloader)
