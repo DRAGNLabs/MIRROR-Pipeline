@@ -200,7 +200,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
     def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess):
         if do_preprocess:
-            preprocessed = dataset.preprocess(preprocessor.preprocess_example)
+            preprocessed = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
         else:
             preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
         dataloader = DataLoader(
