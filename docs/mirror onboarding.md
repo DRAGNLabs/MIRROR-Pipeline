@@ -8,14 +8,102 @@
 
 ### Things to do every time you log in
 
-[Add Content Here]
- 
-### General MIRROR Pipeline Architecture
+1. Log in to the supercomputer
 
-[the core components, data flow, and primary services that make up the MIRROR Pipeline]
+    If you have a VSCode window already open to the MIRROR Pipeline, this will simply consist of logging in again with your password and authentication code. Otherwise, go to the Remote Explorer tab (computer monitor icon), hover over the MIRROR-Pipeline, and click the arrow icon, then log in. 
 
-[how to use the MIRROR Pipeline. This will essentially be the documentation for our pipeline]
+2. (If necessary) Run `source /etc/profile`
+
+    If you logged in to the supercomputer strictly by ssh'ing through the terminal, this will automatically have been done for you. Otherwise (e.g. using VSCode to log in to the supercomputer), run `source /etc/profile/` to load system-wide environment settings and paths. 
+    
+3. Activate mamba environment
+
+    To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have [created the environment first](#initial-access-setup), of course.) 
+
+4. Ensure you're on the correct branch
+
+    Run `git status` to see what branch you're currently checked out to. Make sure that this matches the branch you're intending to work on. If it doesn't, run `git checkout <branch_name>` to switch to the correct branch. 
+
+5. Update with any new changes
+
+    Run `git fetch origin` to check for any new changes to the main branch from other branches getting merged, then `git merge main` to integrate these changes into your local branch. If there are merge conflicts, resolve them as needed. 
+
+    If you're working on a branch with someone else, run `git pull` to check for any changes they may have pushed and integrate them locally. 
  
+## General MIRROR Pipeline Architecture
+
+The MIRROR pipeline follows a modular architecture where each component handles a distinct responsibility. The overall data flow is:
+
+```
+main.py (CLI entry point)
+  → subcommands.py (routes to pipelines such as `fit` or `preprocess`)
+    → trainer.py (orchestrates the training loop)
+      → Datasets (load raw data, e.g. text)
+      → Preprocessors (convert raw data into model-compatible format, e.g. by tokenizing and padding)
+      → Models (compute forward passes)
+      → Callbacks (handle checkpointing, logging, progress, etc.)
+```
+
+On a login node, the pipeline downloads required assets (like tokenizers/models) and submits an SBATCH training job; on a compute node, it executes the actual training.
+
+### main.py
+
+This is the entry point for the pipeline. It parses command-line arguments/YAML config files, then routes to the appropriate subcommand.
+
+A first parse determines which subcommand was invoked. `jsonargparse` is then used to load arguments from a YAML config file and instantiate the appropriate `MirrorModel`, `MirrorPreprocessor`, etc. On login nodes, the script downloads the model/tokenizer and submits the job to a compute node. On compute nodes, it calls `fit()` directly.
+
+An example YAML config can be found in [config-example.md](config-example.md).
+
+### subcommands.py
+
+This module implements the pipeline's subcommands. The two main subcommands:
+- `fit()` — The main training subcommand. If running on a login node with `job_type=compute`, it submits a training job to the supercomputer; otherwise (i.e. either we're training locally/on a login node, or we're already on a compute node), it executes training directly via `trainer.fit()`.
+- `preprocess()` — Applies a preprocessor to a dataset and caches the result, without running training.
+
+The `templates/` directory contains `slurm.jinja`, a Jinja2 SBATCH template. When submitting a job from a login node, `subcommands.py` fills in this template and passes the result to `sbatch` to submit a training job to the supercomputer.
+
+### trainer.py
+
+The `Trainer` class drives the training loop, built on top of PyTorch Lightning Fabric to support training distributed across nodes/GPUs. 
+
+The `fit()` method is the most important part of the class. It accepts a model, dataset, preprocessor, optional checkpoint, and training hyperparameters (epochs, batch size, etc.), as well as optional validation and test datasets. It begins by setting up the model and optimizer with Fabric, then builds the training dataloader (and optionally validation/test dataloaders). If a checkpoint is provided, it resumes training from that checkpoint. 
+
+The core loop iterates over epochs and batches: for each batch it zeroes gradients, calls `model.training_step(batch)` to get the loss, backpropagates via Fabric, and steps the optimizer.
+
+### Datasets
+
+Datasets provide a unified interface for loading data, such as text rows, or other types of data (e.g., the [MCQA repository](https://github.com/DRAGNLabs/MIRROR-MCQA-Decisions) uses McqaRows). They all extend `MirrorDataset`, a generic typed class built on top of PyTorch's `Dataset`.
+
+Available datasets include the HuggingFace datasets `ImdbDataset` and `WikitextDataset`, which must be downloaded once using HuggingFace credentials, and thereafter will be automatically cached locally. `TxtDataset` allows plain text files, such as the Church Text Dataset, to be used as datasets as well. `OnDemandPreprocessedDataset` is a wrapper that supports "lazily" preprocessing a dataset on-the-fly rather than upfront (useful for memory efficiency).
+
+### Preprocessors
+
+Preprocessors convert raw data into a format suitable for model training. They extend `MirrorPreprocessor`, which defines two methods: `preprocess_example(example)` (usually converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together into a single object).
+
+Each model has its own preprocessor because each model architecture uses a distinct tokenizer and vocab size. For example, GPT-2 has `vocab_size = 50257` while Llama 3.2-1B has `vocab_size = 128256`, so they each have their own preprocessor with the correct vocab size. However, preprocessors can be mixed and matched as long as the vocab sizes match — for example, you could use a custom Llama config with `vocab_size = 50257` and pair it with `MirrorGPTPreprocessor` instead.
+
+Tokenizers are downloaded/cached just like models and datasets.
+
+### Models
+
+This is where specific model implementations lie. Each extends the `MirrorModel` class, requiring a `preprocessor` property, a `training_step(batch)` method that returns a loss, and a `configure_optimizers()` method.
+
+Models are downloaded and cached similarly to datasets.
+
+The models module also includes a `Whitebox Transformers` subsystem, which provides a type-safe way to extract optional outputs (loss, hidden states, attentions) from HuggingFace models by chaining method calls together (e.g., `.fresh(model).include_loss(labels).execute(batch)`).
+
+### Callbacks
+
+Callbacks allow Fabric to execute custom functions at specific points during the training process. Each callback implementation extends the `Callback` base class, which defines methods like `on_fit_start`, `on_fit_end`, `on_train_batch_end`, `on_validation_epoch_end`, and `on_test_epoch_end`. For example, `self.fabric.call("on_fit_start", ...)` will call the `on_fit_start` method with the provided parameters on each callback that implements that method.
+
+Essentially, callbacks control "side-effects" that don't directly affect the training process — for example, printing training progress bars.
+
+### Interventions
+
+Interventions are model wrappers — MirrorModels that contain a MirrorModel — that allow for modifications to the architecture of base models, such as mirror neuron capabilities. In contrast to callbacks, which don't directly affect training, interventions are for directly altering the structure or behavior of the model/training process.
+
+Future model interventions will be implemented in this module.
+
 ## Pipeline Developer Information
 
 ## Common Commands
@@ -238,5 +326,33 @@ Replace `fit` with `preprocess` if you are just trying to do a preprocessing run
 ### Pre-Pull Request Checklist
 [specific test runs, formatting checks they must run locally before opening a Pull Request]
  
-### Ticket 5: New Ticket Kickoff Checklist
-[administrative steps required for assigning yourself a new ticket (move the card, assign yourself, create a branch, etc.), and also for writing a new ticket]
+### New Ticket Kickoff Checklist
+
+#### Starting work on an existing ticket
+
+1. Assign the ticket to yourself
+    Click the gear icon next to "Assignees" in the top right and select your GitHub profile.
+
+2. Mark ticket as In Progress
+    Below the Assignees section, in the Projects section, the ticket will have a blue "Ready" status tag. Click on it and select the orange "In Progress" tag.
+
+3. Create a new branch
+    Near the bottom of the right side bar, under "Development", click the "Create a branch" link. Click the green "Create branch" button in the pop-up, and copy the git commands that pop up. Run these commands in your terminal; this will switch you to your new branch.
+
+#### Creating a new ticket
+
+1. Create the ticket/issue
+
+    In the "Backlog" column of the project pipeline, press the `+` button to add an item. In the text bar that opens up at the bottom, enter a descriptive title for the new ticket, and hit Enter. Select the correct repository, and press the "Blank issue" button.
+
+2. Give the ticket a description
+
+    Unless the ticket is very simple and its title is self-explanatory, give a brief explanation of the issue or feature this ticket is trying to fix or implement. Add any details about potential implementations you've thought of, other tickets this may be related to, etc. 
+
+3. Acceptance criteria
+
+    Add "Acceptance criteria: " to the bottom of the ticket description, then a bullet point for each criterion or condition that should be met for this ticket to be considered complete.
+
+4. Hit "Create"
+
+    Hit the green "Create" button to finish creating the ticket. If the ticket is of higher priority or relevance, you can move it immediately from Backlog to Ready (or In Progress if you plan to immediately work on this ticket, e.g. if you're trying to fix an emergency bug).  
