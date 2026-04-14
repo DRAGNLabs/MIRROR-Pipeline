@@ -228,7 +228,7 @@ To test out submitting a training run, run this command:
 python src/main.py fit --config demo_fit_config.yaml
 ```
 
-You should see the output `Submitted batch job <number>`. If this is your first time submitting a training run, you may be prompted to [log in to huggingface] first to download required resources like the Llama model weights.
+You should see the output `Submitted batch job <number>`. If this is your first time submitting a training run, you may be prompted to [log in to huggingface](#initial-access-setup) first to download required resources like the Llama model weights.
 
 That command uses a demo config YAML file to specify the settings for the training run. To customize a training run, you can either use a config file or pass in each argument and its value through the command line, e.g.:
 
@@ -236,39 +236,37 @@ That command uses a demo config YAML file to specify the settings for the traini
 python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel
 ```
 
-It's recommended to use config files rather than passing in arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline through the lens of creating this config file.
+It's recommended to use config files rather than passing in arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline by walking you through creating this config file, section by section.
 
-First, select your model:
+#### Selecting your model 
+
+If you want to use Llama:
+
 ```yaml
 model:
-    class_path: MirrorLlamaModel # or MirrorGPTModel, etc
-    init_args: # If using Llama: 
+    class_path: MirrorLlamaModel 
+    init_args: 
         initialization:
             # Pretrained weights:
             <model_spec> # 3.2-1B | 3.2-1B-Instruct
+
             # OR custom config:
             vocab_size: <vocab_size>
             hidden_size: <hidden_size> # etc
+```
 
-        # If using GPT2:
+Note that you'll need to [use an h200 GPU](#setting-up-slurm-jobtraining-run-settings) in order to have enough VRAM to run Llama with pretrained weights, so we usually use a smaller custom config of Llama, like the one defined in [demo_fit_config.yaml](../configs/demo_fit_config.yaml).
+
+To use GPT-2:
+
+```yaml
+model:
+    class_path: MirrorGPTModel 
+    init_args: 
         weights: <weights> # pretrained | random
-    # Etc/as appropriate for other models
 ```
 
-Next, decide how the data will be preprocessed. The model's own preprocessor will be used by default, but it can be overridden (see Mirror Architecture/Preprocessors):
-
-```yaml
-preprocessor:
-    class_path: <class_path> # e.g. MirrorLlamaPreprocessor
-```
-
-To preprocess up front rather than on-the-fly:
-
-```yaml
-do_preprocess: True # False by default
-``` 
-
-Now pick your dataset and how it will be used:
+#### Selecting your dataset 
 
 ```yaml
 data: # Training set 
@@ -280,7 +278,11 @@ data: # Training set
     # OR
     # # start_fraction: 0.0
     # end_fraction: 0.8 # Use the first 80% of the selected dataset/split
-    
+```
+
+#### Setting up val/test data
+
+```yaml
 val_data: # Validation set
   class_path: WikitextDataset
   init_args:
@@ -296,7 +298,22 @@ test_data: # Test set
     ... # etc
 ```
 
-Next, pick your SLURM job/training run settings. 
+#### Deciding how the data will be preprocessed
+
+The model's own preprocessor will be used by default, but it can be overridden (see [Preprocessors](#preprocessors)):
+
+```yaml
+preprocessor:
+    class_path: <class_path> # e.g. MirrorLlamaPreprocessor
+```
+
+To preprocess up front rather than on-the-fly:
+
+```yaml
+do_preprocess: True # False by default
+``` 
+
+#### Setting up SLURM job/training run settings
 
 ```yaml
 slurm:
@@ -317,7 +334,9 @@ batch_size: 1 # Num of samples in each batch
 device: cuda # `cuda` for GPU, `cpu` for CPU
 ```
 
-Now submit the training job by running the following command:
+#### Submitting the training job
+
+Run the following command:
 
 `python src/main.py fit --config <configfilename>.yaml`
 
