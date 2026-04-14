@@ -134,7 +134,21 @@ Vim is the default editor for commit message files (e.g. git merge).
 
 ## How to use the MIRROR Pipeline
 
-It's highly recommended to use YAML config files rather than passing in arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline through the lens of creating this config file.
+To test out submitting a training run, run this command: 
+
+```
+python src/main.py fit --config demo_fit_config.yaml
+```
+
+You should see the output `Submitted batch job <number>`. If this is your first time submitting a training run, you may be prompted to [log in to huggingface] first to download required resources like the Llama model weights.
+
+That command uses a demo config YAML file to specify the settings for the training run. To customize a training run, you can either use a config file or pass in each argument and its value through the command line, e.g.:
+
+```
+python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel
+```
+
+It's recommended to use config files rather than passing in arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline through the lens of creating this config file.
 
 First, select your model:
 ```yaml
@@ -220,7 +234,6 @@ Now submit the training job by running the following command:
 `python src/main.py fit --config <configfilename>.yaml`
 
 Replace `fit` with `preprocess` if you are just trying to do a preprocessing run. It's smart to make a separate config file for preprocessing, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your preprocessing config file for preprocessing runs.
-
 
 ### Pre-Pull Request Checklist
 [specific test runs, formatting checks they must run locally before opening a Pull Request]
