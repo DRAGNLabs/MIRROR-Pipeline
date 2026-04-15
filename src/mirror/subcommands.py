@@ -74,8 +74,8 @@ def preprocess(
         )
         print(f"Submitted batch job {job_id}")
         return
-
-    data.preprocess(preprocessor.preprocess_example)
+    
+    data.preprocess(preprocessor.preprocess_example, slurm.nodes or 1)
 
 def _submit_slurm_job(
         *,

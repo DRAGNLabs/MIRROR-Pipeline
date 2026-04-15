@@ -12,6 +12,7 @@ mirror_pipeline.egg-info/
 
 # Project
 config*.yaml
+configs/
 slurm_logs/
 src/mirror/models/baby_babble/
 src/jupyter_template.ipynb
