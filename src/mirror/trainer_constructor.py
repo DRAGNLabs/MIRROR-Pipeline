@@ -16,14 +16,16 @@ class TrainerConstructor:
             num_nodes: int = 1,
             callbacks: list[Callback] = [],
     ) -> None:
-        from lightning.fabric.strategies.fsdp import FSDPStrategy
-
-        self.strategy = strategy if strategy is not None else FSDPStrategy()
+        if strategy is None:
+            from lightning.fabric.strategies.fsdp import FSDPStrategy
+            self.strategy = FSDPStrategy()
+        else:
+            self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
         self.callbacks = callbacks
 
-    def construct_trainer[RawT, ProcessedT, BatchT, ModelOutputT](self) -> Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
+    def construct_trainer(self) -> Trainer:
         from mirror.trainer import Trainer
 
         return Trainer(self.strategy, self.devices, self.num_nodes, self.callbacks)

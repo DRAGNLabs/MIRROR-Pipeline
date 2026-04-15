@@ -18,7 +18,7 @@ def submit_slurm_job(slurm_args: str, port: int, env_name: str) -> tuple[str, Pa
     # We use --output to capture the token/url
     cmd = (
         f"sbatch {slurm_args} --output={log_file} "
-        f"--wrap='{activate_cmd} && jupyter notebook --no-browser --port={port} --ip=0.0.0.0'"
+        f"--wrap='{activate_cmd} && jupyter lab --no-browser --port={port} --ip=0.0.0.0'"
     )
     
     result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
