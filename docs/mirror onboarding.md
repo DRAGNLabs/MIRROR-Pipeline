@@ -4,7 +4,27 @@
 
 ### Initial Access Setup
 
- [Add Content Here]
+#### Creating a Mamba Environment 
+
+After logging into the supercomputer, first, you'll need to create a local mamba environment to develop in.
+
+```
+mamba create --yes -f environment.yml -p ./.env
+```
+
+This environment can be activated at any time (and should basically always be active when working on the pipeline) by running:
+
+```
+mamba activate ./.env
+```
+
+#### Logging in to Huggingface
+
+To use resources like Llama/GPT-2 model weights, you'll need to get access through Huggingface.
+
+1. [Create an account](https://huggingface.co).
+2. Create a [User Access Token](https://huggingface.co/settings/tokens). When you try to use Llama/GPT-2 models in the MIRROR Pipeline for the first time, you'll be prompted to log in to Huggingface with this token.
+3. Request access for [Llama 3.2-1B](https://huggingface.co/meta-llama/Llama-3.2-1B), [Llama 3.2-1B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct), and [GPT-2](https://huggingface.co/openai-community/gpt2). Fill out the form to request access on each of these repositories; you should be approved within a few minutes.
 
 ### Things to do every time you log in
 
