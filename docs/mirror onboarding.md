@@ -220,6 +220,133 @@ Vim is the default editor for commit message files (e.g. git merge).
     - Useful for preparing data separately before running a training job
     - Requires `--data` and `--preprocessor` to be specified (either in the config file or as command-line arguments)
 
+## How to use the MIRROR Pipeline
+
+To test out submitting a training run, run this command: 
+
+```
+python src/main.py fit --config demo_fit_config.yaml
+```
+
+You should see the output `Submitted batch job <number>`. If this is your first time submitting a training run, you may be prompted to [log in to huggingface](#initial-access-setup) first to download required resources like the Llama model weights.
+
+That command uses a demo config YAML file to specify the settings for the training run. To customize a training run, you can either use a config file or pass in each argument and its value through the command line, e.g.:
+
+```
+python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel
+```
+
+The `init_args` in each YAML section correspond to that class's constructor arguments. If you want to know what arguments that class accepts, you can look at its `__init__` method in the code. It's recommended to use config files rather than passing in all of the arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline by walking you through creating this config file, section by section.
+
+#### Selecting your model 
+
+If you want to use Llama:
+
+```yaml
+model:
+    class_path: MirrorLlamaModel 
+    init_args: 
+        initialization:
+            # Pretrained weights:
+            <model_spec> # 3.2-1B | 3.2-1B-Instruct
+
+            # OR custom config:
+            vocab_size: <vocab_size>
+            hidden_size: <hidden_size> # etc
+```
+
+Note that you'll need to [use a GPU more capable than a p100, like an h200](#setting-up-slurm-jobtraining-run-settings), in order to have enough VRAM to run Llama with pretrained weights. Thus, we usually use a smaller custom config of Llama, like the one defined in [demo_fit_config.yaml](../configs/demo_fit_config.yaml).
+
+To use GPT-2:
+
+```yaml
+model:
+    class_path: MirrorGPTModel 
+    init_args: 
+        weights: <weights> # pretrained | random
+```
+
+The same general patterns will apply to any other models that are implemented in the MIRROR Pipeline. 
+
+#### Selecting your dataset 
+
+```yaml
+data: # Training set 
+  class_path: WikitextDataset
+  init_args:
+    split: train # Use the dataset's `train` portion
+    skip: <i> # Optionally, skip the first <i> examples from the selected split 
+    head: <j> # Use the first <j> examples (after skipping)
+    # OR
+    # # start_fraction: 0.0
+    # end_fraction: 0.8 # Use the first 80% of the selected dataset/split
+```
+
+#### Setting up val/test data
+
+```yaml
+val_data: # Validation set 
+  class_path: WikitextDataset
+  init_args:
+    split: validation # Use the dataset's `validation` portion
+    ... # etc
+
+val_check_interval: <k> # Perform validation every <k> epochs
+
+test_data: # Test set - will be run at the end of the training run
+  class_path: WikitextDataset
+  init_args:
+    split: test # Use the dataset's `test` portion
+    ... # etc
+```
+
+#### Deciding how the data will be preprocessed
+
+The model's own preprocessor will be used by default, but it can be overridden (see [Preprocessors](#preprocessors)):
+
+```yaml
+preprocessor:
+    class_path: <class_path> # e.g. MirrorLlamaPreprocessor
+```
+
+To preprocess up front rather than on-the-fly:
+
+```yaml
+do_preprocess: True # False by default
+``` 
+
+#### Setting up SLURM job/training run settings
+
+```yaml
+slurm:
+  job_type: <job_type> # "compute / "local" / "local-download"
+  # "compute": Submit job to a compute node 
+  # "local": Run the job directly on the login node
+  # "local-download": Download/cache the model on the login node so that 
+  # it can be accessed subsequently from compute nodes, then exit
+  time: "01:00:00" # Timeout limit - note that the requeue callback will continue 
+  # the job if the time limit is reached by submitting another SLURM job
+  gpus_per_node: <gpu_type>:<num_gpus> # p100, a100 (dw87 cluster), h200, etc.
+  nodes: 1 # Number of nodes to allocate
+  mem_per_cpu: "128G" # Memory allocated per CPU core
+  output: "slurm_logs/%j.out" # Path for job stdout log (%j = job ID)
+  open_mode: "append" # Append to log file instead of overwriting
+  signal: "SIGHUP@90" # Send SIGHUP signal 90 seconds before timeout to allow graceful shutdown
+  requeue: true # Automatically requeue job if it is preempted
+  qos: <cluster> # Specific GPU cluster/config, e.g. dw87, test
+
+epochs: 1 # Num of passes through the training dataset
+batch_size: 1 # Num of samples in each batch 
+device: cuda # `cuda` for GPU, `cpu` for CPU
+```
+
+#### Submitting the training job
+
+Run the following command:
+
+`python src/main.py fit --config <configfilename>.yaml`
+
+Replace `fit` with `preprocess` if you are just trying to do a preprocessing run. It's smart to make a separate config file for preprocessing, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your preprocessing config file for preprocessing runs.
 
 ### Pre-Pull Request Checklist
 [specific test runs, formatting checks they must run locally before opening a Pull Request]
