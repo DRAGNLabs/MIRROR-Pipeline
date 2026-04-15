@@ -236,7 +236,7 @@ That command uses a demo config YAML file to specify the settings for the traini
 python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel
 ```
 
-It's recommended to use config files rather than passing in arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline by walking you through creating this config file, section by section.
+The `init_args` in each YAML section correspond to that class's constructor arguments. If you want to know what arguments that class accepts, you can look at its `__init__` method in the code. It's recommended to use config files rather than passing in all of the arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline by walking you through creating this config file, section by section.
 
 #### Selecting your model 
 
@@ -255,7 +255,7 @@ model:
             hidden_size: <hidden_size> # etc
 ```
 
-Note that you'll need to [use an h200 GPU](#setting-up-slurm-jobtraining-run-settings) in order to have enough VRAM to run Llama with pretrained weights, so we usually use a smaller custom config of Llama, like the one defined in [demo_fit_config.yaml](../configs/demo_fit_config.yaml).
+Note that you'll need to [use a GPU more capable than a p100, like an h200](#setting-up-slurm-jobtraining-run-settings), in order to have enough VRAM to run Llama with pretrained weights. Thus, we usually use a smaller custom config of Llama, like the one defined in [demo_fit_config.yaml](../configs/demo_fit_config.yaml).
 
 To use GPT-2:
 
@@ -265,6 +265,8 @@ model:
     init_args: 
         weights: <weights> # pretrained | random
 ```
+
+The same general patterns will apply to any other models that are implemented in the MIRROR Pipeline. 
 
 #### Selecting your dataset 
 
@@ -283,7 +285,7 @@ data: # Training set
 #### Setting up val/test data
 
 ```yaml
-val_data: # Validation set
+val_data: # Validation set 
   class_path: WikitextDataset
   init_args:
     split: validation # Use the dataset's `validation` portion
@@ -291,7 +293,7 @@ val_data: # Validation set
 
 val_check_interval: <k> # Perform validation every <k> epochs
 
-test_data: # Test set
+test_data: # Test set - will be run at the end of the training run
   class_path: WikitextDataset
   init_args:
     split: test # Use the dataset's `test` portion
@@ -317,10 +319,14 @@ do_preprocess: True # False by default
 
 ```yaml
 slurm:
-  job_type: "compute" # "local" "local-download"
+  job_type: <job_type> # "compute / "local" / "local-download"
+  # "compute": Submit job to a compute node 
+  # "local": Run the job directly on the login node
+  # "local-download": Download/cache the model on the login node so that 
+  # it can be accessed subsequently from compute nodes, then exit
   time: "01:00:00" # Timeout limit - note that the requeue callback will continue 
   # the job if the time limit is reached by submitting another SLURM job
-  gpus_per_node: <gpu_type>:<num_gpus> # GPUs, low -> high capability: p100 | a100 (dw87 cluster) | h200  
+  gpus_per_node: <gpu_type>:<num_gpus> # p100, a100 (dw87 cluster), h200, etc.
   nodes: 1 # Number of nodes to allocate
   mem_per_cpu: "128G" # Memory allocated per CPU core
   output: "slurm_logs/%j.out" # Path for job stdout log (%j = job ID)
