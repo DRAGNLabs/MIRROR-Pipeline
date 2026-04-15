@@ -1,39 +1,42 @@
-from lightning import Fabric
-from torch.utils.data import DataLoader
-from typing import List
+from __future__ import annotations
+
 import datetime
 import os
 import warnings
-import torch
 from itertools import islice
+from typing import TYPE_CHECKING, List
 
-from lightning.fabric.strategies.strategy import Strategy
-from lightning.fabric.strategies.fsdp import FSDPStrategy
-from lightning.fabric.strategies.single_device import SingleDeviceStrategy
-
-from mirror.callbacks.callback import Callback
-from mirror.callbacks.checkpoint_callback import CheckpointCallback
-from mirror.callbacks.progress_callback import ProgressCallback
-from mirror.callbacks.requeue_callback import RequeueCallback
-from mirror.callbacks.wandb_callback import WandbCallback
-from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
-from mirror.callbacks.print_step_callback import PrintStepCallback
-from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
-from mirror.models.mirror_model import MirrorModel
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.config import RuntimeEnvironment, get_config
+if TYPE_CHECKING:
+    from lightning import Fabric
+    from lightning.fabric.strategies.strategy import Strategy
+    from mirror.callbacks.callback import Callback
+    from mirror.checkpoint_identifier import CheckpointIdentifier
+    from mirror.datasets.mirror_dataset import MirrorDataset
+    from mirror.models.mirror_model import MirrorModel
+    from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 
 
 class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
     def __init__(
             self,
-            strategy: Strategy = FSDPStrategy(),
+            strategy: Strategy | None = None,
             devices: int = 1,
             num_nodes: int = 1,
             callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
+        from lightning.fabric.strategies.fsdp import FSDPStrategy
+        from lightning.fabric.strategies.single_device import SingleDeviceStrategy
+        from mirror.callbacks.checkpoint_callback import CheckpointCallback
+        from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
+        from mirror.callbacks.print_step_callback import PrintStepCallback
+        from mirror.callbacks.progress_callback import ProgressCallback
+        from mirror.callbacks.requeue_callback import RequeueCallback
+        from mirror.callbacks.wandb_callback import WandbCallback
+        from mirror.config import RuntimeEnvironment, get_config
+
+        if strategy is None:
+            strategy = FSDPStrategy()
+
         config = get_config()
         self.config = config
         if config['device'] == "cpu" and isinstance(strategy, FSDPStrategy):
@@ -63,6 +66,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         self.fabric = self._make_fabric(self.strategy, config['device'])
 
     def launch(self):
+        import torch
+        from lightning.fabric.strategies.fsdp import FSDPStrategy
+        from lightning.fabric.strategies.single_device import SingleDeviceStrategy
+
         try:
             self.fabric.launch()
         except torch.AcceleratorError as exc:
@@ -110,7 +117,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         if checkpoint:
             # models and optimizers are treated specially: they are populated via their load_state_dict
             # methods internally to fabric.load. Anything else in the state dict is just set in place.
-            
+
             state = {
                 'model': model,
                 'optimizer': optimizer,
@@ -121,7 +128,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             checkpoint_global_step = state['global_step']
             if checkpoint_global_step is None:
                 raise RuntimeError(
-                    "checkpoint_global_step cannot be None. " 
+                    "checkpoint_global_step cannot be None. "
                     f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
                     )
             start_epoch = checkpoint_global_step // n_batches
@@ -134,9 +141,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         test_dataloader = None
         if test_dataset is not None:
             test_dataloader = self._make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess)
-        
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, 
-            training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch, 
+
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
+            training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch,
             start_batch=start_batch, run_config_yaml=run_config_yaml)
 
         for epoch_idx in range(start_epoch, epochs):
@@ -172,18 +179,20 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                 val_loss = self._eval_loop(model, val_dataloader)
 
-                self.fabric.call('on_validation_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer, 
+                self.fabric.call('on_validation_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
                                  val_loss=val_loss, training_run_id=training_run_id, epoch=epoch_idx)
 
         if test_dataloader is not None:
             test_loss = self._eval_loop(model, test_dataloader)
-            self.fabric.call('on_test_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer, 
+            self.fabric.call('on_test_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
                              test_loss=test_loss, training_run_id=training_run_id)
 
-        self.fabric.call('on_fit_end', fabric=self.fabric, model=model, 
+        self.fabric.call('on_fit_end', fabric=self.fabric, model=model,
                          optimizer=optimizer, training_run_id=training_run_id)
 
     def _eval_loop(self, model, dataloader) -> float:
+        import torch
+
         model.eval()
         total_loss = 0.0
         n_batches = 0
@@ -199,6 +208,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         return total_loss / n_batches
 
     def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess):
+        from torch.utils.data import DataLoader
+        from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
+
         if do_preprocess:
             preprocessed = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
         else:
@@ -212,6 +224,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         return self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
+        from lightning import Fabric
+
         return Fabric(
             strategy=strategy,
             devices=self.devices,
