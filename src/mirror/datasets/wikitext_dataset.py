@@ -44,6 +44,9 @@ class WikitextDataset(MirrorDataset[TextRow]):
     def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
         return ds.filter(lambda row: len(row['text']) > 0)
 
+    def to_row_type(self, ds_row: dict) -> TextRow:
+        return TextRow(text=ds_row['text'])
+
     def __len__(self) -> int:
         return len(self.ds)
 

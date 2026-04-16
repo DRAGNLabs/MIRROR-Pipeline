@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Callable, Sequence, Sized, cast
+from typing import Callable, Sequence, Sized
 from torch.utils.data import Dataset
 from datasets import Dataset as HFDataset
 from abc import abstractmethod
@@ -12,8 +12,9 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
     def ds(self) -> HFDataset:
         pass
 
+    @abstractmethod
     def to_row_type(self, ds_row: dict) -> RawT:
-        return cast(RawT, ds_row)
+        pass
 
     def __getitem__(self, index: int) -> RawT:
         return self.to_row_type(self.ds[index])
