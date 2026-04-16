@@ -4,7 +4,7 @@
 
 ### Initial Access Setup
 
-Before getting started with work on the MIRROR Pipeline, it will be helpful to read the [NSF Research Grant]() to understand the purpose and goal of the project. You may need to email the repo administrator(s) for access to the Google Drive. [Andrej Karpathy's Zero to Hero series](https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ) on YouTube is a great resource for learning about training neural networks in PyTorch as well.
+Before getting started with work on the MIRROR Pipeline, it will be helpful to read the [NSF Research Grant](https://drive.google.com/file/d/1PgxW9qaAkQDepXvC9p67mAqY2WeXaIu4/view?usp=sharing) to understand the purpose and goal of the project. You may need to email the repo administrator(s) for access to the Google Drive. [Andrej Karpathy's Zero to Hero series](https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ) on YouTube is a great resource for learning about training neural networks in PyTorch as well.
 
 1. **Create a BYU Research Computing Account**
 
@@ -42,13 +42,13 @@ mamba activate ./.env
 
 3. **Logging in to Huggingface**
 
-To use resources like Llama/GPT-2 model weights, you'll need to get access through Huggingface.
+To use resources like Llama/GPT-2 model weights, you'll need to get access through Huggingface. Follow these steps:
 
-1. [Create an account](https://huggingface.co).
-2. Create a [User Access Token](https://huggingface.co/settings/tokens).      
+- [Create an account](https://huggingface.co).
+- Create a [User Access Token](https://huggingface.co/settings/tokens).
   - When you try to use Llama/GPT-2 models in the MIRROR Pipeline for the first time, you'll be prompted to log in to Huggingface with this token
-  - In addition, make a copy of [`.ENV_example`](../../.ENV_example), rename it to `.ENV`, and paste this token between the quotation marks. 
-3. Request access for [Llama 3.2-1B](https://huggingface.co/meta-llama/Llama-3.2-1B), [Llama 3.2-1B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct), and [GPT-2](https://huggingface.co/openai-community/gpt2). Fill out the form to request access on each of these repositories; you should be approved within a few minutes.
+  - In addition, make a copy of [`.ENV_example`](../../.ENV_example), rename it to `.ENV`, and paste this token between the quotation marks.
+- Request access for [Llama 3.2-1B](https://huggingface.co/meta-llama/Llama-3.2-1B), [Llama 3.2-1B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct), and [GPT-2](https://huggingface.co/openai-community/gpt2). Fill out the form to request access on each of these repositories; you should be approved within a few minutes.
 
 ### Things to do every time you log in
 
