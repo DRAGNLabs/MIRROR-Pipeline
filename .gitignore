@@ -3,6 +3,7 @@ slurm_logs/
 **/__pycache__/
 .ENV
 config*.yaml
+configs/
 mirror_pipeline.egg-info/
 .vscode/
 .claude/

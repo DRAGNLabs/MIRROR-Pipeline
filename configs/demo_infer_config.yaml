@@ -1,0 +1,23 @@
+model:
+  class_path: MirrorGPTModel
+  init_args:
+    weights: pretrained
+
+checkpoint_path:
+text:
+num_tokens: 100
+temperature: 0.8
+top_p: 0.95
+repetition_penalty: 1.2
+
+slurm:
+  job_type: compute
+  time: "01:00:00"
+  gpus_per_node: "1"
+  mem_per_cpu: "128G"
+  output: "slurm_logs/%j.out"
+  open_mode: "append"
+  signal: "SIGHUP@90"
+  requeue: true
+
+device: cuda

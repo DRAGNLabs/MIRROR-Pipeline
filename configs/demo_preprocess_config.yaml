@@ -1,0 +1,28 @@
+data:
+  class_path: 
+    WikitextDataset
+  init_args:
+    split: train
+    head: 1000
+
+preprocessor: 
+  class_path: MirrorLlamaPreprocessor
+  init_args:
+    vocab_size: 128256
+
+# checkpoint:
+#   training_run_id: <training_run_id>
+#   checkpoint_name: <checkpoint_name>
+
+slurm:
+  job_type: compute
+  time: "01:00:00"
+  gpus_per_node: "p100:1"
+  nodes: 4
+  mem_per_cpu: "128G"
+  output: "slurm_logs/%j.out"
+  open_mode: "append"
+  signal: "SIGHUP@90"
+  requeue: true
+
+device: cuda
