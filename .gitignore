@@ -1,4 +1,5 @@
 slurm_logs/
+src/mirror/models/baby_babble/
 .env/
 **/__pycache__/
 .ENV
