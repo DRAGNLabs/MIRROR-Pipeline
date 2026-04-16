@@ -4,26 +4,50 @@
 
 ### Initial Access Setup
 
-#### Creating a Mamba Environment 
+Before getting started with work on the MIRROR Pipeline, it will be helpful to read the [NSF Research Grant]() to understand the purpose and goal of the project. You may need to email the repo administrator(s) for access to the Google Drive. [Andrej Karpathy's Zero to Hero series](https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ) on YouTube is a great resource for learning about training neural networks in PyTorch as well.
 
-After logging into the supercomputer, first, you'll need to create a local mamba environment to develop in.
+1. **Create a BYU Research Computing Account**
 
+In order to access BYU's supercomputer system where development and training takes place, you'll need to [request a BYU RC account](https://rc.byu.edu/account/create/). Your sponsor should be Nancy Fulda.
+
+For an introduction to BYU's supercomputer and how to use it, BYU has published a helpful [YouTube Playlist](https://www.youtube.com/watch?v=i1r9BxHBG0I&list=PL326A5EB4E3B16FED) with some quick tutorials.
+
+2. **Setting Up The MIRROR Pipeline In VSCode**
+
+In a new window in VSCode, click on the icon on the left icon bar that looks like a computer monitor. Hover over `SSH` and press the `+` button. In the window that opens at the top, enter the following command:
+
+```bash
+ssh <your username>@ssh.rc.byu.edu
 ```
+
+You will be prompted to enter your BYU RC password and a two-factor authentication code. 
+
+Once you log in, clone the MIRROR Pipeline repository:
+
+```bash
+git clone https://github.com/DRAGNLabs/MIRROR-Pipeline
+```
+
+Now you'll need to create a local mamba environment to develop in.
+
+```bash
 mamba create --yes -f environment.yml -p ./.env
 ```
 
-This environment can be activated at any time (and should basically always be active when working on the pipeline) by running:
+This environment can be activated at any time by running:
 
-```
+```bash
 mamba activate ./.env
 ```
 
-#### Logging in to Huggingface
+3. **Logging in to Huggingface**
 
 To use resources like Llama/GPT-2 model weights, you'll need to get access through Huggingface.
 
 1. [Create an account](https://huggingface.co).
-2. Create a [User Access Token](https://huggingface.co/settings/tokens). When you try to use Llama/GPT-2 models in the MIRROR Pipeline for the first time, you'll be prompted to log in to Huggingface with this token.
+2. Create a [User Access Token](https://huggingface.co/settings/tokens).      
+  - When you try to use Llama/GPT-2 models in the MIRROR Pipeline for the first time, you'll be prompted to log in to Huggingface with this token
+  - In addition, make a copy of [`.ENV_example`](../../.ENV_example), rename it to `.ENV`, and paste this token between the quotation marks. 
 3. Request access for [Llama 3.2-1B](https://huggingface.co/meta-llama/Llama-3.2-1B), [Llama 3.2-1B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct), and [GPT-2](https://huggingface.co/openai-community/gpt2). Fill out the form to request access on each of these repositories; you should be approved within a few minutes.
 
 ### Things to do every time you log in
@@ -39,7 +63,7 @@ To use resources like Llama/GPT-2 model weights, you'll need to get access throu
 3. Activate mamba environment
 
     To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have [created the environment first](#initial-access-setup), of course.) 
-
+    
 4. Ensure you're on the correct branch
 
     Run `git status` to see what branch you're currently checked out to. Make sure that this matches the branch you're intending to work on. If it doesn't, run `git checkout <branch_name>` to switch to the correct branch. 
