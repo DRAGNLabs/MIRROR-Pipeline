@@ -34,8 +34,8 @@ class ImdbDataset(MirrorDataset[TextRow]):
         if head:
             self._ds = self._ds.select(range(head))
 
-    def __getitem__(self, index: int) -> TextRow:
-        return cast(TextRow, self.ds[index])
+    def to_row_type(self, ds_row: dict) -> TextRow:
+        return TextRow(text=ds_row['text'])
 
     def __len__(self) -> int:
         return len(self.ds)
