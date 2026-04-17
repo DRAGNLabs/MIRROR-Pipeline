@@ -1,8 +1,10 @@
 slurm_logs/
+src/mirror/models/baby_babble/
 .env/
 **/__pycache__/
 .ENV
 config*.yaml
+configs/
 mirror_pipeline.egg-info/
 .vscode/
 .claude/
