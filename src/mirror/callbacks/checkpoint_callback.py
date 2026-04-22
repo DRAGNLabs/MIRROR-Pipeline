@@ -1,8 +1,11 @@
+from typing import cast, Any
 from lightning import Fabric
+from torch.nn import Module
 from torch.optim import Optimizer
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.models.mirror_model import MirrorModel
+from mirror.dict_types import StateDict
 
 class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
        Callback[RawT, ProcessedT, BatchT, ModelOutputT]
@@ -63,9 +66,9 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             checkpoint_identifier: CheckpointIdentifier,
             global_step: int | None,
     ):
-        state = {
+        state : StateDict = {
             'model': model,
             'optimizer': optimizer,
             'global_step': global_step,
         }
-        fabric.save(checkpoint_identifier.path, state)
+        fabric.save(checkpoint_identifier.path, cast(dict[str, Module | Optimizer | Any], state))

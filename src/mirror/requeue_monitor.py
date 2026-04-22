@@ -4,15 +4,17 @@ import signal
 import time
 from subprocess import call
 from types import FrameType
-from typing import Dict, Literal
+from typing import cast, Dict, Literal, Any
 
 from lightning import Fabric
+from torch.nn import Module
 from torch.optim import Optimizer
 
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.slurm_util import get_job_id
+from mirror.dict_types import StateDict
 from mirror.util import is_power_of_ten, mirror_data_path
 
 
@@ -36,16 +38,15 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
     def setup(
             self,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
-            optimizer: Optimizer,
-    ) -> int | None:
+            state: StateDict,
+    ) -> StateDict | None:
         """Set up the requeue signal handler and load a requeue checkpoint if one is present.
 
         Returns the global_step from the requeue checkpoint, or None if no checkpoint was loaded.
         """
         rank_zero_log(fabric, f'setting up requeue handler on signal {self.requeue_signal}')
         signal.signal(self.requeue_signal, self._make_requeue_handler(fabric))
-        return self._load_requeue_checkpoint_if_present(fabric, model, optimizer)
+        return self._load_requeue_checkpoint_if_present(fabric, state["model"], state["optimizer"])
 
     def on_train_batch_end(
             self,
@@ -69,7 +70,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
             fabric: Fabric,
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
-    ) -> int | None:
+    ) -> StateDict | None:
         path = requeue_handoff_path()
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -80,13 +81,13 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
                 handoff: RequeueHandoff = json.loads(handoff_json)
 
                 checkpoint_id = self._requeue_checkpoint_id(handoff['previous_training_run_id'])
-                state = {
+                state : StateDict = {
                     'model': model,
                     'optimizer': optimizer,
                     'global_step': 0,
                 }
-                fabric.load(checkpoint_id.path, state)
-                return state['global_step']
+                fabric.load(checkpoint_id.path, cast(dict[str, Module | Optimizer | Any], state))
+                return state
         except FileNotFoundError:
             return None
 
@@ -103,12 +104,12 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
     ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')
         checkpoint_id = self._requeue_checkpoint_id(training_run_id)
-        state = {
+        state : StateDict = {
             'model': model,
             'optimizer': optimizer,
             'global_step': global_step,
         }
-        fabric.save(checkpoint_id.path, state)
+        fabric.save(checkpoint_id.path, cast(dict[str, Module | Optimizer | Any], state))
 
     def _create_requeue_handoff(self, training_run_id: str):
         path = requeue_handoff_path()
@@ -147,8 +148,8 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
             if training_step_duration > self.grace_period_seconds:
                 self.num_iterations_too_long += 1
 
-            if is_power_of_ten(self.num_iterations_too_long):
-                rank_zero_log(fabric, f'WARNING: the last training step took {training_step_duration} seconds, which is longer than the requeue grace period of {self.grace_period_seconds} seconds. This might cause your training run not to get properly checkpointed and requeued if it hits the walltime limit. {self.num_iterations_too_long} training step(s) have been longer than the grace period so far.')
+                if is_power_of_ten(self.num_iterations_too_long):
+                    rank_zero_log(fabric, f'WARNING: the last training step took {training_step_duration} seconds, which is longer than the requeue grace period of {self.grace_period_seconds} seconds. This might cause your training run not to get properly checkpointed and requeued if it hits the walltime limit. {self.num_iterations_too_long} training step(s) have been longer than the grace period so far.')
         self.last_train_batch_end_time = current_time
 
     def _make_requeue_handler(self, fabric: Fabric):

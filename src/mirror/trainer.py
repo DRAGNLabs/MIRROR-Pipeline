@@ -1,6 +1,6 @@
 from lightning import Fabric
 from torch.utils.data import DataLoader
-from typing import List
+from typing import Any, List, cast
 import datetime
 import os
 import warnings
@@ -24,6 +24,7 @@ from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.requeue_monitor import RequeueMonitor
+from mirror.dict_types import StateDict
 
 
 class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
@@ -110,31 +111,34 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         n_batches = len(dataloader)
 
         requeue_global_step: int | None = None
-        if self.requeue_monitor:
-            requeue_global_step = self.requeue_monitor.setup(self.fabric, model, optimizer)
+
+        state : StateDict = {
+            'model': model,
+            'optimizer': optimizer,
+            'global_step': 0,
+        }
 
         if checkpoint:
             # models and optimizers are treated specially: they are populated via their load_state_dict
             # methods internally to fabric.load. Anything else in the state dict is just set in place.
 
-            state = {
-                'model': model,
-                'optimizer': optimizer,
-                'global_step': 0,
-            }
-            self.fabric.load(checkpoint.path, state)
+            self.fabric.load(checkpoint.path, cast(dict[str, torch.Module | torch.optim.Optimizer | Any], state))
 
-            checkpoint_global_step = state['global_step']
-            if checkpoint_global_step is None:
+            if state['global_step'] is None:
                 raise RuntimeError(
                     "checkpoint_global_step cannot be None. "
                     f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
                     )
-            start_epoch = checkpoint_global_step // n_batches
-            start_batch = (checkpoint_global_step % n_batches) + 1
-        elif requeue_global_step is not None:
-            start_epoch = requeue_global_step // n_batches
-            start_batch = (requeue_global_step % n_batches) + 1
+            
+        if self.requeue_monitor:
+            result = self.requeue_monitor.setup(self.fabric, state)
+            if result is not None:
+                state = cast(StateDict, result)
+
+        global_step : int = cast(int, state["global_step"])
+
+        start_epoch = global_step // n_batches
+        start_batch = (global_step % n_batches) + 1
 
         val_dataloader = None
         if val_dataset is not None:
