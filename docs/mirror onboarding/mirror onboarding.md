@@ -8,13 +8,16 @@ Before getting started with work on the MIRROR Pipeline, it will be helpful to r
 
 1. **Create a BYU Research Computing Account**
 
-In order to access BYU's supercomputer system where development and training takes place, you'll need to [request a BYU RC account](https://rc.byu.edu/account/create/). Your sponsor should be Nancy Fulda.
+In order to access BYU's supercomputer system where development and training takes place, you'll need to [request a BYU RC account](https://rc.byu.edu/account/create/). Your sponsor should be Nancy Fulda. You'll be asked to justify your need for an account:
+- **What research are you doing?** Just mention that you'll be working on developing LLM training pipelines optimized for the supercomputer
+- **What software will you use?** Python/Pytorch
+- **What resources do you anticipate needing?** Resource utilization will be mostly minor and usually at most a GPU or two at a time, used for iterating & testing code
 
-For an introduction to BYU's supercomputer and how to use it, BYU has published a helpful [YouTube Playlist](https://www.youtube.com/watch?v=i1r9BxHBG0I&list=PL326A5EB4E3B16FED) with some quick tutorials.
+For an introduction to BYU's supercomputer and how to use it, BYU has published a helpful [YouTube playlist](https://www.youtube.com/watch?v=i1r9BxHBG0I&list=PL326A5EB4E3B16FED) with some quick tutorials.
 
 2. **Setting Up The MIRROR Pipeline In VSCode**
 
-In a new window in VSCode, click on the icon on the left icon bar that looks like a computer monitor. Hover over `SSH` and press the `+` button. In the window that opens at the top, enter the following command:
+In a new window in VSCode, make sure you have the "Visual Studio Code Remote - SSH" extension installed, then click on the icon on the left icon bar for "Remote Explorer" (looks like a computer monitor). Hover over `SSH` and press the `+` button. In the window that opens at the top, enter the following command:
 
 ```bash
 ssh <your username>@ssh.rc.byu.edu
@@ -26,9 +29,10 @@ Once you log in, clone the MIRROR Pipeline repository:
 
 ```bash
 git clone https://github.com/DRAGNLabs/MIRROR-Pipeline
+cd MIRROR-Pipeline
 ```
 
-Now you'll need to create a local mamba environment to develop in.
+Now you'll need to create a [local mamba environment](https://rc.byu.edu/wiki/?id=Conda+Environments) to develop in.
 
 ```bash
 mamba create --yes -f environment.yml -p ./.env
