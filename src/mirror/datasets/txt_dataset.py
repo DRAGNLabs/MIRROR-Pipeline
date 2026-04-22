@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import cast
 
 from datasets import Dataset, load_dataset
-
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.row_types import TextRow
 

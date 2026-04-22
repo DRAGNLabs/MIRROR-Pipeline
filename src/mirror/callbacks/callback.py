@@ -6,7 +6,7 @@ from mirror.models.mirror_model import MirrorModel
 
 class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
     """
-    The names of the methods here are based on those of Lightning's 
+    The names of the methods here are based on those of Lightning's
     Callback class: https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.Callback.html#lightning.pytorch.callbacks.Callback
     """
 
@@ -34,11 +34,11 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
         pass
 
     def on_fit_end(
-        self, 
-        *, 
-        fabric: Fabric, 
-        model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], 
-        optimizer: Optimizer, 
+        self,
+        *,
+        fabric: Fabric,
+        model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+        optimizer: Optimizer,
         training_run_id: str
     ):
         pass

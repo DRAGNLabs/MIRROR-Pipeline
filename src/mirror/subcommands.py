@@ -1,4 +1,3 @@
-
 from dataclasses import asdict
 from pathlib import Path
 import shlex
@@ -6,6 +5,7 @@ import subprocess
 import sys
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
+
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
@@ -55,8 +55,8 @@ def fit(
     )
 
 def preprocess(
-        data: MirrorDataset, 
-        preprocessor: MirrorPreprocessor, 
+        data: MirrorDataset,
+        preprocessor: MirrorPreprocessor,
         slurm: SlurmConfig = SlurmConfig()
 ) -> None:
     if slurm.job_type == "compute" and is_login_node():
@@ -72,9 +72,9 @@ def preprocess(
     data.preprocess(preprocessor.preprocess_example, slurm.nodes or 1)
 
 def _submit_slurm_job(
-        *, 
-        python_args: list[str], 
-        slurm: SlurmConfig, 
+        *,
+        python_args: list[str],
+        slurm: SlurmConfig,
         num_nodes: int,
         devices: int
 ) -> str:
@@ -97,7 +97,7 @@ def _submit_slurm_job(
 
     if slurm_ctx["ntasks_per_node"] is None:
         slurm_ctx["ntasks_per_node"] = devices
-        
+
     if slurm_ctx["gpus_per_node"] is None:
         slurm_ctx["gpus_per_node"] = devices
 
@@ -109,11 +109,10 @@ def _submit_slurm_job(
     }
 
     script = template.render(**context)
-    
+
     res = subprocess.run(["sbatch"], input=script, text=True, capture_output=True)
     if res.returncode != 0:
         raise RuntimeError(
             f"sbatch failed (exit {res.returncode}):\n{res.stderr}\n\nGenerated script:\n{script}"
         )
     return res.stdout.strip().split()[-1]
-
