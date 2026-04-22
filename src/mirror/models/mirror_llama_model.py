@@ -12,7 +12,7 @@ from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.models.configuration_llama import LlamaConfig
 from mirror.preprocessors.mirror_llama_preprocessor import MirrorLlamaPreprocessor
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor, TrainStepOutput
-from mirror.row_types import TextRow
+from mirror.dict_types import TextRow
 
 class MirrorLlamaModel(
     MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None],

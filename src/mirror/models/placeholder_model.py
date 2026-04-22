@@ -7,7 +7,7 @@ from mirror.preprocessors.placeholder_preprocessor import PlaceholderPreprocesso
 from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor, TrainStepOutput
 from mirror.util import get_device
 
-from mirror.row_types import TextRow
+from mirror.dict_types import TextRow
 
 class PlaceholderModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None]):
     def __init__(self) -> None:

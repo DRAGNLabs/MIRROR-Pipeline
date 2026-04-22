@@ -4,7 +4,7 @@ from datasets import Dataset, DatasetDict
 
 from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.row_types import TextRow
+from mirror.dict_types import TextRow
 
 hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
