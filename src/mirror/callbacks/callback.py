@@ -1,12 +1,7 @@
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from lightning import Fabric
-    from torch.optim import Optimizer
-    from mirror.datasets.mirror_dataset import MirrorDataset
-    from mirror.models.mirror_model import MirrorModel
+from lightning import Fabric
+from torch.optim import Optimizer
+from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.models.mirror_model import MirrorModel
 
 
 class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:

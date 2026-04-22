@@ -1,12 +1,9 @@
-from __future__ import annotations
+from typing import Literal, cast
 
-from typing import TYPE_CHECKING, Literal, cast
-
+from datasets import Dataset, DatasetDict
+from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.row_types import TextRow
-
-if TYPE_CHECKING:
-    from datasets import Dataset
 
 hf_dataset_path = 'stanfordnlp/imdb'
 
@@ -29,9 +26,6 @@ class ImdbDataset(MirrorDataset[TextRow]):
             split: which dataset split to use. 'unsupervised' is the union of
                 'train' and 'test'
         """
-        from datasets import DatasetDict
-        from mirror.datasets.dataset_util import load_hf_dataset
-
         super().__init__()
 
         self._ds = cast(DatasetDict, load_hf_dataset(hf_dataset_path))[split]

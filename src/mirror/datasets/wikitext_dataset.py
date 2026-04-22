@@ -1,12 +1,10 @@
-from __future__ import annotations
+from typing import Literal, cast
 
-from typing import TYPE_CHECKING, Literal, cast
+from datasets import Dataset, DatasetDict
 
+from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.row_types import TextRow
-
-if TYPE_CHECKING:
-    from datasets import Dataset, DatasetDict
 
 hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
@@ -29,9 +27,6 @@ class WikitextDataset(MirrorDataset[TextRow]):
             skip: how many examples to skip from the start.
             split: which dataset split to use.
         """
-        from datasets import DatasetDict
-        from mirror.datasets.dataset_util import load_hf_dataset
-
         super().__init__()
 
         self._ds = cast(DatasetDict, load_hf_dataset(
