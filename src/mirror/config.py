@@ -1,5 +1,6 @@
 import os
 import socket
+import torch
 from enum import Enum
 from typing import Literal, TypedDict
 
@@ -36,22 +37,17 @@ def init_config(device: DeviceType | None = None) -> RuntimeConfig:
         os.environ.setdefault("HF_DATASETS_OFFLINE", "1")
         os.environ.setdefault("HF_HUB_DISABLE_TELEMETRY", "1")
     if device is None:
-        if environment == RuntimeEnvironment.SLURM_COMPUTE and _cuda_is_available():
+        if environment == RuntimeEnvironment.SLURM_COMPUTE and torch.cuda.is_available():
             device = 'cuda'
         else:
             device = 'cpu'
-    elif device == 'cuda' and not _cuda_is_available():
+    elif device == 'cuda' and not torch.cuda.is_available():
         raise ValueError(
             "Device 'cuda' was requested but CUDA is not available. "
             "Use --device cpu, or run on a CUDA-capable system."
         )
     _CONFIG = {'device': device, 'environment': environment}
     return _CONFIG
-
-
-def _cuda_is_available() -> bool:
-    import torch
-    return torch.cuda.is_available()
 
 
 def get_config() -> RuntimeConfig:

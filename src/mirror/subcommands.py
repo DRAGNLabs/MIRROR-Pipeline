@@ -1,20 +1,18 @@
-from __future__ import annotations
-
 from dataclasses import asdict
 from pathlib import Path
 import shlex
 import subprocess
 import sys
-from typing import TYPE_CHECKING
 
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
+
+from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.models.mirror_model import MirrorModel
+from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.slurm_util import SlurmConfig
-
-if TYPE_CHECKING:
-    from mirror.checkpoint_identifier import CheckpointIdentifier
-    from mirror.datasets.mirror_dataset import MirrorDataset
-    from mirror.models.mirror_model import MirrorModel
-    from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-    from mirror.trainer import Trainer
+from mirror.trainer import Trainer
+from mirror.util import is_login_node
 
 
 def fit(
@@ -32,8 +30,6 @@ def fit(
         test_data: MirrorDataset | None = None,
         val_check_interval: int = 1,
 ):
-    from mirror.util import is_login_node
-
     if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
             python_args=sys.argv[1:],
@@ -63,8 +59,6 @@ def preprocess(
         preprocessor: MirrorPreprocessor,
         slurm: SlurmConfig = SlurmConfig()
 ) -> None:
-    from mirror.util import is_login_node
-
     if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
             python_args=sys.argv[1:],
@@ -84,8 +78,6 @@ def _submit_slurm_job(
         num_nodes: int,
         devices: int
 ) -> str:
-    from jinja2 import Environment, FileSystemLoader, StrictUndefined
-
     # Prevent recursion: job run should not submit again
     args = [a for a in python_args if not a.startswith("--slurm.submit")]
     args.append("--slurm.submit=false")

@@ -1,13 +1,9 @@
-from __future__ import annotations
-
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
+from datasets import Dataset, load_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.row_types import TextRow
-
-if TYPE_CHECKING:
-    from datasets import Dataset
 
 
 class TxtDataset(MirrorDataset[TextRow]):
@@ -25,8 +21,6 @@ class TxtDataset(MirrorDataset[TextRow]):
             file_path: path to a .txt file where each line is one example.
             head: how many examples to include. None includes the whole split.
         """
-        from datasets import Dataset, load_dataset
-
         super().__init__()
 
         self._ds = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
