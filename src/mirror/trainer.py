@@ -212,7 +212,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 
         if do_preprocess:
-            preprocessed = dataset.preprocess(preprocessor.preprocess_example)
+            preprocessed = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
         else:
             preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
         dataloader = DataLoader(

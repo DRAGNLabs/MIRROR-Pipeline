@@ -8,7 +8,27 @@
 
 ### Things to do every time you log in
 
-[Add Content Here]
+1. Log in to the supercomputer
+
+    If you have a VSCode window already open to the MIRROR Pipeline, this will simply consist of logging in again with your password and authentication code. Otherwise, go to the Remote Explorer tab (computer monitor icon), hover over the MIRROR-Pipeline, and click the arrow icon, then log in. 
+
+2. (If necessary) Run `source /etc/profile`
+
+    If you logged in to the supercomputer strictly by ssh'ing through the terminal, this will automatically have been done for you. Otherwise (e.g. using VSCode to log in to the supercomputer), run `source /etc/profile/` to load system-wide environment settings and paths. 
+    
+3. Activate mamba environment
+
+    To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have [created the environment first](#initial-access-setup), of course.) 
+
+4. Ensure you're on the correct branch
+
+    Run `git status` to see what branch you're currently checked out to. Make sure that this matches the branch you're intending to work on. If it doesn't, run `git checkout <branch_name>` to switch to the correct branch. 
+
+5. Update with any new changes
+
+    Run `git fetch origin` to check for any new changes to the main branch from other branches getting merged, then `git merge main` to integrate these changes into your local branch. If there are merge conflicts, resolve them as needed. 
+
+    If you're working on a branch with someone else, run `git pull` to check for any changes they may have pushed and integrate them locally. 
  
 ## General MIRROR Pipeline Architecture
 
@@ -193,7 +213,7 @@ Vim is the default editor for commit message files (e.g. git merge).
 
 - `python src/main.py fit --config <config-file>`: Train a model using settings from a config file
     - The config file specifies the dataset, model, preprocessor, training parameters, and SLURM settings
-        - Config files should be local and user-specific; start your config file(s) names with "config" so that the `.gitignore` knows not to track them
+        - Config files should be local and user-specific; to avoid Git tracking these files, either start their filename with 'config' or place them in the `configs` folder, where they will be parsed automatically in the same way
     - You can also pass arguments directly, e.g. `python src/main.py fit --data.class_path WikitextDataset --model.class_path MirrorLlamaModel --epochs 1 --batch_size 1`
 
 - `python src/main.py preprocess --config <config-file>`: Preprocess a dataset without training
