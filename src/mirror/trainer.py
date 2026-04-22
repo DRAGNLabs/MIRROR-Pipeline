@@ -1,29 +1,19 @@
+from __future__ import annotations
+
 import datetime
 import os
 import warnings
 from itertools import islice
-from typing import List
+from typing import TYPE_CHECKING, List
 
-import torch
-from lightning import Fabric
-from lightning.fabric.strategies.fsdp import FSDPStrategy
-from lightning.fabric.strategies.single_device import SingleDeviceStrategy
-from lightning.fabric.strategies.strategy import Strategy
-from torch.utils.data import DataLoader
-
-from mirror.callbacks.callback import Callback
-from mirror.callbacks.checkpoint_callback import CheckpointCallback
-from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
-from mirror.callbacks.print_step_callback import PrintStepCallback
-from mirror.callbacks.progress_callback import ProgressCallback
-from mirror.callbacks.requeue_callback import RequeueCallback
-from mirror.callbacks.wandb_callback import WandbCallback
-from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.config import RuntimeEnvironment, get_config
-from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
-from mirror.models.mirror_model import MirrorModel
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+if TYPE_CHECKING:
+    from lightning import Fabric
+    from lightning.fabric.strategies.strategy import Strategy
+    from mirror.callbacks.callback import Callback
+    from mirror.checkpoint_identifier import CheckpointIdentifier
+    from mirror.datasets.mirror_dataset import MirrorDataset
+    from mirror.models.mirror_model import MirrorModel
+    from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 
 
 class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
@@ -34,6 +24,16 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             num_nodes: int = 1,
             callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
+        from lightning.fabric.strategies.fsdp import FSDPStrategy
+        from lightning.fabric.strategies.single_device import SingleDeviceStrategy
+        from mirror.callbacks.checkpoint_callback import CheckpointCallback
+        from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
+        from mirror.callbacks.print_step_callback import PrintStepCallback
+        from mirror.callbacks.progress_callback import ProgressCallback
+        from mirror.callbacks.requeue_callback import RequeueCallback
+        from mirror.callbacks.wandb_callback import WandbCallback
+        from mirror.config import RuntimeEnvironment, get_config
+
         if strategy is None:
             strategy = FSDPStrategy()
 
@@ -66,6 +66,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         self.fabric = self._make_fabric(self.strategy, config['device'])
 
     def launch(self):
+        import torch
+        from lightning.fabric.strategies.fsdp import FSDPStrategy
+        from lightning.fabric.strategies.single_device import SingleDeviceStrategy
+
         try:
             self.fabric.launch()
         except torch.AcceleratorError as exc:
@@ -187,6 +191,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                          optimizer=optimizer, training_run_id=training_run_id)
 
     def _eval_loop(self, model, dataloader) -> float:
+        import torch
+
         model.eval()
         total_loss = 0.0
         n_batches = 0
@@ -202,6 +208,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         return total_loss / n_batches
 
     def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess):
+        from torch.utils.data import DataLoader
+        from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
+
         if do_preprocess:
             preprocessed = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
         else:
@@ -215,6 +224,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         return self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
+        from lightning import Fabric
+
         return Fabric(
             strategy=strategy,
             devices=self.devices,

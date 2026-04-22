@@ -3,8 +3,6 @@ import os
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-
-from datasets import config as datasets_config
 from mirror.config import RuntimeEnvironment, get_config
 
 
@@ -41,12 +39,13 @@ def is_power_of_ten(n: int):
 
 @contextmanager
 def _ds_cache_path_context() -> Generator[None, None, None]:
+    from datasets import config
     hf_cache_path = mirror_data_path / "hf_cache"
     hf_cache_path.mkdir(exist_ok=True)
-    original = datasets_config.HF_DATASETS_CACHE
-    datasets_config.HF_DATASETS_CACHE = str(hf_cache_path)
+    original = config.HF_DATASETS_CACHE
+    config.HF_DATASETS_CACHE = str(hf_cache_path)
     try:
         yield
     finally:
-        datasets_config.HF_DATASETS_CACHE = original
+        config.HF_DATASETS_CACHE = original
     
