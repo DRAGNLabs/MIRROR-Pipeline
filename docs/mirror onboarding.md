@@ -200,8 +200,8 @@ Vim is the default editor for commit message files (e.g. git merge).
     - Useful for preparing data separately before running a training job
     - Requires `--data` and `--preprocessor` to be specified (either in the config file or as command-line arguments)
 
-- `python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for submitting SLURM jobs in a Jupyter notebook
-    - Jupyter notebooks allow for significantly decreased startup time on repeat job submissions 
+- `python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
+    - Jupyter notebooks allow for significantly decreased startup time on repeat job runs
     - This command will output a URL, which is used to set the environment for `jupyter_template.ipynb` (or your copy(s) of it)
 
 ### Pre-Pull Request Checklist
