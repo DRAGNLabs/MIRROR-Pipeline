@@ -20,10 +20,13 @@ class MirrorLlamaModel(
     def __init__(
         self,
         initialization: Literal["3.2-1B", "3.2-1B-Instruct"] | LlamaConfig = "3.2-1B-Instruct",
+        seed: int | None = None,
     ) -> None:
         super().__init__()
         self._preprocessor = MirrorLlamaPreprocessor()
         if isinstance(initialization, LlamaConfig):
+            if seed is not None:
+                torch.manual_seed(seed)
             self._hf_model = cast(LlamaForCausalLM, AutoModelForCausalLM.from_config(initialization))
         else:
             hf_model_name = f"meta-llama/Llama-{initialization}"
