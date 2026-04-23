@@ -1,8 +1,8 @@
-from typing import Literal, Sequence, cast
+from typing import Literal, cast
 
+from datasets import Dataset, DatasetDict
 from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
-from datasets import Dataset, DatasetDict
 from mirror.row_types import TextRow
 
 hf_dataset_path = 'stanfordnlp/imdb'
@@ -34,8 +34,8 @@ class ImdbDataset(MirrorDataset[TextRow]):
         if head:
             self._ds = self._ds.select(range(head))
 
-    def __getitem__(self, index: int) -> TextRow:
-        return cast(TextRow, self.ds[index])
+    def to_row_type(self, ds_row: dict) -> TextRow:
+        return TextRow(text=ds_row['text'])
 
     def __len__(self) -> int:
         return len(self.ds)

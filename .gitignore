@@ -1,9 +1,18 @@
-slurm_logs/
-.env/
-**/__pycache__/
-.ENV
-config*.yaml
-configs/
+# Python
+__pycache__/
 mirror_pipeline.egg-info/
+
+# Environments
+.env/
+.ENV
+
+# IDE / tools
 .vscode/
 .claude/
+
+# Project
+config*.yaml
+configs/
+slurm_logs/
+src/mirror/models/baby_babble/
+src/jupyter_template.ipynb
