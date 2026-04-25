@@ -1,7 +1,7 @@
 from jsonargparse import ActionConfigFile, ArgumentParser
 from typing import Literal
 
-from mirror.util import is_login_node
+from mirror.util import is_login_node, resolve_config_args
 
 import warnings
 import sys
@@ -25,6 +25,7 @@ import mirror.datasets
 import mirror.models
 import mirror.preprocessors
 import mirror.schedulers
+import mirror.interventions
 
 Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
 
@@ -45,8 +46,8 @@ def main(subcommand: Subcommand):
             parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
             parser.add_subclass_arguments(TrainerConstructor, "trainer", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
-            cfg = parser.parse_args(sys.argv[2:])
-            
+            cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+
             run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
 
             if hasattr(cfg, 'config'):
@@ -60,14 +61,14 @@ def main(subcommand: Subcommand):
 
             trainer = trainer.construct_trainer()
 
-            trainer.launch()
             if not (is_login_node() and init.slurm.job_type == "compute"):
+                trainer.launch()
                 model = instantiate_model(model, fabric=trainer.fabric)
 
             if is_login_node() and init.slurm.job_type == "local-download":
                 print("Model downloaded/cached. Re-run on a compute node.")
                 return
-                
+
             del init.model # pyright: ignore
             del init.device # pyright: ignore
 
@@ -77,11 +78,11 @@ def main(subcommand: Subcommand):
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
             parser.add_function_arguments(preprocess, as_positional=False)
-            cfg = parser.parse_args(sys.argv[2:])
+            cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
             if hasattr(cfg, 'config'):
                 del cfg.config  # pyright: ignore
-                
+
             init = parser.instantiate_classes(cfg)
             preprocess(**init)
             

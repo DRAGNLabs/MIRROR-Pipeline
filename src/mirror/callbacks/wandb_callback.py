@@ -52,16 +52,16 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             "n_batches": n_batches,
             "run_config_yaml": run_config_yaml,
         })
-        
+
     def on_train_batch_end(
         self,
         *,
         loss: float,
         **kwargs,
     ):
-        self.step += 1
-        assert self.run is not None
-        self.run.log({"train/loss": loss}, step=self.step)
+        if self.run:
+            self.step += 1
+            self.run.log({"train/loss": loss}, step=self.step)
 
     def on_validation_epoch_end(
         self,
@@ -69,8 +69,8 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         val_loss: float,
         **kwargs,
     ):
-        assert self.run is not None
-        self.run.log({"val/loss": val_loss}, step=self.step)
+        if self.run:
+            self.run.log({"val/loss": val_loss}, step=self.step)
 
     def on_test_epoch_end(
         self,
@@ -78,16 +78,16 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         test_loss: float,
         **kwargs,
     ):
-        assert self.run is not None
-        self.run.log({"test/loss": test_loss}, step=self.step)
+        if self.run:
+            self.run.log({"test/loss": test_loss}, step=self.step)
 
     def on_fit_end(
         self,
         **kwargs,
     ):
-        assert self.run is not None
-        self.run.finish()
-        self.run = None
+        if self.run:
+            self.run.finish()
+            self.run = None
 
     def _mode(self) -> WandbMode:
         if get_config()["environment"] == RuntimeEnvironment.SLURM_COMPUTE:

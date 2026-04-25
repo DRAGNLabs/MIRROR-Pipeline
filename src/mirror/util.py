@@ -3,9 +3,21 @@ import os
 from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from datasets import config
+
+from datasets import config as datasets_config
 from mirror.config import RuntimeEnvironment, get_config
 
+
+_CONFIGS_DIR = Path(__file__).parent.parent.parent / 'configs'
+
+def resolve_config_args(args: list[str]) -> list[str]:
+    result = list(args)
+    for i, arg in enumerate(result[:-1]):
+        if arg == '--config':
+            path = Path(result[i + 1])
+            if not path.exists() and (_CONFIGS_DIR / path).exists():
+                result[i + 1] = str(_CONFIGS_DIR / path)
+    return result
 
 mirror_data_path = Path(
     os.getenv("MIRROR_DATA_PATH", f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data")
@@ -31,10 +43,10 @@ def is_power_of_ten(n: int):
 def _ds_cache_path_context() -> Generator[None, None, None]:
     hf_cache_path = mirror_data_path / "hf_cache"
     hf_cache_path.mkdir(exist_ok=True)
-    original = config.HF_DATASETS_CACHE
-    config.HF_DATASETS_CACHE = str(hf_cache_path)
+    original = datasets_config.HF_DATASETS_CACHE
+    datasets_config.HF_DATASETS_CACHE = str(hf_cache_path)
     try:
         yield
     finally:
-        config.HF_DATASETS_CACHE = original
+        datasets_config.HF_DATASETS_CACHE = original
     

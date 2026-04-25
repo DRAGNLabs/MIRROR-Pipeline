@@ -18,3 +18,6 @@ class MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT](ABC, nn.Module):
     @abstractmethod
     def configure_optimizers(self) -> Optimizer:
         pass
+
+    def mlp_modules(self) -> list[nn.Module]:
+        return []

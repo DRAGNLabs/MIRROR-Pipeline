@@ -1,10 +1,8 @@
-from subprocess import call
-
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
-from mirror.callbacks import Callback
-
+from mirror.callbacks.callback import Callback
 from mirror.trainer import Trainer
+
 
 class TrainerConstructor:
     def __init__(
