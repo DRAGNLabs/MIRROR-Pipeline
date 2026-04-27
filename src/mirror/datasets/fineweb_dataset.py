@@ -43,16 +43,13 @@ class FinewebDataset(MirrorDataset[TextRow]):
         if head:
             self._ds = self._ds.select(range(head))
 
-    def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
-        if isinstance(ds, DatasetDict):
-            return DatasetDict({split: self._truncate(d) for split, d in ds.items()})
-        return self._truncate(ds)
+    def _process(self, ds: DatasetDict | Dataset) -> DatasetDict:
+        assert isinstance(ds, DatasetDict)
+        return DatasetDict({split: self._truncate(d) for split, d in ds.items()})
 
     def _truncate(self, ds: Dataset) -> Dataset:
         cumulative = np.cumsum(np.asarray(ds['token_count'], dtype=np.int64))
         cutoff = int(np.searchsorted(cumulative, target_token_count, side='right')) + 1
-        if cutoff >= len(ds):
-            return ds
         return ds.select(range(cutoff))
 
     def to_row_type(self, ds_row: dict) -> TextRow:
