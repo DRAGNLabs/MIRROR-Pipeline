@@ -149,51 +149,56 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch,
             start_batch=start_batch, run_config_yaml=run_config_yaml)
 
-        for epoch_idx in range(start_epoch, epochs):
+        try:
+            for epoch_idx in range(start_epoch, epochs):
 
-            skip_batches = start_batch if epoch_idx == start_epoch else 0
-            batch_iter = islice(enumerate(dataloader), skip_batches, None)
+                skip_batches = start_batch if epoch_idx == start_epoch else 0
+                batch_iter = islice(enumerate(dataloader), skip_batches, None)
 
-            for batch_idx, batch in batch_iter:
+                for batch_idx, batch in batch_iter:
 
-                batch: BatchT = batch
+                    batch: BatchT = batch
 
-                optimizer.zero_grad()
-                train_step_output = model.training_step(batch)
-                loss_value = train_step_output.loss.item()
-                self.fabric.backward(train_step_output.loss)
-                optimizer.step()
-                if scheduler is not None:
-                    scheduler.step()
+                    optimizer.zero_grad()
+                    train_step_output = model.training_step(batch)
+                    loss_value = train_step_output.loss.item()
+                    self.fabric.backward(train_step_output.loss)
+                    optimizer.step()
+                    if scheduler is not None:
+                        scheduler.step()
 
-                global_step = epoch_idx * n_batches + batch_idx
+                    global_step = epoch_idx * n_batches + batch_idx
 
-                self.fabric.call(
-                    'on_train_batch_end',
-                    fabric=self.fabric,
-                    model=model,
-                    optimizer=optimizer,
-                    loss=loss_value,
-                    training_run_id=training_run_id,
-                    epochs=epochs,
-                    n_batches=n_batches,
-                    batch_idx=batch_idx,
-                    global_step = global_step,
-                )
+                    self.fabric.call(
+                        'on_train_batch_end',
+                        fabric=self.fabric,
+                        model=model,
+                        optimizer=optimizer,
+                        loss=loss_value,
+                        training_run_id=training_run_id,
+                        epochs=epochs,
+                        n_batches=n_batches,
+                        batch_idx=batch_idx,
+                        global_step = global_step,
+                    )
 
-            if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
-                val_loss = self._eval_loop(model, val_dataloader)
+                if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
+                    val_loss = self._eval_loop(model, val_dataloader)
 
-                self.fabric.call('on_validation_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
-                                 val_loss=val_loss, training_run_id=training_run_id, epoch=epoch_idx)
+                    self.fabric.call('on_validation_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
+                                     val_loss=val_loss, training_run_id=training_run_id, epoch=epoch_idx)
 
-        if test_dataloader is not None:
-            test_loss = self._eval_loop(model, test_dataloader)
-            self.fabric.call('on_test_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
-                             test_loss=test_loss, training_run_id=training_run_id)
+            if test_dataloader is not None:
+                test_loss = self._eval_loop(model, test_dataloader)
+                self.fabric.call('on_test_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
+                                 test_loss=test_loss, training_run_id=training_run_id)
 
-        self.fabric.call('on_fit_end', fabric=self.fabric, model=model,
-                         optimizer=optimizer, training_run_id=training_run_id)
+            self.fabric.call('on_fit_end', fabric=self.fabric, model=model,
+                             optimizer=optimizer, training_run_id=training_run_id)
+        except Exception as error:
+            self.fabric.call('on_training_error', fabric=self.fabric, model=model,
+                             optimizer=optimizer, training_run_id=training_run_id, error=error)
+            raise
 
     def _eval_loop(self, model, dataloader) -> float:
         model.eval()

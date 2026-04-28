@@ -80,3 +80,14 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             training_run_id: str,
     ):
         pass
+
+    def on_training_error(
+            self,
+            *,
+            fabric: Fabric,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            training_run_id: str,
+            error: Exception,
+    ):
+        pass
