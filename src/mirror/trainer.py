@@ -147,7 +147,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch,
-            start_batch=start_batch, run_config_yaml=run_config_yaml)
+            start_batch=start_batch, run_config_yaml=run_config_yaml,
+            batch_size=batch_size, num_nodes=self.num_nodes)
 
         try:
             for epoch_idx in range(start_epoch, epochs):

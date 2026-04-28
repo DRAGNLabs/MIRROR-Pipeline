@@ -30,6 +30,8 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             epochs: int,
             start_epoch: int,
             start_batch: int,
+            batch_size: int,
+            num_nodes: int,
     ):
         pass
 
