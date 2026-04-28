@@ -23,12 +23,6 @@ class FinewebDataset(MirrorDataset[TextRow]):
         skip: int | None = None,
         split: Literal['train'] = 'train',
     ):
-        """
-        Args:
-            head: how many examples to include. None includes the whole split.
-            skip: how many examples to skip from the start.
-            split: which dataset split to use.
-        """
         super().__init__()
 
         self._ds = cast(DatasetDict, load_hf_dataset(
