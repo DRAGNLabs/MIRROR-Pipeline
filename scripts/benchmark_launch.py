@@ -85,6 +85,7 @@ def _sbatch_script(
         #SBATCH --qos=dw87
         #SBATCH --output={mirror_data_path}/slurm_logs/%j.out
         #SBATCH --open-mode=append
+        #SBATCH --signal=SIGHUP@90
         #SBATCH --chdir={Path.cwd()}
 
         mamba activate ./.env

@@ -1,6 +1,8 @@
 import json
+import signal
 import time
 from pathlib import Path
+from types import FrameType
 from typing import Literal, TypedDict, cast
 
 import torch
@@ -25,6 +27,7 @@ class _BenchmarkFailureEntry(BenchmarkEntryMetadata):
 class BenchmarkSuccessEntry(BenchmarkEntryMetadata):
     status: Literal["success"]
     duration_seconds: float
+    is_estimated: bool
 
 
 class BenchmarkOomEntry(_BenchmarkFailureEntry):
@@ -59,6 +62,8 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         self._lock_dir = lock_dir
         self._run_metadata: BenchmarkEntryMetadata | None = None
         self._start_time: float | None = None
+        self._steps_done: int = 0
+        self._total_steps: int = 0
 
     def on_fit_start(
         self,
@@ -67,6 +72,10 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         model,
         batch_size: int,
         num_nodes: int,
+        n_batches: int,
+        epochs: int,
+        start_epoch: int,
+        start_batch: int,
         **kwargs,
     ) -> None:
         # All ranks must participate in the reduce before branching on is_global_zero.
@@ -84,12 +93,23 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             batch_size=batch_size,
             param_count=param_count,
         )
+        self._total_steps = (epochs - start_epoch) * n_batches - start_batch
+
+        print(f"[TimerCallback] starting run: {dict(self._run_metadata)}")
+
         lock_path = benchmark_lock_path(
             self._lock_dir, num_nodes, devices_per_node, batch_size, param_count
         )
         self._lock_dir.mkdir(parents=True, exist_ok=True)
         lock_path.touch()
         self._start_time = time.perf_counter()
+
+        signal.signal(signal.SIGHUP, self._make_timeout_handler())
+
+    def on_train_batch_end(self, *, fabric: Fabric, **kwargs) -> None:
+        if not fabric.is_global_zero:
+            return
+        self._steps_done += 1
 
     def on_fit_end(self, *, fabric: Fabric, **kwargs) -> None:
         if not fabric.is_global_zero:
@@ -100,6 +120,7 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             **self._run_metadata,
             status="success",
             duration_seconds=duration,
+            is_estimated=False,
         )
         self._write_log(entry)
         self._release_lock()
@@ -116,6 +137,22 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             failure = BenchmarkErrorEntry(**self._run_metadata, status="error", error=str(error))
         self._write_log(failure)
         self._release_lock()
+
+    def _make_timeout_handler(self):
+        def handler(_signum: int, _frame: FrameType | None) -> None:
+            if self._run_metadata is None or self._start_time is None or self._steps_done == 0:
+                return
+            elapsed = time.perf_counter() - self._start_time
+            estimated = elapsed * (self._total_steps / self._steps_done)
+            entry = BenchmarkSuccessEntry(
+                **self._run_metadata,
+                status="success",
+                duration_seconds=estimated,
+                is_estimated=True,
+            )
+            self._write_log(entry)
+            self._release_lock()
+        return handler
 
     def _write_log(self, entry: BenchmarkLogEntry) -> None:
         self._log_file.parent.mkdir(parents=True, exist_ok=True)
