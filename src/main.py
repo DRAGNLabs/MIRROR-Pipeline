@@ -24,6 +24,7 @@ import mirror.callbacks
 import mirror.datasets
 import mirror.models
 import mirror.preprocessors
+import mirror.schedulers
 import mirror.interventions
 
 Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
