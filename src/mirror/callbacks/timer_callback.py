@@ -8,7 +8,7 @@ from torch import Tensor
 from lightning import Fabric
 
 from mirror.callbacks.callback import Callback
-from mirror.util import mirror_data_path
+from mirror.util import count_params, mirror_data_path
 
 
 class BenchmarkEntryMetadata(TypedDict):
@@ -38,12 +38,12 @@ class BenchmarkErrorEntry(_BenchmarkFailureEntry):
 BenchmarkLogEntry = BenchmarkSuccessEntry | BenchmarkOomEntry | BenchmarkErrorEntry
 
 
-def benchmark_run_key(num_nodes: int, devices_per_node: int, batch_size: int) -> str:
-    return f"{num_nodes}n_{devices_per_node}d_bs{batch_size}"
+def benchmark_run_key(num_nodes: int, devices_per_node: int, batch_size: int, param_count: int) -> str:
+    return f"{num_nodes}n_{devices_per_node}d_bs{batch_size}_p{param_count}"
 
 
-def benchmark_lock_path(lock_dir: Path, num_nodes: int, devices_per_node: int, batch_size: int) -> Path:
-    return lock_dir / f"{benchmark_run_key(num_nodes, devices_per_node, batch_size)}.lock"
+def benchmark_lock_path(lock_dir: Path, num_nodes: int, devices_per_node: int, batch_size: int, param_count: int) -> Path:
+    return lock_dir / f"{benchmark_run_key(num_nodes, devices_per_node, batch_size, param_count)}.lock"
 
 
 class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
@@ -70,8 +70,7 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         **kwargs,
     ) -> None:
         # All ranks must participate in the reduce before branching on is_global_zero.
-        local_params = sum(p.numel() for p in model.parameters())
-        reduced = cast(Tensor, fabric.all_reduce(torch.tensor(local_params), reduce_op="sum"))
+        reduced = cast(Tensor, fabric.all_reduce(torch.tensor(count_params(model)), reduce_op="sum"))
         param_count = int(reduced.item())
 
         if not fabric.is_global_zero:
@@ -85,7 +84,9 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             batch_size=batch_size,
             param_count=param_count,
         )
-        lock_path = benchmark_lock_path(self._lock_dir, num_nodes, devices_per_node, batch_size)
+        lock_path = benchmark_lock_path(
+            self._lock_dir, num_nodes, devices_per_node, batch_size, param_count
+        )
         self._lock_dir.mkdir(parents=True, exist_ok=True)
         lock_path.touch()
         self._start_time = time.perf_counter()
@@ -128,6 +129,7 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             self._run_metadata["num_nodes"],
             self._run_metadata["devices_per_node"],
             self._run_metadata["batch_size"],
+            self._run_metadata["param_count"],
         )
         if lock_path.exists():
             lock_path.unlink()

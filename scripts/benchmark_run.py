@@ -8,21 +8,14 @@ of the specified size, using TimerCallback to log the result.
 import argparse
 from pathlib import Path
 
+from mirror.benchmark_configs import MODEL_CONFIGS
 from mirror.callbacks.timer_callback import TimerCallback
 from mirror.config import init_config
 from mirror.datasets.txt_dataset import TxtDataset
-from mirror.models.configuration_llama import LlamaConfig
 from mirror.models.mirror_llama_model import MirrorLlamaModel
 from mirror.trainer import Trainer
 from mirror.util import mirror_data_path
 
-
-MODEL_CONFIGS: dict[str, LlamaConfig] = {
-    "100k": LlamaConfig(vocab_size=6000, hidden_size=16,  intermediate_size=24,   num_hidden_layers=4,  num_attention_heads=16, tie_word_embeddings=True),
-    "1M":   LlamaConfig(vocab_size=8000, hidden_size=96,  intermediate_size=128,  num_hidden_layers=4,  num_attention_heads=16, tie_word_embeddings=True),
-    "10M":  LlamaConfig(vocab_size=8000, hidden_size=360, intermediate_size=400,  num_hidden_layers=8,  num_attention_heads=16, tie_word_embeddings=True),
-    "100M": LlamaConfig(vocab_size=8000, hidden_size=896, intermediate_size=1000, num_hidden_layers=16, num_attention_heads=16, tie_word_embeddings=True),
-}
 
 DATASET_PATH = Path("/grphome/grp_mirror/mirror_data/datasets/church-english.txt")
 DATASET_HEAD = 100_000
