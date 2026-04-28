@@ -152,6 +152,12 @@ Interventions are model wrappers — MirrorModels that contain a MirrorModel —
 
 Future model interventions will be implemented in this module.
 
+### Metrics
+
+By default, Wandb (`WandbCallback`) only logs `train/loss`, `val/loss`, and `test/loss`. To log additional per-step values to Wandb, pass an `ExtraMetricsGetter` into `WandbCallback`. An `ExtraMetricsGetter` is an abstract base class with a single method, `get_metrics(self, model: MirrorModel) -> dict`, which is called once per training step; whatever dict it returns is merged into that step's wandb log alongside `train/loss`.
+
+Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(ExtraMetricsGetter)` reads the model's gradients and returns `{"grad_norm": ...}`; to use it, you would [pass `WandbCallback(extra_metrics_getter=GradNormMetrics())` to the trainer's `callbacks=` list](config-example.md), which will override the default `WandbCallback`.
+
 ## Pipeline Developer Information
 
 ## Common Commands
