@@ -62,6 +62,7 @@ def _sbatch_script(
     batch_size: int,
     model_size: str,
     gpu_type: str,
+    qos: str,
     log_file: Path,
     lock_dir: Path,
     time_limit: str,
@@ -82,8 +83,8 @@ def _sbatch_script(
         #SBATCH --ntasks-per-node={devices}
         #SBATCH --gpus-per-node={gpu_type}:{devices}
         #SBATCH --mem-per-cpu=16G
-        #SBATCH --qos=dw87
-        #SBATCH --output={mirror_data_path}/slurm_logs/%j.out
+        #SBATCH --qos={qos}
+        #SBATCH --output=slurm_logs/%j.out
         #SBATCH --open-mode=append
         #SBATCH --signal=SIGHUP@90
         #SBATCH --chdir={Path.cwd()}
@@ -96,7 +97,8 @@ def _sbatch_script(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gpu-type",   default="h100", help="SLURM GPU type (e.g. h100, h200, a100)")
+    parser.add_argument("--gpu-type",   default="h200", help="SLURM GPU type (e.g. h100, h200, a100)")
+    parser.add_argument("--qos", default="normal")
     parser.add_argument("--time-limit", default="02:00:00")
     parser.add_argument("--log-file",   type=Path, default=mirror_data_path / "benchmark_log.jsonl")
     parser.add_argument("--lock-dir",   type=Path, default=mirror_data_path / "timer_locks")
@@ -132,6 +134,7 @@ def main() -> None:
                     batch_size=batch_size,
                     model_size=model_size,
                     gpu_type=args.gpu_type,
+                    qos=args.qos,
                     log_file=args.log_file,
                     lock_dir=args.lock_dir,
                     time_limit=args.time_limit,
