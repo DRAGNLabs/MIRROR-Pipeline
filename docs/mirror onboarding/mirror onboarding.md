@@ -401,8 +401,24 @@ Run the following command:
 Replace `fit` with `preprocess` if you are just trying to do a preprocessing run. It's smart to make a separate config file for preprocessing, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your preprocessing config file for preprocessing runs.
 
 ### Pre-Pull Request Checklist
-[specific test runs, formatting checks they must run locally before opening a Pull Request]
- 
+
+Before starting a pull request, you'll want to run some checks on the changes you've made. 
+
+First, directly test using the pipeline with the new changes. A simple   training run (e.g. `fit` with a small Llama model config & the Wikitext dataset with `data.head: 10`) will cover lots of simple tickets, but you should expand your test suite as necessary to test tickets that change different parts of the pipeline. For example, if your ticket relates to SLURM jobs across multiple nodes, you'll want to test submitting jobs on a single node, multiple nodes, maybe multiple GPUs on a single node, etc. 
+
+You may also want to run type checks locally; the easiest way to do this is with Pyright. Once you've installed it (`pip install pyright`), just run `pyright` in your terminal, and it will print any errors it sees. There's also a script that runs when you make a pull request that will automatically check for any new Pyright errors on that branch. 
+
+It's also a good idea to review the changes made on your branch to help catch any issues or unintended changes ahead of time. You have a few options:
+- You can run `git status` to see which files have been modified, added, or deleted, and use `git diff main...HEAD` to see the full set of changes your branch introduces compared to `main`
+- You can also review the diff in VS Code's Source Control panel (the icon that looks like branching dots)
+- Lastly, after opening the pull request on GitHub, you can go to the "Files Changed" tab and view the diff there before you send the ticket into review. 
+
+Finally, once you've tested and reviewed your changes (and pushed them), go to the [main pipeline repo page](https://github.com/DRAGNLabs/MIRROR-Pipeline). At the top of the page, there should be a message noting that the branch you've been working on has had recent changes pushed, with a green button to create a pull request. Click that button.
+
+On the next page, you'll be asked fill out the pull request description. First, describe how you tested the changes you made, and add any other relevant info or notes. Then, at the bottom, add "Closes #<ticket-number>" to link the pull request to the ticket it addresses. 
+
+Finally, after creating the ticket, it's time to move the ticket into peer review. Click the gear icon on the "Reviewers" section and assign the peer you'll be asking to review the pull request. Then do the same with the "Assignees" section of your ticket on the [MIRROR Pipeline project page](https://github.com/orgs/DRAGNLabs/projects/5/views/1), and under the "Projects" section, change "Status" from "In Progress" to "Peer Review". 
+
 ### New Ticket Kickoff Checklist
 
 #### Starting work on an existing ticket
