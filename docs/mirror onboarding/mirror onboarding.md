@@ -415,7 +415,7 @@ It's also a good idea to review the changes made on your branch to help catch an
 
 Finally, once you've tested and reviewed your changes (and pushed them), go to the [main pipeline repo page](https://github.com/DRAGNLabs/MIRROR-Pipeline). At the top of the page, there should be a message noting that the branch you've been working on has had recent changes pushed, with a green button to create a pull request. Click that button.
 
-On the next page, you'll be asked fill out the pull request description. First, describe how you tested the changes you made, and add any other relevant info or notes. Then, at the bottom, add "Closes #<ticket-number>" to link the pull request to the ticket it addresses. 
+On the next page, you'll be asked fill out the pull request description. First, describe how you tested the changes you made, and add any other relevant info or notes. Then, at the bottom, add "Closes #`<ticket-number>`" to link the pull request to the ticket it addresses. 
 
 Finally, after creating the ticket, it's time to move the ticket into peer review. Click the gear icon on the "Reviewers" section and assign the peer you'll be asking to review the pull request. Then do the same with the "Assignees" section of your ticket on the [MIRROR Pipeline project page](https://github.com/orgs/DRAGNLabs/projects/5/views/1), and under the "Projects" section, change "Status" from "In Progress" to "Peer Review". 
 
