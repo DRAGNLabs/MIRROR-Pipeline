@@ -110,8 +110,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         start_batch = 0
         n_batches = len(dataloader)
 
-        requeue_global_step: int | None = None
-
         state : StateDict = {
             'model': model,
             'optimizer': optimizer,
@@ -147,7 +145,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         test_dataloader = None
         if test_dataset is not None:
             test_dataloader = self._make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess)
-        
+
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, 
             training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch, 
             start_batch=start_batch, run_config_yaml=run_config_yaml)
