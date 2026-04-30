@@ -20,7 +20,7 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
 
     def preprocess[ProcessedT](self, preprocessor_function: Callable[[RawT], ProcessedT], num_nodes: int) -> Sequence[ProcessedT]:
 
-        def mappable_preprocessor_function(row: dict) -> dict[str, ProcessedT]:
+        def mappable_preprocessor_function(row: dict) -> dict:
             return {"input_ids": preprocessor_function(self.to_row_type(row))}
 
         with _ds_cache_path_context():
