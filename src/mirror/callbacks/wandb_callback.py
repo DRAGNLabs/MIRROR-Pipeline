@@ -59,17 +59,18 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     def on_train_batch_end(
         self,
         *,
+        fabric: Fabric,
         model: MirrorModel,
         loss: float,
         **kwargs,
     ):
+        extra_metrics = (
+            self.extra_metrics_getter.get_metrics(model, fabric)
+            if self.extra_metrics_getter
+            else {}
+        )
         if self.run:
             self.step += 1
-            extra_metrics = (
-                self.extra_metrics_getter.get_metrics(model)
-                if self.extra_metrics_getter
-                else {}
-            )
             self.run.log({"train/loss": loss, **extra_metrics}, step=self.step)
 
     def on_validation_epoch_end(
