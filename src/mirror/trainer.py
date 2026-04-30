@@ -1,40 +1,44 @@
-from lightning import Fabric
-from torch.utils.data import DataLoader
 from typing import Any, List, cast
 import datetime
 import os
 import warnings
-import torch
 from itertools import islice
+from typing import List
 
-from lightning.fabric.strategies.strategy import Strategy
+import torch
+from lightning import Fabric
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from lightning.fabric.strategies.single_device import SingleDeviceStrategy
+from lightning.fabric.strategies.strategy import Strategy
+from torch.utils.data import DataLoader
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
-from mirror.callbacks.progress_callback import ProgressCallback
-from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.callbacks.print_step_callback import PrintStepCallback
+from mirror.callbacks.progress_callback import ProgressCallback
+from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.schedulers.configure_scheduler import ConfigureScheduler
+from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.config import RuntimeEnvironment, get_config
 from mirror.requeue_monitor import RequeueMonitor
 from mirror.dict_types import StateDict
-
 
 class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
     def __init__(
             self,
-            strategy: Strategy = FSDPStrategy(),
+            strategy: Strategy | None = None,
             devices: int = 1,
             num_nodes: int = 1,
             callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
     ) -> None:
+        if strategy is None:
+            strategy = FSDPStrategy()
+
         config = get_config()
         self.config = config
         if config['device'] == "cpu" and isinstance(strategy, FSDPStrategy):
@@ -93,6 +97,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             val_dataset: MirrorDataset[RawT] | None = None,
             test_dataset: MirrorDataset[RawT] | None = None,
             val_check_interval: int = 1,
+            configure_scheduler: ConfigureScheduler | None = None,
     ):
         training_run_id = datetime.datetime.now().isoformat()
         preprocessor = preprocessor or model.preprocessor
@@ -108,6 +113,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         start_epoch = 0
         start_batch = 0
+        
         n_batches = len(dataloader)
 
         state : StateDict = {
@@ -138,6 +144,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         start_epoch = global_step // n_batches
         start_batch = (global_step % n_batches) + 1
 
+        scheduler = None
+        if configure_scheduler is not None:
+            total_training_steps = epochs * len(dataloader)
+            scheduler = configure_scheduler(optimizer, total_training_steps)
+
         val_dataloader = None
         if val_dataset is not None:
             val_dataloader = self._make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess)
@@ -164,6 +175,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 loss_value = train_step_output.loss.item()
                 self.fabric.backward(train_step_output.loss)
                 optimizer.step()
+                if scheduler is not None:
+                    scheduler.step()
 
                 global_step = epoch_idx * n_batches + batch_idx
 
@@ -192,15 +205,15 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                 val_loss = self._eval_loop(model, val_dataloader)
 
-                self.fabric.call('on_validation_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer, 
+                self.fabric.call('on_validation_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
                                  val_loss=val_loss, training_run_id=training_run_id, epoch=epoch_idx)
 
         if test_dataloader is not None:
             test_loss = self._eval_loop(model, test_dataloader)
-            self.fabric.call('on_test_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer, 
+            self.fabric.call('on_test_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
                              test_loss=test_loss, training_run_id=training_run_id)
 
-        self.fabric.call('on_fit_end', fabric=self.fabric, model=model, 
+        self.fabric.call('on_fit_end', fabric=self.fabric, model=model,
                          optimizer=optimizer, training_run_id=training_run_id)
 
     def _eval_loop(self, model, dataloader) -> float:
@@ -220,7 +233,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
     def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess):
         if do_preprocess:
-            preprocessed = dataset.preprocess(preprocessor.preprocess_example)
+            preprocessed = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
         else:
             preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
         dataloader = DataLoader(

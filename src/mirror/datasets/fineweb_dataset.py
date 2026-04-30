@@ -1,16 +1,18 @@
 from typing import Literal, cast
 
+import numpy as np
 from datasets import Dataset, DatasetDict
 
 from mirror.datasets.dataset_util import load_hf_dataset
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.dict_types import TextRow
 
-hf_dataset_path = 'Salesforce/wikitext'
-hf_dataset_name = 'wikitext-2-raw-v1'
+hf_dataset_path = 'HuggingFaceFW/fineweb-edu'
+hf_dataset_name = 'sample-10BT'
+target_token_count = 2_000_000_000
 
 
-class WikitextDataset(MirrorDataset[TextRow]):
+class FinewebDataset(MirrorDataset[TextRow]):
     @property
     def ds(self) -> Dataset:
         return self._ds
@@ -19,14 +21,8 @@ class WikitextDataset(MirrorDataset[TextRow]):
         self,
         head: int | None = None,
         skip: int | None = None,
-        split: Literal['train'] | Literal['validation'] | Literal['test'] = 'train',
+        split: Literal['train'] = 'train',
     ):
-        """
-        Args:
-            head: how many examples to include. None includes the whole split.
-            skip: how many examples to skip from the start.
-            split: which dataset split to use.
-        """
         super().__init__()
 
         self._ds = cast(DatasetDict, load_hf_dataset(
@@ -41,8 +37,14 @@ class WikitextDataset(MirrorDataset[TextRow]):
         if head:
             self._ds = self._ds.select(range(head))
 
-    def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
-        return ds.filter(lambda row: len(row['text']) > 0)
+    def _process(self, ds: DatasetDict | Dataset) -> DatasetDict:
+        assert isinstance(ds, DatasetDict)
+        return DatasetDict({split: self._truncate(d) for split, d in ds.items()})
+
+    def _truncate(self, ds: Dataset) -> Dataset:
+        cumulative = np.cumsum(np.asarray(ds['token_count'], dtype=np.int64))
+        cutoff = int(np.searchsorted(cumulative, target_token_count, side='right')) + 1
+        return ds.select(range(cutoff))
 
     def to_row_type(self, ds_row: dict) -> TextRow:
         return TextRow(text=ds_row['text'])
@@ -51,4 +53,4 @@ class WikitextDataset(MirrorDataset[TextRow]):
         return len(self.ds)
 
     def item(self, index) -> str:
-       return self.ds[index]['text']
+        return self.ds[index]['text']

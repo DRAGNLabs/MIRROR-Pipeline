@@ -4,7 +4,55 @@
 
 ### Initial Access Setup
 
- [Add Content Here]
+Before getting started with work on the MIRROR Pipeline, it will be helpful to read the [NSF Research Grant](https://drive.google.com/file/d/1PgxW9qaAkQDepXvC9p67mAqY2WeXaIu4/view?usp=sharing) to understand the purpose and goal of the project. You may need to email the repo administrator(s) for access to the Google Drive. [Andrej Karpathy's Zero to Hero series](https://www.youtube.com/playlist?list=PLAqhIrjkxbuWI23v9cThsA9GvCAUhRvKZ) on YouTube is a great resource for learning about training neural networks in PyTorch as well.
+
+1. **Create a BYU Research Computing Account**
+
+In order to access BYU's supercomputer system where development and training takes place, you'll need to [request a BYU RC account](https://rc.byu.edu/account/create/). Your sponsor should be Nancy Fulda. You'll be asked to justify your need for an account:
+- **What research are you doing?** Just mention that you'll be working on developing LLM training pipelines optimized for the supercomputer
+- **What software will you use?** Python/Pytorch
+- **What resources do you anticipate needing?** Resource utilization will be mostly minor and usually at most a GPU or two at a time, used for iterating & testing code
+
+For an introduction to BYU's supercomputer and how to use it, BYU has published a helpful [YouTube playlist](https://www.youtube.com/watch?v=i1r9BxHBG0I&list=PL326A5EB4E3B16FED) with some quick tutorials.
+
+2. **Setting Up The MIRROR Pipeline In VSCode**
+
+In a new window in VSCode, make sure you have the "Visual Studio Code Remote - SSH" extension installed, then click on the icon on the left icon bar for "Remote Explorer" (looks like a computer monitor). Hover over `SSH` and press the `+` button. In the window that opens at the top, enter the following command:
+
+```bash
+ssh <your username>@ssh.rc.byu.edu
+```
+
+You will be prompted to enter your BYU RC password and a two-factor authentication code. 
+
+Once you log in, clone the MIRROR Pipeline repository:
+
+```bash
+git clone https://github.com/DRAGNLabs/MIRROR-Pipeline
+cd MIRROR-Pipeline
+```
+
+Now you'll need to create a [local mamba environment](https://rc.byu.edu/wiki/?id=Conda+Environments) to develop in.
+
+```bash
+mamba create --yes -f environment.yml -p ./.env
+```
+
+This environment can be activated at any time by running:
+
+```bash
+mamba activate ./.env
+```
+
+3. **Logging in to Huggingface**
+
+To use resources like Llama/GPT-2 model weights, you'll need to get access through Huggingface. Follow these steps:
+
+- [Create an account](https://huggingface.co).
+- Create a [User Access Token](https://huggingface.co/settings/tokens).
+  - When you try to use Llama/GPT-2 models in the MIRROR Pipeline for the first time, you'll be prompted to log in to Huggingface with this token
+  - In addition, make a copy of [`.ENV_example`](../../.ENV_example), rename it to `.ENV`, and paste this token between the quotation marks.
+- Request access for [Llama 3.2-1B](https://huggingface.co/meta-llama/Llama-3.2-1B), [Llama 3.2-1B-Instruct](https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct), and [GPT-2](https://huggingface.co/openai-community/gpt2). Fill out the form to request access on each of these repositories; you should be approved within a few minutes.
 
 ### Things to do every time you log in
 
@@ -19,7 +67,7 @@
 3. Activate mamba environment
 
     To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have [created the environment first](#initial-access-setup), of course.) 
-
+    
 4. Ensure you're on the correct branch
 
     Run `git status` to see what branch you're currently checked out to. Make sure that this matches the branch you're intending to work on. If it doesn't, run `git checkout <branch_name>` to switch to the correct branch. 
@@ -213,13 +261,144 @@ Vim is the default editor for commit message files (e.g. git merge).
 
 - `python src/main.py fit --config <config-file>`: Train a model using settings from a config file
     - The config file specifies the dataset, model, preprocessor, training parameters, and SLURM settings
-        - Config files should be local and user-specific; start your config file(s) names with "config" so that the `.gitignore` knows not to track them
+        - Config files should be local and user-specific; to avoid Git tracking these files, either start their filename with 'config' or place them in the `configs` folder, where they will be parsed automatically in the same way
     - You can also pass arguments directly, e.g. `python src/main.py fit --data.class_path WikitextDataset --model.class_path MirrorLlamaModel --epochs 1 --batch_size 1`
 
 - `python src/main.py preprocess --config <config-file>`: Preprocess a dataset without training
     - Useful for preparing data separately before running a training job
     - Requires `--data` and `--preprocessor` to be specified (either in the config file or as command-line arguments)
 
+- `python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
+    - Jupyter notebooks allow for significantly decreased startup time on repeat job runs
+    - This command will output a URL, which is used to set the environment for `jupyter_template.ipynb` (or your copy(s) of it)
+
+## How to use the MIRROR Pipeline
+
+To test out submitting a training run, run this command: 
+
+```
+python src/main.py fit --config demo_fit_config.yaml
+```
+
+You should see the output `Submitted batch job <number>`. If this is your first time submitting a training run, you may be prompted to [log in to huggingface](#initial-access-setup) first to download required resources like the Llama model weights.
+
+That command uses a demo config YAML file to specify the settings for the training run. To customize a training run, you can either use a config file or pass in each argument and its value through the command line, e.g.:
+
+```
+python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel
+```
+
+The `init_args` in each YAML section correspond to that class's constructor arguments. If you want to know what arguments that class accepts, you can look at its `__init__` method in the code. It's recommended to use config files rather than passing in all of the arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline by walking you through creating this config file, section by section.
+
+#### Selecting your model 
+
+If you want to use Llama:
+
+```yaml
+model:
+    class_path: MirrorLlamaModel 
+    init_args: 
+        initialization:
+            # Pretrained weights:
+            <model_spec> # 3.2-1B | 3.2-1B-Instruct
+
+            # OR custom config:
+            vocab_size: <vocab_size>
+            hidden_size: <hidden_size> # etc
+```
+
+Note that you'll need to [use a GPU more capable than a p100, like an h200](#setting-up-slurm-jobtraining-run-settings), in order to have enough VRAM to run Llama with pretrained weights. Thus, we usually use a smaller custom config of Llama, like the one defined in [demo_fit_config.yaml](../configs/demo_fit_config.yaml).
+
+To use GPT-2:
+
+```yaml
+model:
+    class_path: MirrorGPTModel 
+    init_args: 
+        weights: <weights> # pretrained | random
+```
+
+The same general patterns will apply to any other models that are implemented in the MIRROR Pipeline. 
+
+#### Selecting your dataset 
+
+```yaml
+data: # Training set 
+  class_path: WikitextDataset
+  init_args:
+    split: train # Use the dataset's `train` portion
+    skip: <i> # Optionally, skip the first <i> examples from the selected split 
+    head: <j> # Use the first <j> examples (after skipping)
+    # OR
+    # # start_fraction: 0.0
+    # end_fraction: 0.8 # Use the first 80% of the selected dataset/split
+```
+
+#### Setting up val/test data
+
+```yaml
+val_data: # Validation set 
+  class_path: WikitextDataset
+  init_args:
+    split: validation # Use the dataset's `validation` portion
+    ... # etc
+
+val_check_interval: <k> # Perform validation every <k> epochs
+
+test_data: # Test set - will be run at the end of the training run
+  class_path: WikitextDataset
+  init_args:
+    split: test # Use the dataset's `test` portion
+    ... # etc
+```
+
+#### Deciding how the data will be preprocessed
+
+The model's own preprocessor will be used by default, but it can be overridden (see [Preprocessors](#preprocessors)):
+
+```yaml
+preprocessor:
+    class_path: <class_path> # e.g. MirrorLlamaPreprocessor
+```
+
+To preprocess up front rather than on-the-fly:
+
+```yaml
+do_preprocess: True # False by default
+``` 
+
+#### Setting up SLURM job/training run settings
+
+```yaml
+slurm:
+  job_type: <job_type> # "compute / "local" / "local-download"
+  # "compute": Submit job to a compute node 
+  # "local": Run the job directly on the login node
+  # "local-download": Download/cache the model on the login node so that 
+  # it can be accessed subsequently from compute nodes, then exit
+  time: "01:00:00" # Timeout limit - note that the requeue callback will continue 
+  # the job if the time limit is reached by submitting another SLURM job
+  gpus_per_node: <gpu_type>:<num_gpus> # p100, a100 (dw87 cluster), h200, etc.
+  nodes: 1 # Number of nodes to allocate
+  mem_per_cpu: "128G" # Memory allocated per CPU core
+  output: "slurm_logs/%j.out" # Path for job stdout log (%j = job ID)
+  open_mode: "append" # Append to log file instead of overwriting
+  signal: "SIGHUP@90" # Send SIGHUP signal 90 seconds before timeout to allow graceful shutdown
+  requeue: true # Automatically requeue job if it is preempted
+  qos: <cluster> # Specific GPU cluster/config, e.g. dw87, test
+
+epochs: 1 # Num of passes through the training dataset
+batch_size: 1 # Num of samples in each batch 
+device: cuda # `cuda` for GPU, `cpu` for CPU
+```
+
+#### Submitting the training job
+
+Run the following command:
+
+`python src/main.py fit --config <configfilename>.yaml`
+
+Replace `fit` with `preprocess` if you are just trying to do a preprocessing run. It's smart to make a separate config file for preprocessing, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your preprocessing config file for preprocessing runs.
 
 ### Pre-Pull Request Checklist
 [specific test runs, formatting checks they must run locally before opening a Pull Request]

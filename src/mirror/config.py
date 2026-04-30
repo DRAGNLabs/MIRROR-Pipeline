@@ -1,9 +1,8 @@
 import os
 import socket
+import torch
 from enum import Enum
 from typing import Literal, TypedDict
-
-import torch
 
 DeviceType = Literal['cpu', 'cuda']
 

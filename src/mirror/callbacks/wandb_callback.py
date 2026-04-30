@@ -52,7 +52,7 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             "n_batches": n_batches,
             "run_config_yaml": run_config_yaml,
         })
-        
+
     def on_train_batch_end(
         self,
         *,

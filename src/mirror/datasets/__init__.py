@@ -1,3 +1,5 @@
+from mirror.datasets.fineweb_dataset import FinewebDataset
 from mirror.datasets.imdb_dataset import ImdbDataset
+from mirror.datasets.mixed_dataset import MixedDataset
 from mirror.datasets.txt_dataset import TxtDataset
 from mirror.datasets.wikitext_dataset import WikitextDataset

@@ -10,14 +10,20 @@ from mirror.dict_types import TextRow
 class MirrorLlamaPreprocessor(
     MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
 ):
-    def __init__(self) -> None:
+    def __init__(self, max_length: int | None = 2048) -> None:
         self._hf_model_name = "meta-llama/Llama-3.2-1B-Instruct"
         self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(self._hf_model_name)
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
+        self._max_length = max_length
 
     def preprocess_example(self, example: TextRow) -> TokenTensor:
-        ids = self._tokenizer.encode(example['text'], add_special_tokens=True)
+        ids = self._tokenizer.encode(
+            example['text'],
+            add_special_tokens=True,
+            max_length=self._max_length,
+            truncation=self._max_length is not None,
+        )
         if len(ids) < 2:
             eos = self._tokenizer.eos_token_id
             ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
