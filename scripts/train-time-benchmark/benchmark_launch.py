@@ -105,7 +105,6 @@ def main() -> None:
     parser.add_argument("--dry-run",    action="store_true", help="Print configs without submitting")
     args = parser.parse_args()
 
-    (mirror_data_path / "slurm_logs").mkdir(parents=True, exist_ok=True)
     args.lock_dir.mkdir(parents=True, exist_ok=True)
 
     param_counts = _model_param_counts()

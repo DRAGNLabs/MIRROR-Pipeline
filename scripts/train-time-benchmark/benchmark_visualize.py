@@ -10,22 +10,24 @@ Produces:
 import argparse
 import json
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
+from mirror.callbacks.timer_callback import BenchmarkLogEntry, BenchmarkSuccessEntry
 from mirror.util import mirror_data_path
 
 
-def _load(log_file: Path) -> list[dict]:
+def _load(log_file: Path) -> list[BenchmarkLogEntry]:
     if not log_file.exists():
         raise FileNotFoundError(log_file)
-    entries = []
+    entries: list[BenchmarkLogEntry] = []
     with open(log_file) as f:
         for line in f:
             line = line.strip()
             if line:
-                entries.append(json.loads(line))
+                entries.append(cast(BenchmarkLogEntry, json.loads(line)))
     return entries
 
 
@@ -33,7 +35,7 @@ def _row_label(num_nodes: int, devices_per_node: int, batch_size: int) -> str:
     return f"{num_nodes}x{devices_per_node} GPUs  bs={batch_size}"
 
 
-def _cell(entry: dict) -> str:
+def _cell(entry: BenchmarkLogEntry) -> str:
     match entry["status"]:
         case "success":
             return f"{entry['duration_seconds']:.1f}s"
@@ -43,11 +45,11 @@ def _cell(entry: dict) -> str:
             return "ERR"
 
 
-def print_table(entries: list[dict]) -> None:
+def print_table(entries: list[BenchmarkLogEntry]) -> None:
     param_counts = sorted({e["param_count"] for e in entries})
     col_labels = [f"{p:,}" for p in param_counts]
 
-    lookup = {
+    lookup: dict[tuple[int, int, int, int], BenchmarkLogEntry] = {
         (e["num_nodes"], e["devices_per_node"], e["batch_size"], e["param_count"]): e
         for e in entries
     }
@@ -74,8 +76,8 @@ def print_table(entries: list[dict]) -> None:
             print(f"{row_label:>{row_w}}" + "".join(f"{c:>{col_w}}" for c in cells))
 
 
-def plot_chart(entries: list[dict], output: Path, log_y: bool) -> None:
-    successes = [e for e in entries if e["status"] == "success"]
+def plot_chart(entries: list[BenchmarkLogEntry], output: Path, log_y: bool) -> None:
+    successes: list[BenchmarkSuccessEntry] = [e for e in entries if e["status"] == "success"]
     if not successes:
         print("No successful entries to plot.")
         return
