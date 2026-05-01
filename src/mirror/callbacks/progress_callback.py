@@ -28,10 +28,11 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             *,
             fabric: Fabric,
             loss: float,
+            extra_metrics: dict,
             **kwargs,
     ):
         if fabric.is_global_zero and self.progress_bar is not None:
-            self.progress_bar.set_postfix(Loss=f"{loss:.3f}", refresh=False)
+            self.progress_bar.set_postfix(Loss=f"{loss:.3f}", **extra_metrics, refresh=False)
             self.progress_bar.update(1)
 
     def on_validation_epoch_end(

@@ -154,9 +154,17 @@ Future model interventions will be implemented in this module.
 
 ### Metrics
 
-By default, Wandb (`WandbCallback`) only logs `train/loss`, `val/loss`, and `test/loss`. To log additional per-step values to Wandb, pass an `ExtraMetricsGetter` into `WandbCallback`. An `ExtraMetricsGetter` is an abstract base class with a single method, `get_metrics(self, model: MirrorModel) -> dict`, which is called once per training step; whatever dict it returns is merged into that step's wandb log alongside `train/loss`.
+By default, things that track metrics (Wandb and the `ProgressCallback` tqdm bar) only show loss. To report additional per-step values, pass an `ExtraMetricsGetter` to the trainer. An `ExtraMetricsGetter` is an abstract base class with a single method, `get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict`, which the trainer calls once per training step. The returned dict is merged into the wandb log and the progress bar postfix alongside `loss`. 
 
-Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(ExtraMetricsGetter)` reads the model's gradients and returns `{"grad_norm": ...}`; to use it, you would [pass `WandbCallback(extra_metrics_getter=GradNormMetrics())` to the trainer's `callbacks=` list](config-example.md), which will override the default `WandbCallback`.
+(Important implementation note: `get_metrics` must run on every rank, even ranks that won't display the result. Implementations may invoke collectives like `fabric.all_reduce`, and skipping the call on non-zero ranks will deadlock NCCL. The trainer handles this for you — it always calls the getter on every rank before fanning out to callbacks.)
+
+Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(ExtraMetricsGetter)` computes the global gradient norm (summing squared gradients per rank, all-reducing across ranks under FSDP, then taking the sqrt) and returns `{"grad_norm": ...}`. To use it:
+
+```yaml
+trainer:
+  extra_metrics_getter:
+    class_path: GradNormMetrics
+```
 
 ## Pipeline Developer Information
 
