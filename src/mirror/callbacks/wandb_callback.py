@@ -19,11 +19,20 @@ WandbMode = Literal["online", "offline"]
 class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
-    def __init__(self, extra_metrics_getter: ExtraMetricsGetter | None = None) -> None:
+    def __init__(
+        self,
+        extra_metrics_getter: ExtraMetricsGetter | None = None,
+        log_every_n_steps: int = 1,
+    ) -> None:
         super().__init__(is_singleton=True)
+        if log_every_n_steps < 1:
+            raise ValueError(
+                f"log_every_n_steps must be >= 1, got {log_every_n_steps}"
+            )
         self.run: WandbRun | None = None
         self.step = 0
         self.extra_metrics_getter = extra_metrics_getter
+        self.log_every_n_steps = log_every_n_steps
 
     def on_fit_start(
         self,
@@ -64,13 +73,15 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         loss: float,
         **kwargs,
     ):
+        self.step += 1
+        if self.step % self.log_every_n_steps != 0:
+            return
         extra_metrics = (
             self.extra_metrics_getter.get_metrics(model, fabric)
             if self.extra_metrics_getter
             else {}
         )
         if self.run:
-            self.step += 1
             self.run.log({"train/loss": loss, **extra_metrics}, step=self.step)
 
     def on_validation_epoch_end(
