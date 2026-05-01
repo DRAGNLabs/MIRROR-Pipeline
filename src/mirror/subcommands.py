@@ -8,7 +8,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.mirror_dataset import MirrorDataset, preprocess as preprocess_dataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.slurm_util import SlurmConfig
@@ -72,7 +72,7 @@ def preprocess(
         print(f"Submitted batch job {job_id}")
         return
     
-    data.preprocess(preprocessor.preprocess_example, slurm.nodes or 1)
+    preprocess_dataset(data, preprocessor.preprocess_example, slurm.nodes or 1)
 
 def _submit_slurm_job(
         *,
