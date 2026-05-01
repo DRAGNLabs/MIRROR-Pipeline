@@ -25,10 +25,6 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         log_every_n_steps: int = 1,
     ) -> None:
         super().__init__(is_singleton=True)
-        if log_every_n_steps < 1:
-            raise ValueError(
-                f"log_every_n_steps must be >= 1, got {log_every_n_steps}"
-            )
         self.run: WandbRun | None = None
         self.step = 0
         self.extra_metrics_getter = extra_metrics_getter
@@ -44,6 +40,8 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         epochs: int,
         **kwargs,
     ):
+        self.step = 0
+
         if not fabric.is_global_zero:
             return
 
@@ -56,7 +54,6 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             mode=self._mode(),
             dir=str(wandb_dir),
         )
-        self.step = 0
 
         self.run.config.update({
             "training_run_id": training_run_id,
