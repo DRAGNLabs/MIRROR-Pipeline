@@ -23,6 +23,7 @@ from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
+from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 
@@ -34,6 +35,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             devices: int = 1,
             num_nodes: int = 1,
             callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
+            extra_metrics_getter: ExtraMetricsGetter | None = None,
     ) -> None:
         if strategy is None:
             strategy = FSDPStrategy()
@@ -64,6 +66,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         callbacks = [*singleton_cbs, *default_non_singleton_cbs, *input_non_singleton_cbs]
         self.callbacks = callbacks
+        self.extra_metrics_getter = extra_metrics_getter
         self.fabric = self._make_fabric(self.strategy, config['device'])
 
     def launch(self):
@@ -168,12 +171,19 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
                 global_step = epoch_idx * n_batches + batch_idx
 
+                extra_metrics = (
+                    self.extra_metrics_getter.get_metrics(model, self.fabric)
+                    if self.extra_metrics_getter is not None
+                    else {}
+                )
+
                 self.fabric.call(
                     'on_train_batch_end',
                     fabric=self.fabric,
                     model=model,
                     optimizer=optimizer,
                     loss=loss_value,
+                    extra_metrics=extra_metrics,
                     training_run_id=training_run_id,
                     epochs=epochs,
                     n_batches=n_batches,

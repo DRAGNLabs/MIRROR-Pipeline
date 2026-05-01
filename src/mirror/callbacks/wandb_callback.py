@@ -7,8 +7,6 @@ from lightning import Fabric
 
 from mirror.callbacks.callback import Callback
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
-from mirror.models.mirror_model import MirrorModel
 from mirror.util import mirror_data_path
 
 from wandb.sdk.wandb_run import Run as WandbRun
@@ -19,11 +17,10 @@ WandbMode = Literal["online", "offline"]
 class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
-    def __init__(self, extra_metrics_getter: ExtraMetricsGetter | None = None) -> None:
+    def __init__(self) -> None:
         super().__init__(is_singleton=True)
         self.run: WandbRun | None = None
         self.step = 0
-        self.extra_metrics_getter = extra_metrics_getter
 
     def on_fit_start(
         self,
@@ -59,16 +56,10 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     def on_train_batch_end(
         self,
         *,
-        fabric: Fabric,
-        model: MirrorModel,
         loss: float,
+        extra_metrics: dict,
         **kwargs,
     ):
-        extra_metrics = (
-            self.extra_metrics_getter.get_metrics(model, fabric)
-            if self.extra_metrics_getter
-            else {}
-        )
         if self.run:
             self.step += 1
             self.run.log({"train/loss": loss, **extra_metrics}, step=self.step)
