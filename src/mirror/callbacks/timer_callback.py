@@ -1,5 +1,6 @@
 import json
 import signal
+import sys
 import time
 from pathlib import Path
 from types import FrameType
@@ -95,7 +96,7 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         )
         self._total_steps = (epochs - start_epoch) * n_batches - start_batch
 
-        print(f"[TimerCallback] starting run: {dict(self._run_metadata)}")
+        print(f"[TimerCallback] starting run: {dict(self._run_metadata)}", file=sys.stderr)
 
         lock_path = benchmark_lock_path(
             self._lock_dir, num_nodes, devices_per_node, batch_size, param_count
