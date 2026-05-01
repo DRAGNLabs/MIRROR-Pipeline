@@ -21,7 +21,7 @@ from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.mirror_dataset import MirrorDataset, preprocess as preprocess_dataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
@@ -212,7 +212,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
     def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess):
         if do_preprocess:
-            preprocessed = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
+            preprocessed = preprocess_dataset(dataset, preprocessor.preprocess_example, self.num_nodes)
         else:
             preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
         dataloader = DataLoader(
