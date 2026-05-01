@@ -74,7 +74,7 @@ def print_table(entries: list[dict]) -> None:
             print(f"{row_label:>{row_w}}" + "".join(f"{c:>{col_w}}" for c in cells))
 
 
-def plot_chart(entries: list[dict], output: Path) -> None:
+def plot_chart(entries: list[dict], output: Path, log_y: bool) -> None:
     successes = [e for e in entries if e["status"] == "success"]
     if not successes:
         print("No successful entries to plot.")
@@ -109,6 +109,9 @@ def plot_chart(entries: list[dict], output: Path) -> None:
             ax.plot(xs, ys, marker=marker, color=color, label=label)
 
     ax.set_xscale("log")
+    if log_y:
+        ax.set_yscale("log")
+
     ax.set_xlabel("Parameter count")
     ax.set_ylabel("Training time (s)")
     ax.set_title("Training time vs model size")
@@ -126,11 +129,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--log-file", type=Path, default=mirror_data_path / "benchmark_log.jsonl")
     parser.add_argument("--output",   type=Path, default=mirror_data_path / "benchmark_chart.png")
+    parser.add_argument("--log-y", action='store_true')
     args = parser.parse_args()
 
     entries = _load(args.log_file)
     print_table(entries)
-    plot_chart(entries, args.output)
+    plot_chart(entries, args.output, args.log_y)
 
 
 if __name__ == "__main__":
