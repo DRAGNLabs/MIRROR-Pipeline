@@ -4,10 +4,8 @@ import torch.nn as nn
 
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.placeholder_preprocessor import PlaceholderPreprocessor
-from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor, TrainStepOutput
+from mirror.types import AttentionMaskBatch, Loss, TextRow, TokenBatch, TokenTensor, TrainStepOutput
 from mirror.util import get_device
-
-from mirror.row_types import TextRow
 
 class PlaceholderModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None]):
     def __init__(self) -> None:
