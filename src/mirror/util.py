@@ -4,7 +4,6 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
-from datasets import config as datasets_config
 from mirror.config import RuntimeEnvironment, get_config
 
 
@@ -20,7 +19,10 @@ def resolve_config_args(args: list[str]) -> list[str]:
     return result
 
 mirror_data_path = Path(
-    os.getenv("MIRROR_DATA_PATH", f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data")
+    os.getenv(
+        "MIRROR_DATA_PATH", 
+        f"/home/{os.environ['USER']}/nobackup/autodelete/mirror_data"
+    )
 )
 
 def is_login_node() -> bool:
@@ -41,6 +43,7 @@ def is_power_of_ten(n: int):
 
 @contextmanager
 def _ds_cache_path_context() -> Generator[None, None, None]:
+    from datasets import config as datasets_config
     hf_cache_path = mirror_data_path / "hf_cache"
     hf_cache_path.mkdir(exist_ok=True)
     original = datasets_config.HF_DATASETS_CACHE

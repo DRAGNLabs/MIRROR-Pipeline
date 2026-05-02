@@ -1,35 +1,40 @@
-from jsonargparse import ActionConfigFile, ArgumentParser
-from typing import Literal
-
-from mirror.util import is_login_node, resolve_config_args
-
-import warnings
 import sys
-
-from lightning.fabric.utilities.warnings import PossibleUserWarning
-
-from mirror.config import init_config
-from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.models.mirror_model import MirrorModel
-from mirror.models.model_util import instantiate_model
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.subcommands import fit, preprocess
-from mirror.trainer_constructor import TrainerConstructor
-# from mirror.trainer import Trainer
-
-# These are required so that their items can be found easily by jsonargparse without
-# having to give the full classpath
-import lightning.fabric.strategies
-import mirror.callbacks
-import mirror.datasets
-import mirror.models
-import mirror.preprocessors
-import mirror.schedulers
-import mirror.interventions
+from typing import Literal
 
 Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
 
+
 def main(subcommand: Subcommand):
+    from mirror.slurm_launcher import submit_slurm_job
+    if submit_slurm_job(sys.argv[1:]) is not None:
+        return
+
+    _run(subcommand)
+
+
+def _run(subcommand: Subcommand):
+    import warnings
+
+    from jsonargparse import ActionConfigFile, ArgumentParser
+    from lightning.fabric.utilities.warnings import PossibleUserWarning
+
+    from mirror.config import init_config
+    from mirror.models.mirror_model import MirrorModel
+    from mirror.models.model_util import instantiate_model
+    from mirror.subcommands import fit, preprocess
+    from mirror.trainer_constructor import TrainerConstructor
+    from mirror.util import is_login_node, resolve_config_args
+
+    # These are required so that their items can be found easily by jsonargparse without
+    # having to give the full classpath
+    import lightning.fabric.strategies  # noqa: F401
+    import mirror.callbacks  # noqa: F401
+    import mirror.datasets  # noqa: F401
+    import mirror.models  # noqa: F401
+    import mirror.preprocessors  # noqa: F401
+    import mirror.schedulers  # noqa: F401
+    import mirror.interventions  # noqa: F401
+
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*`load_state_dict` is deprecated and will be removed in future versions\\. Please use `load` instead.*')
@@ -60,10 +65,8 @@ def main(subcommand: Subcommand):
             model = init.model
 
             trainer = trainer.construct_trainer()
-
-            if not (is_login_node() and init.slurm.job_type == "compute"):
-                trainer.launch()
-                model = instantiate_model(model, fabric=trainer.fabric)
+            trainer.launch()
+            model = instantiate_model(model, fabric=trainer.fabric)
 
             if is_login_node() and init.slurm.job_type == "local-download":
                 print("Model downloaded/cached. Re-run on a compute node.")
@@ -85,11 +88,13 @@ def main(subcommand: Subcommand):
 
             init = parser.instantiate_classes(cfg)
             preprocess(**init)
-            
+
         case _:
             print(f'unimplemented subcommand: {subcommand}')
 
+
 if __name__ == '__main__':
+    from jsonargparse import ArgumentParser
     parser = ArgumentParser()
     parser.add_argument("subcommand", type=Subcommand)
     cfg = parser.parse_args(sys.argv[1:2])
