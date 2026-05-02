@@ -4,6 +4,8 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
+import torch.nn as nn
+
 from datasets import config as datasets_config
 from mirror.config import RuntimeEnvironment, get_config
 
@@ -38,6 +40,10 @@ def get_device() -> str:
 
 def is_power_of_ten(n: int):
     return n > 0 and math.log10(n).is_integer()
+
+def count_params(model: nn.Module) -> int:
+    return sum(p.numel() for p in model.parameters())
+
 
 @contextmanager
 def _ds_cache_path_context() -> Generator[None, None, None]:
