@@ -31,6 +31,7 @@ def fit(
         test_data: MirrorDataset | None = None,
         val_check_interval: int = 1,
         configure_scheduler: ConfigureScheduler | None = None,
+        shuffle: bool = True,
 ):
     if slurm.job_type == "compute" and is_login_node():
         job_id = _submit_slurm_job(
@@ -43,18 +44,19 @@ def fit(
         return
 
     trainer.fit(
-        model,
-        data,
-        preprocessor,
-        checkpoint,
-        epochs,
-        batch_size,
-        do_preprocess,
-        run_config_yaml,
-        val_data,
-        test_data,
-        val_check_interval,
-        configure_scheduler,
+        model=model,
+        dataset=data,
+        preprocessor=preprocessor,
+        checkpoint=checkpoint,
+        epochs=epochs,
+        batch_size=batch_size,
+        do_preprocess=do_preprocess,
+        run_config_yaml=run_config_yaml,
+        val_dataset=val_data,
+        test_dataset=test_data,
+        val_check_interval=val_check_interval,
+        configure_scheduler=configure_scheduler,
+        shuffle=shuffle,
     )
 
 def preprocess(
