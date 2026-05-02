@@ -95,6 +95,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             test_dataset: MirrorDataset[RawT] | None = None,
             val_check_interval: int = 1,
             configure_scheduler: ConfigureScheduler | None = None,
+            shuffle: bool = True,
     ):
         training_run_id = datetime.datetime.now().isoformat()
         preprocessor = preprocessor or model.preprocessor
@@ -106,7 +107,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         )
 
 
-        dataloader = self._make_dataloader(dataset, preprocessor, batch_size, do_preprocess)
+        dataloader = self._make_dataloader(dataset, preprocessor, batch_size, do_preprocess, shuffle)
 
         start_epoch = 0
         start_batch = 0
@@ -139,11 +140,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = self._make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess)
+            val_dataloader = self._make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess, False)
 
         test_dataloader = None
         if test_dataset is not None:
-            test_dataloader = self._make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess)
+            test_dataloader = self._make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess, False)
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
             training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch,
@@ -210,7 +211,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             return 0.0
         return total_loss / n_batches
 
-    def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess):
+    def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess, shuffle):
         if do_preprocess:
             preprocessed = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
         else:
@@ -220,6 +221,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             batch_size=batch_size,
             collate_fn=preprocessor.collate,
             drop_last=False,
+            shuffle=shuffle,
         )
         return self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 
