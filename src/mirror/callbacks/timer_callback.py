@@ -79,7 +79,6 @@ class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         start_batch: int,
         **kwargs,
     ) -> None:
-        # All ranks must participate in the reduce before branching on is_global_zero.
         reduced = cast(Tensor, fabric.all_reduce(torch.tensor(count_params(model)), reduce_op="sum"))
         param_count = int(reduced.item())
 
