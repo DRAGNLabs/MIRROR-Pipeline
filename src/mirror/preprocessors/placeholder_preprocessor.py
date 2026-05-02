@@ -4,8 +4,7 @@ import torch
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.util import get_device
-from mirror.row_types import TextRow
-from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
+from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor
 
 class PlaceholderPreprocessor(
     MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
