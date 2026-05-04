@@ -158,13 +158,15 @@ By default, things that track metrics (Wandb and the `ProgressCallback` tqdm bar
 
 (Important implementation note: `get_metrics` must run on every rank, even ranks that won't display the result. Implementations may invoke collectives like `fabric.all_reduce`, and skipping the call on non-zero ranks will deadlock NCCL. The trainer handles this for you — it always calls the getter on every rank before fanning out to callbacks.)
 
-Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(ExtraMetricsGetter)` computes the global gradient norm (summing squared gradients per rank, all-reducing across ranks under FSDP, then taking the sqrt) and returns `{"grad_norm": ...}`. To use it:
+Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(ExtraMetricsGetter)` computes the global gradient norm and returns `{"grad_norm": ...}`. To use it:
 
 ```yaml
 trainer:
   extra_metrics_getter:
     class_path: GradNormMetrics
 ```
+
+To change how often metrics are logged, pass `log_every_n_steps` (defaults to 1) to `WandbCallback`. 
 
 ## Pipeline Developer Information
 
@@ -418,13 +420,15 @@ Replace `fit` with `preprocess` if you are just trying to do a preprocessing run
 
 Before starting a pull request, you'll want to run some checks on the changes you've made. 
 
-First, directly test using the pipeline with the new changes. A simple training run (e.g. `fit` with a small Llama model config & the Wikitext dataset with `data.head: 10`) will cover lots of simple tickets, but you should expand your test suite as necessary to test tickets that change different parts of the pipeline. For example, if your ticket relates to SLURM jobs across multiple nodes, you'll want to test submitting jobs on a single node, multiple nodes, maybe multiple GPUs on a single node, etc. 
+First, run `git merge main` to make sure your branch is up to date with main and hopefully catch some merge conflicts ahead of time. If there are merge conflicts, you can resolve them using VS Code's Source Control panel (the icon that looks like branching dots). It's also smart to run this anytime you're moving a ticket back into review after it was kicked back to you. Once a pull request has been created, merge conflicts can also often be resolved using GitHub's web editor.
+
+Now it's time to directly test using the pipeline with the new changes. A simple training run (e.g. `fit` with a small Llama model config & the Wikitext dataset with `data.head: 10`) will cover lots of simple tickets, but you should expand your test suite as necessary to test tickets that change different parts of the pipeline. For example, if your ticket relates to SLURM jobs across multiple nodes, you'll want to test submitting jobs on a single node, multiple nodes, maybe multiple GPUs on a single node, etc. 
 
 You may also want to run type checks locally; the easiest way to do this is with Pyright. Once you've installed the project's dependencies (`pip install -e ".[dev]"`), just run `pyright` in your terminal, and it will print any errors it sees. There's also a script that runs when you make a pull request that will automatically check for any new Pyright errors on that branch. 
 
 It's also a good idea to review the changes made on your branch to help catch any issues or unintended changes ahead of time. You have a few options:
-- You can run `git status` to see which files have been modified, added, or deleted, and use `git diff main...HEAD` to see the full set of changes your branch introduces compared to `main`
-- You can also review the diff in VS Code's Source Control panel (the icon that looks like branching dots)
+- You can run `git status` to see which files have been modified, added, or deleted, and use `git diff main...HEAD` to see the full set of changes your branch introduces compared to `main`.
+- You can also review the diff in VS Code's Source Control panel.
 - Lastly, after opening the pull request on GitHub, you can go to the "Files Changed" tab and view the diff there before you send the ticket into review. 
 
 You'll also want to make sure the [documentation](../docs/) is updated appropriately to reflect your changes, if necessary. 

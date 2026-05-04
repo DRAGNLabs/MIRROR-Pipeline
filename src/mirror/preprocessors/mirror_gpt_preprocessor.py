@@ -4,8 +4,7 @@ from transformers import PreTrainedTokenizerBase
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
-from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
-from mirror.row_types import TextRow
+from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor
 
 
 

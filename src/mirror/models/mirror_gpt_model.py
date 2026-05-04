@@ -10,8 +10,7 @@ from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTr
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
-from mirror.types import AttentionMaskBatch, Loss, TokenBatch, TokenTensor, TrainStepOutput
-from mirror.row_types import TextRow
+from mirror.types import AttentionMaskBatch, Loss, TextRow, TokenBatch, TokenTensor, TrainStepOutput
 
 
 hf_model_name = "openai-community/gpt2"
