@@ -2,14 +2,14 @@ import datetime
 import os
 import warnings
 from itertools import islice
-from typing import List
+from typing import List, cast
 
 import torch
 from lightning import Fabric
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 from lightning.fabric.strategies.strategy import Strategy
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
@@ -21,7 +21,7 @@ from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
@@ -219,11 +219,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
     def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess, shuffle):
         if do_preprocess:
-            preprocessed = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
+            preprocessed = preprocess_dataset(dataset, preprocessor.preprocess_example, self.num_nodes)
         else:
             preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
         dataloader = DataLoader(
-            preprocessed,
+            cast(Dataset, preprocessed),
             batch_size=batch_size,
             collate_fn=preprocessor.collate,
             drop_last=False,
