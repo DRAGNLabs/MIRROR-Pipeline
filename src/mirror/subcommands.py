@@ -1,6 +1,6 @@
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.slurm_util import SlurmConfig
@@ -22,20 +22,22 @@ def fit(
         test_data: MirrorDataset | None = None,
         val_check_interval: int = 1,
         configure_scheduler: ConfigureScheduler | None = None,
+        shuffle: bool = True,
 ):
     trainer.fit(
-        model,
-        data,
-        preprocessor,
-        checkpoint,
-        epochs,
-        batch_size,
-        do_preprocess,
-        run_config_yaml,
-        val_data,
-        test_data,
-        val_check_interval,
-        configure_scheduler,
+        model=model,
+        dataset=data,
+        preprocessor=preprocessor,
+        checkpoint=checkpoint,
+        epochs=epochs,
+        batch_size=batch_size,
+        do_preprocess=do_preprocess,
+        run_config_yaml=run_config_yaml,
+        val_dataset=val_data,
+        test_dataset=test_data,
+        val_check_interval=val_check_interval,
+        configure_scheduler=configure_scheduler,
+        shuffle=shuffle,
     )
 
 def preprocess(
@@ -43,4 +45,4 @@ def preprocess(
         preprocessor: MirrorPreprocessor,
         slurm: SlurmConfig = SlurmConfig()
 ) -> None:
-    data.preprocess(preprocessor.preprocess_example, slurm.nodes or 1)
+    preprocess_dataset(data, preprocessor.preprocess_example, slurm.nodes or 1)

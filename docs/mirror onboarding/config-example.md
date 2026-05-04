@@ -71,6 +71,7 @@ trainer:
         every_n_train_steps: null        # Save every N steps (null = only at start and end)
     - class_path: WandbCallback          # Customize Wandb output
       init_args:
+        log_every_n_steps: 1             # Log train metrics every N training steps
         extra_metrics_getter:
           class_path: GradNormMetrics
     - class_path: ConfigSnapshotCallback # Snapshot the config file alongside each checkpoint
