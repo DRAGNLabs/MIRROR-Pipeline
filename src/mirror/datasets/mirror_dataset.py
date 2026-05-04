@@ -20,8 +20,8 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
         return self.to_row_type(self.ds[index])
 
 
-def preprocess[RawT, ProcessedT](
-    dataset: "MirrorDataset[RawT]",
+def preprocess_dataset[RawT, ProcessedT](
+    dataset: MirrorDataset[RawT],
     preprocessor_function: Callable[[RawT], ProcessedT],
     num_nodes: int,
 ) -> Sequence[ProcessedT]:
