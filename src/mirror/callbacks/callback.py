@@ -30,6 +30,8 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             epochs: int,
             start_epoch: int,
             start_batch: int,
+            batch_size: int,
+            num_nodes: int,
     ):
         pass
 
@@ -78,5 +80,16 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             optimizer: Optimizer,
             test_loss: float,
             training_run_id: str,
+    ):
+        pass
+
+    def on_training_error(
+            self,
+            *,
+            fabric: Fabric,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            training_run_id: str,
+            error: Exception,
     ):
         pass
