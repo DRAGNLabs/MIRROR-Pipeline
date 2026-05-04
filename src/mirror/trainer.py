@@ -2,14 +2,14 @@ import datetime
 import os
 import warnings
 from itertools import islice
-from typing import List
+from typing import List, cast
 
 import torch
 from lightning import Fabric
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 from lightning.fabric.strategies.strategy import Strategy
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
@@ -216,7 +216,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         else:
             preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
         dataloader = DataLoader(
-            preprocessed,
+            cast(Dataset, preprocessed),
             batch_size=batch_size,
             collate_fn=preprocessor.collate,
             drop_last=False,
