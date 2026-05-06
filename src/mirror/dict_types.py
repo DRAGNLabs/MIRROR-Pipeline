@@ -8,7 +8,7 @@ class TextRow(TypedDict):
 class TextLabelRow(TextRow):
   label: str
 
-class StateDict(TypedDict):
-  model: MirrorModel
+class StateDict[RawT, ProcessedT, BatchT, ModelOutputT](TypedDict):
+  model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]
   optimizer: Optimizer
   global_step: int | None

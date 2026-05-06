@@ -56,9 +56,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
             default_callbacks.append(PrintStepCallback())
 
-        self.requeue_monitor: RequeueMonitor | None = None
+        self.requeue_monitor: RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT] | None = None
         if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
-            self.requeue_monitor = RequeueMonitor()
+            self.requeue_monitor = RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]()
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
         input_singleton_cbs, input_non_singleton_cbs = separate_singletons(callbacks)
@@ -116,7 +116,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         
         n_batches = len(dataloader)
 
-        state : StateDict = {
+        state : StateDict[RawT, ProcessedT, BatchT, ModelOutputT] = {
             'model': model,
             'optimizer': optimizer,
             'global_step': 0,
@@ -133,11 +133,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     "checkpoint_global_step cannot be None. "
                     f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
                     )
-            
+
         if self.requeue_monitor:
             result = self.requeue_monitor.setup(self.fabric, state)
             if result is not None:
-                state = cast(StateDict, result)
+                state = result
 
         global_step : int = cast(int, state["global_step"])
 
