@@ -1,5 +1,5 @@
 from typing import TypedDict
-from torch.nn import Module
+from mirror.models.mirror_model import MirrorModel
 from torch.optim import Optimizer
 
 class TextRow(TypedDict):
@@ -9,6 +9,6 @@ class TextLabelRow(TextRow):
   label: str
 
 class StateDict(TypedDict):
-  model: Module
+  model: MirrorModel
   optimizer: Optimizer
   global_step: int | None
