@@ -8,8 +8,7 @@ from transformers import PreTrainedTokenizerFast
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens
-from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch
-from mirror.row_types import TextRow
+from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch, TextRow
 
 from mirror.util import mirror_data_path
 
