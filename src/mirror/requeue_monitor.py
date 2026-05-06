@@ -38,8 +38,8 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
     def setup(
             self,
             fabric: Fabric,
-            state: StateDict,
-    ) -> StateDict | None:
+            state: StateDict[RawT, ProcessedT, BatchT, ModelOutputT],
+    ) -> StateDict[RawT, ProcessedT, BatchT, ModelOutputT] | None:
         """Set up the requeue signal handler and load a requeue checkpoint if one is present.
 
         Returns the global_step from the requeue checkpoint, or None if no checkpoint was loaded.
@@ -52,7 +52,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
             self,
             *,
             fabric: Fabric,
-            state: StateDict,
+            state: StateDict[RawT, ProcessedT, BatchT, ModelOutputT],
             training_run_id: str,
     ):
         self._warn_if_iteration_too_long(fabric)
@@ -68,7 +68,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
             fabric: Fabric,
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
-    ) -> StateDict | None:
+    ) -> StateDict[RawT, ProcessedT, BatchT, ModelOutputT] | None:
         path = requeue_handoff_path()
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -79,7 +79,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
                 handoff: RequeueHandoff = json.loads(handoff_json)
 
                 checkpoint_id = self._requeue_checkpoint_id(handoff['previous_training_run_id'])
-                state : StateDict = {
+                state : StateDict[RawT, ProcessedT, BatchT, ModelOutputT] = {
                     'model': model,
                     'optimizer': optimizer,
                     'global_step': 0,
@@ -95,7 +95,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            state: StateDict,
+            state: StateDict[RawT, ProcessedT, BatchT, ModelOutputT],
             training_run_id: str,
     ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')

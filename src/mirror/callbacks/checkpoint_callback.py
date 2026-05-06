@@ -66,7 +66,7 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             checkpoint_identifier: CheckpointIdentifier,
             global_step: int | None,
     ):
-        state : StateDict = {
+        state : StateDict[RawT, ProcessedT, BatchT, ModelOutputT] = {
             'model': model,
             'optimizer': optimizer,
             'global_step': global_step,
