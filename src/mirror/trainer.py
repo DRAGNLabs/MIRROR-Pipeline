@@ -174,7 +174,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
                     global_step = epoch_idx * n_batches + batch_idx
 
-                   extra_metrics = (
+                    extra_metrics = (
                         self.extra_metrics_getter.get_metrics(model, self.fabric)
                         if self.extra_metrics_getter is not None
                         else {}
@@ -190,7 +190,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                         epochs=epochs,
                         n_batches=n_batches,
                         batch_idx=batch_idx,
-                        global_step = global_step,
+                        global_step=global_step,
+                        extra_metrics=extra_metrics,
                     )
 
                 if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
