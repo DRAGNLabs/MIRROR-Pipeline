@@ -179,6 +179,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     scheduler.step()
 
                 global_step = epoch_idx * n_batches + batch_idx
+                state['global_step'] = global_step
 
                 self.fabric.call(
                     'on_train_batch_end',
@@ -196,10 +197,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                 if self.requeue_monitor:
                     self.requeue_monitor.on_train_batch_end(
                         fabric=self.fabric,
-                        model=model,
-                        optimizer=optimizer,
+                        state=state,
                         training_run_id=training_run_id,
-                        global_step=global_step,
                     )
 
             if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:

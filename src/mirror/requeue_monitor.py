@@ -52,14 +52,12 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
-            optimizer: Optimizer,
+            state: StateDict,
             training_run_id: str,
-            global_step: int,
     ):
         self._warn_if_iteration_too_long(fabric)
         if self.requeue_signal_recieved:
-            self._save_checkpoint(fabric, model, optimizer, training_run_id, global_step)
+            self._save_checkpoint(fabric, state, training_run_id)
             if fabric.is_global_zero:
                 self._create_requeue_handoff(training_run_id)
                 self._requeue(fabric)
@@ -97,18 +95,11 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
-            optimizer: Optimizer,
+            state: StateDict,
             training_run_id: str,
-            global_step: int,
     ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')
         checkpoint_id = self._requeue_checkpoint_id(training_run_id)
-        state : StateDict = {
-            'model': model,
-            'optimizer': optimizer,
-            'global_step': global_step,
-        }
         fabric.save(checkpoint_id.path, cast(dict[str, Module | Optimizer | Any], state))
 
     def _create_requeue_handoff(self, training_run_id: str):
