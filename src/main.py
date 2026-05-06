@@ -6,8 +6,8 @@ Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
 
 def main(subcommand: Subcommand):
     from mirror.slurm_launcher import submit_slurm_job
-    if submit_slurm_job(sys.argv[1:]) is not None:
-        return
+    from mirror.slurm_util import parse_slurm_config
+    submit_slurm_job(parse_slurm_config(sys.argv[1:]), sys.argv[1:])
 
     _run(subcommand)
 
