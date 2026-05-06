@@ -14,7 +14,6 @@ class OnDemandPreprocessedDataset[RawT, ProcessedT](Dataset[ProcessedT]):
         super().__init__()
         self.raw_dataset = raw_dataset
         self.preprocess = preprocess
-        # cumulative_lengths[i] = total processed items produced by raw_dataset[:i+1]
         cumulative = 0
         self._cumulative_lengths: list[int] = []
         for i in range(len(raw_dataset)):
