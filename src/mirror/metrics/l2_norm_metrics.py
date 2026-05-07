@@ -11,8 +11,8 @@ class L2NormMetrics(ExtraMetricsGetter):
     def get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict:
         params = [p.detach() for p in model.parameters()]
         if not params:
-            return {"weight_norm": 0.0}
+            return {"l2_norm": 0.0}
         per_param_norms = torch.stack([torch.linalg.vector_norm(p) for p in params])
         local_sq = per_param_norms.pow(2).sum()
         global_sq = cast(torch.Tensor, fabric.all_reduce(local_sq, reduce_op="sum"))
-        return {"weight_norm": global_sq.sqrt().item()}
+        return {"l2_norm": global_sq.sqrt().item()}
