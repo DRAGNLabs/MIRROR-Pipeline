@@ -107,10 +107,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         )
 
 
-        dataloader = make_dataloader(
-            dataset, preprocessor, batch_size, do_preprocess, shuffle,
-            num_nodes=self.num_nodes, fabric=self.fabric,
-        )
+        dataloader = make_dataloader(dataset, preprocessor, batch_size, do_preprocess,
+                                    shuffle, num_nodes=self.num_nodes, fabric=self.fabric)
 
         start_epoch = 0
         start_batch = 0
@@ -143,22 +141,18 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = make_dataloader(
-                val_dataset, preprocessor, batch_size, do_preprocess, False,
-                num_nodes=self.num_nodes, fabric=self.fabric,
-            )
+            val_dataloader = make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess,
+                                             False, num_nodes=self.num_nodes, fabric=self.fabric)
 
         test_dataloader = None
         if test_dataset is not None:
-            test_dataloader = make_dataloader(
-                test_dataset, preprocessor, batch_size, do_preprocess, False,
-                num_nodes=self.num_nodes, fabric=self.fabric,
-            )
+            test_dataloader = make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess,
+                                              False, num_nodes=self.num_nodes, fabric=self.fabric)
 
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
-            training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch,
-            start_batch=start_batch, run_config_yaml=run_config_yaml,
-            batch_size=batch_size, num_nodes=self.num_nodes)
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, 
+                         dataset=dataset, training_run_id=training_run_id, n_batches=n_batches, 
+                         epochs=epochs, start_epoch=start_epoch, start_batch=start_batch, 
+                         run_config_yaml=run_config_yaml, batch_size=batch_size, num_nodes=self.num_nodes)
 
         try:
             for epoch_idx in range(start_epoch, epochs):
@@ -180,18 +174,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
                     global_step = epoch_idx * n_batches + batch_idx
 
-                    self.fabric.call(
-                        'on_train_batch_end',
-                        fabric=self.fabric,
-                        model=model,
-                        optimizer=optimizer,
-                        loss=loss_value,
-                        training_run_id=training_run_id,
-                        epochs=epochs,
-                        n_batches=n_batches,
-                        batch_idx=batch_idx,
-                        global_step = global_step,
-                    )
+                    self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer,
+                                     loss=loss_value, training_run_id=training_run_id, epochs=epochs, 
+                                     n_batches=n_batches, batch_idx=batch_idx, global_step = global_step)
 
                 if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                     val_loss = self._eval_loop(model, val_dataloader)
