@@ -1,2 +1,3 @@
 from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
 from mirror.metrics.grad_norm_metrics import GradNormMetrics
+from mirror.metrics.l2_norm_metrics import L2NormMetrics
