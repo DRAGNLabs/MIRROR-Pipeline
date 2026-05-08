@@ -1,14 +1,25 @@
 from lightning import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
+from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
+from mirror.models.mirror_model import MirrorModel
 
 class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
        Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
-    def __init__(self, bar_refresh_interval: int = 5) -> None:
+    def __init__(
+            self,
+            bar_refresh_interval: int = 5,
+            extra_metrics_getter: ExtraMetricsGetter | None = None,
+            extra_metrics_every_n_steps: int = 1,
+    ) -> None:
         super().__init__(is_singleton=True)
         self.progress_bar = None
         self.bar_refresh_interval = bar_refresh_interval
+        self.extra_metrics_getter = extra_metrics_getter
+        self.extra_metrics_every_n_steps = extra_metrics_every_n_steps
+        self.step = 0
+        self.last_extra_metrics: dict = {}
 
     def on_fit_start(
             self,
@@ -27,12 +38,15 @@ class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             self,
             *,
             fabric: Fabric,
+            model: MirrorModel,
             loss: float,
-            extra_metrics: dict,
             **kwargs,
     ):
+        self.step += 1
+        if self.extra_metrics_getter is not None and self.step % self.extra_metrics_every_n_steps == 0:
+            self.last_extra_metrics = self.extra_metrics_getter.get_metrics(model, fabric)
         if fabric.is_global_zero and self.progress_bar is not None:
-            self.progress_bar.set_postfix(Loss=f"{loss:.3f}", **extra_metrics, refresh=False)
+            self.progress_bar.set_postfix(Loss=f"{loss:.3f}", **self.last_extra_metrics, refresh=False)
             self.progress_bar.update(1)
 
     def on_validation_epoch_end(

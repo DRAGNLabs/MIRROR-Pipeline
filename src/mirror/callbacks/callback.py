@@ -52,7 +52,6 @@ class Callback[RawT, ProcessedT, BatchT, ModelOutputT]:
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             loss: float,
-            extra_metrics: dict,
             training_run_id: str,
             epochs: int,
             n_batches: int,
