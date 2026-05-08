@@ -23,6 +23,7 @@ from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
+from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 
@@ -98,8 +99,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             shuffle: bool = True,
     ):
         training_run_id = datetime.datetime.now().isoformat()
-        preprocessor = preprocessor or model.preprocessor
+        rank_zero_log(self.fabric, f"Training run ID: {training_run_id}\n")
 
+        preprocessor = preprocessor or model.preprocessor
         model, optimizer = self.fabric.setup(
             model,
             model.configure_optimizers(),
