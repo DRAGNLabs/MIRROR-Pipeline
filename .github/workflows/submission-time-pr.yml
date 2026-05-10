@@ -1,0 +1,30 @@
+name: PR SLURM Submission Time Check
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+jobs:
+  submission-time:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: |
+      github.event.pull_request.author_association == 'OWNER' ||
+      github.event.pull_request.author_association == 'MEMBER' ||
+      github.event.pull_request.author_association == 'COLLABORATOR' ||
+      github.event.pull_request.author_association == 'CONTRIBUTOR'
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Run submission time check
+        run: python scripts/check_submission_time.py
