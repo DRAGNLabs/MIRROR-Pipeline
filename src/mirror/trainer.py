@@ -3,14 +3,14 @@ import datetime
 import os
 import warnings
 from itertools import islice
-from typing import List
+from typing import List, cast
 
 import torch
 from lightning import Fabric
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 from lightning.fabric.strategies.strategy import Strategy
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from mirror.callbacks.callback import Callback
 from mirror.callbacks.checkpoint_callback import CheckpointCallback
@@ -21,7 +21,7 @@ from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
@@ -98,6 +98,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             test_dataset: MirrorDataset[RawT] | None = None,
             val_check_interval: int = 1,
             configure_scheduler: ConfigureScheduler | None = None,
+            shuffle: bool = True,
     ):
         training_run_id = datetime.datetime.now().isoformat()
         preprocessor = preprocessor or model.preprocessor
@@ -109,7 +110,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         )
 
 
-        dataloader = self._make_dataloader(dataset, preprocessor, batch_size, do_preprocess)
+        dataloader = self._make_dataloader(dataset, preprocessor, batch_size, do_preprocess, shuffle)
 
         start_epoch = 0
         start_batch = 0
@@ -151,69 +152,75 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = self._make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess)
+            val_dataloader = self._make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess, False)
 
         test_dataloader = None
         if test_dataset is not None:
-            test_dataloader = self._make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess)
+            test_dataloader = self._make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess, False)
 
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset, 
-            training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch, 
-            start_batch=start_batch, run_config_yaml=run_config_yaml)
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
+            training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch,
+            start_batch=start_batch, run_config_yaml=run_config_yaml,
+            batch_size=batch_size, num_nodes=self.num_nodes)
 
-        for epoch_idx in range(start_epoch, epochs):
+        try:
+            for epoch_idx in range(start_epoch, epochs):
 
-            skip_batches = start_batch if epoch_idx == start_epoch else 0
-            batch_iter = islice(enumerate(dataloader), skip_batches, None)
+                skip_batches = start_batch if epoch_idx == start_epoch else 0
+                batch_iter = islice(enumerate(dataloader), skip_batches, None)
 
-            for batch_idx, batch in batch_iter:
+                for batch_idx, batch in batch_iter:
 
-                batch: BatchT = batch
+                    batch: BatchT = batch
 
-                optimizer.zero_grad()
-                train_step_output = model.training_step(batch)
-                loss_value = train_step_output.loss.item()
-                self.fabric.backward(train_step_output.loss)
-                optimizer.step()
-                if scheduler is not None:
-                    scheduler.step()
+                    optimizer.zero_grad()
+                    train_step_output = model.training_step(batch)
+                    loss_value = train_step_output.loss.item()
+                    self.fabric.backward(train_step_output.loss)
+                    optimizer.step()
+                    if scheduler is not None:
+                        scheduler.step()
 
-                global_step = epoch_idx * n_batches + batch_idx
-                state['global_step'] = global_step
+                    global_step = epoch_idx * n_batches + batch_idx
+                    state['global_step'] = global_step
 
-                self.fabric.call(
-                    'on_train_batch_end',
-                    fabric=self.fabric,
-                    model=model,
-                    optimizer=optimizer,
-                    loss=loss_value,
-                    training_run_id=training_run_id,
-                    epochs=epochs,
-                    n_batches=n_batches,
-                    batch_idx=batch_idx,
-                    global_step=global_step,
-                )
-
-                if self.requeue_monitor:
-                    self.requeue_monitor.on_train_batch_end(
+                    self.fabric.call(
+                        'on_train_batch_end',
                         fabric=self.fabric,
-                        state=state,
+                        model=model,
+                        optimizer=optimizer,
+                        loss=loss_value,
                         training_run_id=training_run_id,
+                        epochs=epochs,
+                        n_batches=n_batches,
+                        batch_idx=batch_idx,
+                        global_step=global_step,
                     )
 
-            if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
-                val_loss = self._eval_loop(model, val_dataloader)
+                    if self.requeue_monitor:
+                        self.requeue_monitor.on_train_batch_end(
+                            fabric=self.fabric,
+                            state=state,
+                            training_run_id=training_run_id,
+                        )
 
-                self.fabric.call('on_validation_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
-                                 val_loss=val_loss, training_run_id=training_run_id, epoch=epoch_idx)
+                if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
+                    val_loss = self._eval_loop(model, val_dataloader)
 
-        if test_dataloader is not None:
-            test_loss = self._eval_loop(model, test_dataloader)
-            self.fabric.call('on_test_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
-                             test_loss=test_loss, training_run_id=training_run_id)
+                    self.fabric.call('on_validation_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
+                                     val_loss=val_loss, training_run_id=training_run_id, epoch=epoch_idx)
 
-        self.fabric.call('on_fit_end', fabric=self.fabric, model=model,
-                         optimizer=optimizer, training_run_id=training_run_id)
+            if test_dataloader is not None:
+                test_loss = self._eval_loop(model, test_dataloader)
+                self.fabric.call('on_test_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
+                                 test_loss=test_loss, training_run_id=training_run_id)
+
+            self.fabric.call('on_fit_end', fabric=self.fabric, model=model,
+                             optimizer=optimizer, training_run_id=training_run_id)
+        except Exception as error:
+            self.fabric.call('on_training_error', fabric=self.fabric, model=model,
+                             optimizer=optimizer, training_run_id=training_run_id, error=error)
+            raise
 
     def _eval_loop(self, model, dataloader) -> float:
         model.eval()
@@ -230,16 +237,17 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             return 0.0
         return total_loss / n_batches
 
-    def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess):
+    def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess, shuffle):
         if do_preprocess:
-            preprocessed = dataset.preprocess(preprocessor.preprocess_example, self.num_nodes)
+            preprocessed = preprocess_dataset(dataset, preprocessor.preprocess_example, self.num_nodes)
         else:
             preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
         dataloader = DataLoader(
-            preprocessed,
+            cast(Dataset, preprocessed),
             batch_size=batch_size,
             collate_fn=preprocessor.collate,
             drop_last=False,
+            shuffle=shuffle,
         )
         return self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
 

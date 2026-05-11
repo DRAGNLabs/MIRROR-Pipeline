@@ -4,4 +4,5 @@ from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.callbacks.print_step_callback import PrintStepCallback
 from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.test_callback import TestCallback
+from mirror.callbacks.timer_callback import TimerCallback
 from mirror.callbacks.wandb_callback import WandbCallback
