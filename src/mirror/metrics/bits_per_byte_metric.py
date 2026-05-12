@@ -8,15 +8,25 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.types import TextRow
+from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor
 
 
-class BitsPerByteMetric(MirrorMetric):
-    def __init__(self, data: MirrorDataset, preprocessor: MirrorPreprocessor | None = None) -> None:
+class BitsPerByteMetric[ModelOutputT](
+    MirrorMetric[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT]
+):
+    def __init__(
+            self,
+            data: MirrorDataset,
+            preprocessor: MirrorPreprocessor | None = None,
+    ) -> None:
         self.data = data
         self.preprocessor = preprocessor
 
-    def get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict:
+    def get_metrics(
+            self,
+            model: MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT],
+            fabric: Fabric,
+    ) -> dict:
         preprocessor = self.preprocessor or model.preprocessor
         local_indices = range(fabric.global_rank, len(self.data), fabric.world_size)
 

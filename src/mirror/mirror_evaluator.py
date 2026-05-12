@@ -16,7 +16,7 @@ class MirrorEvaluator[RawT, ProcessedT, BatchT, ModelOutputT]:
     def evaluate(
             self,
             model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
-            metrics: dict[str, MirrorMetric],
+            metrics: dict[str, MirrorMetric[RawT, ProcessedT, BatchT, ModelOutputT]],
             checkpoint_path: str | None = None,
             slurm: SlurmConfig = SlurmConfig(),
     ) -> dict:
