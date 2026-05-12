@@ -23,6 +23,7 @@ from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
+from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 
@@ -98,8 +99,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             shuffle: bool = True,
     ):
         training_run_id = datetime.datetime.now().isoformat()
-        preprocessor = preprocessor or model.preprocessor
+        rank_zero_log(self.fabric, f"Training run ID: {training_run_id}\n")
 
+        preprocessor = preprocessor or model.preprocessor
         model, optimizer = self.fabric.setup(
             model,
             model.configure_optimizers(),
@@ -107,7 +109,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         )
 
 
-        dataloader = self._make_dataloader(dataset, preprocessor, batch_size, do_preprocess, shuffle)
+        dataloader = make_dataloader(dataset, preprocessor, batch_size, do_preprocess,
+                                    shuffle, num_nodes=self.num_nodes, fabric=self.fabric)
 
         start_epoch = 0
         start_batch = 0
@@ -140,16 +143,18 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = self._make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess, False)
+            val_dataloader = make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess,
+                                             False, num_nodes=self.num_nodes, fabric=self.fabric)
 
         test_dataloader = None
         if test_dataset is not None:
-            test_dataloader = self._make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess, False)
+            test_dataloader = make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess,
+                                              False, num_nodes=self.num_nodes, fabric=self.fabric)
 
-        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, dataset=dataset,
-            training_run_id=training_run_id, n_batches=n_batches, epochs=epochs, start_epoch=start_epoch,
-            start_batch=start_batch, run_config_yaml=run_config_yaml,
-            batch_size=batch_size, num_nodes=self.num_nodes)
+        self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, 
+                         dataset=dataset, training_run_id=training_run_id, n_batches=n_batches, 
+                         epochs=epochs, start_epoch=start_epoch, start_batch=start_batch, 
+                         run_config_yaml=run_config_yaml, batch_size=batch_size, num_nodes=self.num_nodes)
 
         try:
             for epoch_idx in range(start_epoch, epochs):
@@ -171,18 +176,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
                     global_step = epoch_idx * n_batches + batch_idx
 
-                    self.fabric.call(
-                        'on_train_batch_end',
-                        fabric=self.fabric,
-                        model=model,
-                        optimizer=optimizer,
-                        loss=loss_value,
-                        training_run_id=training_run_id,
-                        epochs=epochs,
-                        n_batches=n_batches,
-                        batch_idx=batch_idx,
-                        global_step = global_step,
-                    )
+                    self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer,
+                                     loss=loss_value, training_run_id=training_run_id, epochs=epochs, 
+                                     n_batches=n_batches, batch_idx=batch_idx, global_step = global_step)
 
                 if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                     val_loss = self._eval_loop(model, val_dataloader)
@@ -217,20 +213,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             return 0.0
         return total_loss / n_batches
 
-    def _make_dataloader(self, dataset, preprocessor, batch_size, do_preprocess, shuffle):
-        if do_preprocess:
-            preprocessed = preprocess_dataset(dataset, preprocessor.preprocess_example)
-        else:
-            preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
-        dataloader = DataLoader(
-            cast(Dataset, preprocessed),
-            batch_size=batch_size,
-            collate_fn=preprocessor.collate,
-            drop_last=False,
-            shuffle=shuffle,
-        )
-        return self.fabric.setup_dataloaders(dataloader, move_to_device=self.config['device'] == 'cuda')
-
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
         return Fabric(
             strategy=strategy,
@@ -241,11 +223,38 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         )
 
 def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
-       callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+        callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ) -> tuple[
-   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
-   List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+        List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
+        List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
     return singletons, non_singletons
+
+
+def make_dataloader[RawT, ProcessedT, BatchT](
+        dataset: MirrorDataset[RawT],
+        preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT],
+        batch_size: int,
+        do_preprocess: bool,
+        shuffle: bool,
+        fabric: Fabric | None = None,
+) -> DataLoader:
+    if do_preprocess:
+        preprocessed = preprocess_dataset(dataset, preprocessor.preprocess_example)
+    else:
+        preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
+    dataloader = DataLoader(
+        cast(Dataset, preprocessed),
+        batch_size=batch_size,
+        collate_fn=preprocessor.collate,
+        drop_last=False,
+        shuffle=shuffle,
+    )
+    if fabric is None:
+        return dataloader
+    return cast(
+        DataLoader, 
+        fabric.setup_dataloaders(dataloader, move_to_device=get_config()['device'] == 'cuda')
+    )
