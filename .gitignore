@@ -11,8 +11,7 @@ mirror_pipeline.egg-info/
 .claude/
 
 # Project
-config*.yaml
-configs/
+configs/user_configs/
 slurm_logs/
 src/mirror/models/baby_babble/
 src/jupyter_template.ipynb
