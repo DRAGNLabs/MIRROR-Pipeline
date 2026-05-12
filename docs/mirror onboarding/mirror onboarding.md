@@ -276,6 +276,11 @@ Vim is the default editor for commit message files (e.g. git merge).
     - Useful for preparing data separately before running a training job
     - Requires `--data` and `--preprocessor` to be specified (either in the config file or as command-line arguments)
 
+- `python src/main.py eval --config <config-file>`: Run evaluation metrics on a trained model
+    - Requires a model, an evaluator, and at least one metric to be specified in the config file
+    - Optionally accepts a `checkpoint_path` (a direct path to a `.ckpt` file or FSDP checkpoint directory) to load trained weights before evaluating
+    - See [Evaluating a model](#evaluating-a-model) for a full walkthrough
+
 - `python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
     - Jupyter notebooks allow for significantly decreased startup time on repeat job runs
     - This command will output a URL, which is used to set the environment for `jupyter_template.ipynb` (or your copy(s) of it)

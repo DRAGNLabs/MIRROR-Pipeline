@@ -1,25 +1,23 @@
-from lightning.fabric.strategies.ddp import DDPStrategy
+from lightning.fabric.strategies.fsdp import FSDPStrategy
 from lightning.fabric.strategies.strategy import Strategy
 
-from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 from mirror.slurm_util import SlurmConfig
 
 
-class MirrorEvaluator:
+class MirrorEvaluator[RawT, ProcessedT, BatchT, ModelOutputT]:
     def __init__(
             self,
-            metrics: dict[str, MirrorMetric],
-            strategy: Strategy = DDPStrategy(),
+            strategy: Strategy = FSDPStrategy(),
     ) -> None:
-        self.metrics = metrics
         self.strategy = strategy
 
     def evaluate(
-            self, 
-            model: MirrorModel, 
-            checkpoint: CheckpointIdentifier | None = None, 
+            self,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            metrics: dict[str, MirrorMetric],
+            checkpoint_path: str | None = None,
             slurm: SlurmConfig = SlurmConfig(),
     ) -> dict:
         from mirror.config import get_config
@@ -36,13 +34,13 @@ class MirrorEvaluator:
 
         model = fabric.setup(model)
 
-        if checkpoint:
-            fabric.load(checkpoint.path, {'model': model})
+        if checkpoint_path:
+            fabric.load(checkpoint_path, {'model': model})
 
         model.eval()
 
         results = {}
-        for label, metric in self.metrics.items():
+        for label, metric in metrics.items():
             result = metric.get_metrics(model, fabric)
             results[label] = result
 
