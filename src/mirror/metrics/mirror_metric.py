@@ -5,7 +5,7 @@ from lightning import Fabric
 from mirror.models.mirror_model import MirrorModel
 
 
-class ExtraMetricsGetter(ABC):
+class MirrorMetric(ABC):
     @abstractmethod
     def get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict:
         """Must be called on every rank, even ranks that won't log the result.

@@ -1,4 +1,5 @@
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.mirror_evaluator import MirrorEvaluator
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.models.mirror_model import MirrorModel
@@ -39,6 +40,16 @@ def fit(
         configure_scheduler=configure_scheduler,
         shuffle=shuffle,
     )
+
+def evaluation(
+        model: MirrorModel,
+        evaluator: MirrorEvaluator,
+        checkpoint: CheckpointIdentifier | None = None,
+        slurm: SlurmConfig = SlurmConfig(),
+) -> None:
+    results = evaluator.evaluate(model, checkpoint, slurm)
+    for label, result in results.items():
+        print(f"{label}: {result}")
 
 def preprocess(
         data: MirrorDataset,
