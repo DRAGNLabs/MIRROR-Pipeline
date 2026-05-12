@@ -21,14 +21,15 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
 ):
     def __init__(
         self,
+        extra_metrics_getters: list[ExtraMetricsGetter] = [],
         log_every_n_steps: int = 1,
-        extra_metrics_getter: ExtraMetricsGetter | None = None,
+        extra_metrics_getter: list[ExtraMetricsGetter] = [],
     ) -> None:
         super().__init__(is_singleton=True)
         self.run: WandbRun | None = None
         self.step = 0
+        self.extra_metrics_getters = extra_metrics_getters
         self.log_every_n_steps = log_every_n_steps
-        self.extra_metrics_getter = extra_metrics_getter
 
     def on_fit_start(
         self,
@@ -73,11 +74,11 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         self.step += 1
         if self.step % self.log_every_n_steps != 0:
             return
-        extra_metrics = (
-            self.extra_metrics_getter.get_metrics(model, fabric)
-            if self.extra_metrics_getter is not None
-            else {}
-        )
+        extra_metrics = {
+            k: v
+            for getter in self.extra_metrics_getters
+            for k, v in getter.get_metrics(model, fabric).items()
+        }
         if self.run:
             self.run.log({"train/loss": loss, **extra_metrics}, step=self.step)
 
