@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from mirror.config import RuntimeEnvironment, get_config
 
 
-_CONFIGS_DIR = Path(__file__).parent.parent.parent / 'configs'
+_CONFIGS_DIR = Path(__file__).parent.parent.parent / 'configs' / 'user_configs'
 
 def resolve_config_args(args: list[str]) -> list[str]:
     result = list(args)

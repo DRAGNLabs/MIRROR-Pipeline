@@ -9,7 +9,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run a training config and assert that loss drops enough to indicate overfitting."
     )
-    parser.add_argument("--config", default="overfit_test_config.yaml")
+    parser.add_argument("--config", default="configs/test_configs/overfit_test_config.yaml")
     parser.add_argument("--min-relative-drop", type=float, default=0.5)
     parser.add_argument("--min-absolute-drop", type=float, default=1.0)
     return parser.parse_args()
