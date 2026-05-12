@@ -23,13 +23,12 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
 def preprocess_dataset[RawT, ProcessedT](
     dataset: MirrorDataset[RawT],
     preprocessor_function: Callable[[RawT], ProcessedT],
-    num_nodes: int,
 ) -> Sequence[ProcessedT]:
     def mappable_preprocessor_function(row: dict) -> dict:
         return {"input_ids": preprocessor_function(dataset.to_row_type(row))}
 
     with _ds_cache_path_context():
-        mapped = dataset.ds.map(mappable_preprocessor_function, num_proc=num_nodes)
+        mapped = dataset.ds.map(mappable_preprocessor_function)
 
     print("Preprocessing complete.", file=stderr)
     mapped.set_format(type="torch", columns=["input_ids"])

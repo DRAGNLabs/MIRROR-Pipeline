@@ -239,11 +239,10 @@ def make_dataloader[RawT, ProcessedT, BatchT](
         batch_size: int,
         do_preprocess: bool,
         shuffle: bool,
-        num_nodes: int = 1,
         fabric: Fabric | None = None,
 ) -> DataLoader:
     if do_preprocess:
-        preprocessed = preprocess_dataset(dataset, preprocessor.preprocess_example, num_nodes)
+        preprocessed = preprocess_dataset(dataset, preprocessor.preprocess_example)
     else:
         preprocessed = OnDemandPreprocessedDataset(dataset, preprocessor.preprocess_example)
     dataloader = DataLoader(
