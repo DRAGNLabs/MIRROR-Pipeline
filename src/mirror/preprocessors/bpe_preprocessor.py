@@ -45,13 +45,13 @@ class BPEPreprocessor(
             pad_token="<pad>",
         )
 
-    def preprocess_example(self, example: TextRow) -> TokenTensor:
+    def preprocess_example(self, example: TextRow) -> list[TokenTensor]:
         encoding = self._raw_tokenizer.encode(example['text'], add_special_tokens=True)
         ids = encoding.ids
         if len(ids) < 2:
             eos = self._raw_tokenizer.token_to_id("</s>")
             ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
-        return cast(TokenTensor, ids)
+        return [cast(TokenTensor, ids)]
 
     def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
         return collate_tokens(self._tokenizer, examples)

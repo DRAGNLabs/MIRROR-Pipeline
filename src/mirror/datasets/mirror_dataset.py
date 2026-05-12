@@ -22,14 +22,26 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
 
 def preprocess_dataset[RawT, ProcessedT](
     dataset: MirrorDataset[RawT],
-    preprocessor_function: Callable[[RawT], ProcessedT],
+    preprocessor_function: Callable[[RawT], Sequence[ProcessedT]],
     num_nodes: int,
 ) -> Sequence[ProcessedT]:
-    def mappable_preprocessor_function(row: dict) -> dict:
-        return {"input_ids": preprocessor_function(dataset.to_row_type(row))}
+    column_names = dataset.ds.column_names
+
+    def mappable_preprocessor_function(batch: dict) -> dict:
+        n = len(next(iter(batch.values())))
+        outputs = []
+        for i in range(n):
+            row = {k: batch[k][i] for k in column_names}
+            outputs.extend(preprocessor_function(dataset.to_row_type(row)))
+        return {"input_ids": outputs}
 
     with _ds_cache_path_context():
-        mapped = dataset.ds.map(mappable_preprocessor_function, num_proc=num_nodes)
+        mapped = dataset.ds.map(
+            mappable_preprocessor_function,
+            num_proc=num_nodes,
+            batched=True,
+            remove_columns=column_names,
+        )
 
     print("Preprocessing complete.", file=stderr)
     mapped.set_format(type="torch", columns=["input_ids"])
