@@ -1,9 +1,8 @@
-from typing import Any, List, cast
 import datetime
 import os
 import warnings
 from itertools import islice
-from typing import List, cast
+from typing import Any, List, cast
 
 import torch
 from lightning import Fabric
@@ -128,7 +127,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             # models and optimizers are treated specially: they are populated via their load_state_dict
             # methods internally to fabric.load. Anything else in the state dict is just set in place.
 
-            self.fabric.load(checkpoint.path, cast(dict[str, torch.Module | torch.optim.Optimizer | Any], state))
+            self.fabric.load(checkpoint.path, cast(dict[str, torch.nn.Module | torch.optim.Optimizer | Any], state))
 
             if state['global_step'] is None:
                 raise RuntimeError(
