@@ -58,8 +58,6 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             default_callbacks.append(PrintStepCallback())
 
         self.requeue_monitor: RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT] | None = None
-        if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
-            self.requeue_monitor = RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]()
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
         input_singleton_cbs, input_non_singleton_cbs = separate_singletons(callbacks)
@@ -138,10 +136,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
                     )
 
+        if self.config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
+            self.requeue_monitor = RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT](self.fabric)
+
         if self.requeue_monitor:
-            result = self.requeue_monitor.setup(self.fabric, state)
-            if result is not None:
-                state = result
+            state = self.requeue_monitor.load_requeue_checkpoint_if_present(self.fabric, state)
 
         global_step : int = cast(int, state["global_step"])
 
