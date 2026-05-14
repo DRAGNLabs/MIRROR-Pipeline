@@ -2,7 +2,7 @@ import datetime
 import os
 import warnings
 from itertools import islice
-from typing import List, cast
+from typing import Any, List, cast
 
 import torch
 from lightning import Fabric
@@ -16,7 +16,6 @@ from mirror.callbacks.checkpoint_callback import CheckpointCallback
 from mirror.callbacks.config_snapshot_callback import ConfigSnapshotCallback
 from mirror.callbacks.print_step_callback import PrintStepCallback
 from mirror.callbacks.progress_callback import ProgressCallback
-from mirror.callbacks.requeue_callback import RequeueCallback
 from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
@@ -26,7 +25,8 @@ from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedD
 from mirror.fabric_util import rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-
+from mirror.requeue_monitor import RequeueMonitor
+from mirror.dict_types import StateDict
 
 class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
     def __init__(
@@ -55,8 +55,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         ]
         if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
             default_callbacks.append(PrintStepCallback())
-        if config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
-            default_callbacks.append(RequeueCallback())
+
+        self.requeue_monitor: RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT] | None = None
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
         input_singleton_cbs, input_non_singleton_cbs = separate_singletons(callbacks)
@@ -114,27 +114,37 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         start_epoch = 0
         start_batch = 0
+        
         n_batches = len(dataloader)
+
+        state : StateDict[RawT, ProcessedT, BatchT, ModelOutputT] = {
+            'model': model,
+            'optimizer': optimizer,
+            'global_step': 0,
+        }
 
         if checkpoint:
             # models and optimizers are treated specially: they are populated via their load_state_dict
             # methods internally to fabric.load. Anything else in the state dict is just set in place.
 
-            state = {
-                'model': model,
-                'optimizer': optimizer,
-                'global_step': 0,
-            }
-            self.fabric.load(checkpoint.path, state)
+            self.fabric.load(checkpoint.path, cast(dict[str, torch.nn.Module | torch.optim.Optimizer | Any], state))
 
-            checkpoint_global_step = state['global_step']
-            if checkpoint_global_step is None:
+            if state['global_step'] is None:
                 raise RuntimeError(
                     "checkpoint_global_step cannot be None. "
                     f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
                     )
-            start_epoch = checkpoint_global_step // n_batches
-            start_batch = (checkpoint_global_step % n_batches) + 1
+
+        if self.config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
+            self.requeue_monitor = RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT](self.fabric)
+
+        if self.requeue_monitor:
+            state = self.requeue_monitor.load_requeue_checkpoint_if_present(self.fabric, state)
+
+        global_step : int = cast(int, state["global_step"])
+
+        start_epoch = global_step // n_batches
+        start_batch = (global_step % n_batches) + 1
 
         scheduler = None
         if configure_scheduler is not None:
@@ -175,10 +185,18 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                         scheduler.step()
 
                     global_step = epoch_idx * n_batches + batch_idx
+                    state['global_step'] = global_step
 
                     self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer,
                                      loss=loss_value, training_run_id=training_run_id, epochs=epochs, 
                                      n_batches=n_batches, batch_idx=batch_idx, global_step = global_step)
+
+                    if self.requeue_monitor:
+                        self.requeue_monitor.on_train_batch_end(
+                            fabric=self.fabric,
+                            state=state,
+                            training_run_id=training_run_id,
+                        )
 
                 if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                     val_loss = self._eval_loop(model, val_dataloader)
