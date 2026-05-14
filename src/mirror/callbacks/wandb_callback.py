@@ -23,6 +23,7 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         self,
         extra_metrics_getters: list[ExtraMetricsGetter] = [],
         log_every_n_steps: int = 1,
+        extra_metrics_getter: list[ExtraMetricsGetter] = [],
     ) -> None:
         super().__init__(is_singleton=True)
         self.run: WandbRun | None = None

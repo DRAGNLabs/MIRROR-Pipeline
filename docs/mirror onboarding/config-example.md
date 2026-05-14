@@ -76,6 +76,10 @@ trainer:
           class_path: GradNormMetrics
     - class_path: ConfigSnapshotCallback # Snapshot the config file alongside each checkpoint
     - class_path: ProgressCallback       # Print live loss / progress to stdout
+      init_args:
+        extra_metrics_every_n_steps: 1   # Recompute extra metrics every N steps for the postfix
+        # extra_metrics_getter:          # Optional getter, independent from WandbCallback's
+        #   class_path: GradNormMetrics
 
 # checkpoint:
 #   training_run_id: "20240101_120000"   # ID of the run to resume from

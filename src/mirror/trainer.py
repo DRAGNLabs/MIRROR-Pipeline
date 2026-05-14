@@ -189,7 +189,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
                     self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer,
                                      loss=loss_value, training_run_id=training_run_id, epochs=epochs, 
-                                     n_batches=n_batches, batch_idx=batch_idx, global_step = global_step)
+                                     n_batches=n_batches, batch_idx=batch_idx, global_step=global_step)
 
                     if self.requeue_monitor:
                         self.requeue_monitor.on_train_batch_end(
