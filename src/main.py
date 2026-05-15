@@ -17,6 +17,7 @@ def _run(subcommand: Subcommand):
 
     from jsonargparse import ActionConfigFile, ArgumentParser
     from lightning.fabric.utilities.warnings import PossibleUserWarning
+    from lightning.fabric.strategies.strategy import Strategy
 
     from mirror.config import init_config
     from mirror.models.mirror_model import MirrorModel
@@ -60,8 +61,7 @@ def _run(subcommand: Subcommand):
                 del cfg.config  # pyright: ignore
 
             init_config(cfg.device)
-            init_cfg = cfg.clone()
-            init = parser.instantiate_classes(init_cfg)
+            init = parser.instantiate_classes(cfg)
             trainer = init.trainer or TrainerConstructor()
             model = init.model
 
@@ -91,13 +91,11 @@ def _run(subcommand: Subcommand):
             preprocess(**init)
 
         case 'eval':
-            from mirror.mirror_evaluator import MirrorEvaluator
-
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_function_arguments(evaluation, as_positional=False, skip={"model", "evaluator"})
+            parser.add_function_arguments(evaluation, as_positional=False, skip={"model", "fabric"})
             parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
-            parser.add_subclass_arguments(MirrorEvaluator, "evaluator", required=True, instantiate=True)
+            parser.add_argument("--strategy", type=Strategy)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
@@ -105,9 +103,21 @@ def _run(subcommand: Subcommand):
                 del cfg.config  # pyright: ignore
 
             init_config(cfg.device)
-            init_cfg = cfg.clone()
-            init = parser.instantiate_classes(init_cfg)
-            model = instantiate_model(init.model, fabric=None)
+            init = parser.instantiate_classes(cfg)
+
+            from mirror.config import get_config
+            from mirror.fabric_util import make_fabric
+
+            config = get_config()
+            fabric = make_fabric(
+                init.strategy,
+                config['device'],
+                devices=init.slurm.ntasks_per_node or 1,
+                num_nodes=init.slurm.nodes or 1,
+            )
+            fabric.launch()
+
+            model = instantiate_model(init.model, fabric=fabric)
 
             if is_login_node() and init.slurm.job_type == "local-download":
                 print("Model downloaded/cached. Re-run on a compute node.")
@@ -115,8 +125,9 @@ def _run(subcommand: Subcommand):
 
             del init.model  # pyright: ignore
             del init.device  # pyright: ignore
+            del init.strategy  # pyright: ignore
 
-            evaluation(**{**init, "model": model})
+            evaluation(**{**init, "model": model, "fabric": fabric})
 
         case _:
             print(f'unimplemented subcommand: {subcommand}')

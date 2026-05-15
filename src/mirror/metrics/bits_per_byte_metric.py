@@ -44,9 +44,8 @@ class BitsPerByteMetric[ModelOutputT](
 
                 loss_nats = model.training_step(batch).loss.item()
 
-                # causal LM predicts T-1 targets from T tokens
                 total_bits += loss_nats / math.log(2) * (num_tokens - 1)
-                total_bytes += num_bytes
+                total_bytes += num_bytes - 1
 
         total_bits_global = cast(torch.Tensor, fabric.all_reduce(torch.tensor(total_bits, device=fabric.device), reduce_op="sum")).item()
         total_bytes_global = cast(torch.Tensor, fabric.all_reduce(torch.tensor(total_bytes, device=fabric.device), reduce_op="sum")).item()

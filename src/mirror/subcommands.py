@@ -1,6 +1,7 @@
+from lightning import Fabric
+
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.metrics.mirror_metric import MirrorMetric
-from mirror.mirror_evaluator import MirrorEvaluator
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.models.mirror_model import MirrorModel
@@ -44,12 +45,23 @@ def fit(
 
 def evaluation(
         model: MirrorModel,
-        evaluator: MirrorEvaluator,
         metrics: dict[str, MirrorMetric],
+        fabric: Fabric,
         checkpoint_path: str | None = None,
         slurm: SlurmConfig = SlurmConfig(),
 ) -> None:
-    results = evaluator.evaluate(model, metrics, checkpoint_path, slurm)
+    model = fabric.setup(model)
+
+    if checkpoint_path:
+        fabric.load(checkpoint_path, {'model': model})
+
+    model.eval()
+
+    results = {}
+    for label, metric in metrics.items():
+        result = metric.get_metrics(model, fabric)
+        results[label] = result
+
     for label, result in results.items():
         print(f"{label}: {result}")
 
