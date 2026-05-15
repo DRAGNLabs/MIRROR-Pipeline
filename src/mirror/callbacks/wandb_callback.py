@@ -7,7 +7,7 @@ from lightning import Fabric
 
 from mirror.callbacks.callback import Callback
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
+from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 from mirror.util import mirror_data_path
 
@@ -21,7 +21,7 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
 ):
     def __init__(
         self,
-        extra_metrics_getters: list[ExtraMetricsGetter] = [],
+        extra_metrics_getters: list[MirrorMetric] = [],
         log_every_n_steps: int = 1,
     ) -> None:
         super().__init__(is_singleton=True)

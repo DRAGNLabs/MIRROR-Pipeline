@@ -1,7 +1,7 @@
 import sys
 from typing import Literal
 
-Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess']
+Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess'] | Literal['eval']
 
 
 def main(subcommand: Subcommand):
@@ -17,11 +17,12 @@ def _run(subcommand: Subcommand):
 
     from jsonargparse import ActionConfigFile, ArgumentParser
     from lightning.fabric.utilities.warnings import PossibleUserWarning
+    from lightning.fabric.strategies.strategy import Strategy
 
     from mirror.config import init_config
     from mirror.models.mirror_model import MirrorModel
     from mirror.models.model_util import instantiate_model
-    from mirror.subcommands import fit, preprocess
+    from mirror.subcommands import evaluation, fit, preprocess
     from mirror.trainer_constructor import TrainerConstructor
     from mirror.util import is_login_node, resolve_config_args
 
@@ -34,6 +35,7 @@ def _run(subcommand: Subcommand):
     import mirror.preprocessors  # noqa: F401
     import mirror.schedulers  # noqa: F401
     import mirror.interventions  # noqa: F401
+    import mirror.metrics  # noqa: F401
 
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
@@ -59,8 +61,7 @@ def _run(subcommand: Subcommand):
                 del cfg.config  # pyright: ignore
 
             init_config(cfg.device)
-            init_cfg = cfg.clone()
-            init = parser.instantiate_classes(init_cfg)
+            init = parser.instantiate_classes(cfg)
             trainer = init.trainer or TrainerConstructor()
             model = init.model
 
@@ -88,6 +89,45 @@ def _run(subcommand: Subcommand):
 
             init = parser.instantiate_classes(cfg)
             preprocess(**init)
+
+        case 'eval':
+            parser = ArgumentParser()
+            parser.add_argument("--config", action=ActionConfigFile)
+            parser.add_function_arguments(evaluation, as_positional=False, skip={"model", "fabric"})
+            parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=False)
+            parser.add_argument("--strategy", type=Strategy)
+            parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
+            cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+
+            if hasattr(cfg, 'config'):
+                del cfg.config  # pyright: ignore
+
+            init_config(cfg.device)
+            init = parser.instantiate_classes(cfg)
+
+            from mirror.config import get_config
+            from mirror.fabric_util import make_fabric
+
+            config = get_config()
+            fabric = make_fabric(
+                init.strategy,
+                config['device'],
+                devices=init.slurm.ntasks_per_node or 1,
+                num_nodes=init.slurm.nodes or 1,
+            )
+            fabric.launch()
+
+            model = instantiate_model(init.model, fabric=fabric)
+
+            if is_login_node() and init.slurm.job_type == "local-download":
+                print("Model downloaded/cached. Re-run on a compute node.")
+                return
+
+            del init.model  # pyright: ignore
+            del init.device  # pyright: ignore
+            del init.strategy  # pyright: ignore
+
+            evaluation(**{**init, "model": model, "fabric": fabric})
 
         case _:
             print(f'unimplemented subcommand: {subcommand}')

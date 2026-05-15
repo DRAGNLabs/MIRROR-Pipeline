@@ -1,6 +1,24 @@
 import sys
 
 from lightning import Fabric
+from lightning.fabric.strategies.strategy import Strategy
+
+
+def make_fabric(
+        strategy: Strategy,
+        accelerator: str,
+        devices: int = 1,
+        num_nodes: int = 1,
+        callbacks: list = [],
+) -> Fabric:
+    return Fabric(
+        strategy=strategy,
+        devices=devices,
+        num_nodes=num_nodes,
+        callbacks=callbacks,
+        accelerator=accelerator,
+    )
+
 
 def rank_zero_log(fabric: Fabric, *args):
     if fabric.is_global_zero:
