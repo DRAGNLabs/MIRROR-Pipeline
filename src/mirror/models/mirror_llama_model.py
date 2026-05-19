@@ -19,11 +19,16 @@ class MirrorLlamaModel(
 ):
     def __init__(
         self,
-        initialization: Literal["3.2-1B", "3.2-1B-Instruct"] | LlamaConfig = "3.2-1B-Instruct",
+        initialization: Literal["3.2-1B", "3.2-1B-Instruct"] | dict | LlamaConfig = "3.2-1B-Instruct",
         seed: int | None = None,
+        lr: float = 1e-3,
+        weight_decay: float = 0.0,
+        betas: tuple[float, float] | list[float] = (0.9, 0.999),
     ) -> None:
         super().__init__()
         self._preprocessor = MirrorLlamaPreprocessor()
+        if isinstance(initialization, dict):
+            initialization = LlamaConfig(**initialization)
         if isinstance(initialization, LlamaConfig):
             if seed is not None:
                 torch.manual_seed(seed)
@@ -31,6 +36,9 @@ class MirrorLlamaModel(
         else:
             hf_model_name = f"meta-llama/Llama-{initialization}"
             self._hf_model = cast(LlamaForCausalLM, build_causal_lm(hf_model_name, weights="pretrained"))
+        self._lr = lr
+        self._weight_decay = weight_decay
+        self._betas = tuple(betas)
 
     @property
     def hf_model(self) -> LlamaForCausalLM:
@@ -51,7 +59,12 @@ class MirrorLlamaModel(
         return TrainStepOutput(loss=output.loss, output=None)
 
     def configure_optimizers(self):
-        return optim.AdamW(self.parameters())
+        return optim.AdamW(
+            self.parameters(),
+            lr=self._lr,
+            weight_decay=self._weight_decay,
+            betas=self._betas,
+        )
 
     def mlp_modules(self) -> list[nn.Module]:
         return [cast(nn.Module, layer.mlp) for layer in self._hf_model.model.layers]

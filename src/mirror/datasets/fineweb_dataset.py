@@ -3,7 +3,7 @@ from typing import Literal, cast
 import numpy as np
 from datasets import Dataset, DatasetDict
 
-from mirror.datasets.dataset_util import load_hf_dataset
+from mirror.datasets.dataset_util import load_hf_dataset, slice_by_fraction
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import TextRow
 
@@ -22,6 +22,8 @@ class FinewebDataset(MirrorDataset[TextRow]):
         head: int | None = None,
         skip: int | None = None,
         split: Literal['train'] = 'train',
+        start_fraction: float = 0.0,
+        end_fraction: float = 1.0,
     ):
         super().__init__()
 
@@ -30,6 +32,8 @@ class FinewebDataset(MirrorDataset[TextRow]):
             hf_dataset_name,
             self._process,
         ))[split]
+
+        self._ds = slice_by_fraction(self._ds, start_fraction, end_fraction)
 
         if skip:
             self._ds = self._ds.select(range(skip, len(self._ds)))

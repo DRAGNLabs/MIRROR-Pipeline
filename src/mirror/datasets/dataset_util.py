@@ -13,6 +13,15 @@ from mirror.util import mirror_data_path
 datasets_path = mirror_data_path / 'datasets'
 
 
+def slice_by_fraction(ds: Dataset, start_fraction: float, end_fraction: float) -> Dataset:
+    if not 0.0 <= start_fraction <= end_fraction <= 1.0:
+        raise ValueError(f"Invalid fractions: start={start_fraction}, end={end_fraction}")
+    if start_fraction == 0.0 and end_fraction == 1.0:
+        return ds
+    n = len(ds)
+    return ds.select(range(int(start_fraction * n), int(end_fraction * n)))
+
+
 def load_hf_dataset(
         hf_dataset_path: str,
         hf_dataset_name: str | None = None,
