@@ -19,12 +19,10 @@ from mirror.util import count_params, mirror_data_path
 
 
 DEVICE_CONFIGS: list[tuple[int, int]] = [
-    (1, 1),
     (1, 8),
     (2, 8),
-    (4, 8),
 ]
-BATCH_SIZES: list[int] = [1, 4, 16, 64]
+BATCH_SIZES: list[int] = [64]
 
 
 def _model_param_counts() -> dict[str, int]:
