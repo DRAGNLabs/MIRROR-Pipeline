@@ -49,7 +49,7 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     ):
         n_print_digits = len(str(epochs*n_batches)) + 1
 
-        if self.every_n_training_steps and (global_step + 1) % (self.every_n_training_steps) == 0:
+        if self.every_n_training_steps and global_step % self.every_n_training_steps == 0:
             self._save_checkpoint(
                 fabric,
                 model,
