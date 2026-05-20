@@ -110,7 +110,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
 
         dataloader = make_dataloader(dataset, preprocessor, batch_size, do_preprocess,
-                                    shuffle, num_nodes=self.num_nodes, fabric=self.fabric)
+                                    shuffle, fabric=self.fabric)
 
         start_epoch = 0
         start_batch = 0
@@ -154,12 +154,12 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         val_dataloader = None
         if val_dataset is not None:
             val_dataloader = make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess,
-                                             False, num_nodes=self.num_nodes, fabric=self.fabric)
+                                             False, fabric=self.fabric)
 
         test_dataloader = None
         if test_dataset is not None:
             test_dataloader = make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess,
-                                              False, num_nodes=self.num_nodes, fabric=self.fabric)
+                                              False, fabric=self.fabric)
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, 
                          dataset=dataset, training_run_id=training_run_id, n_batches=n_batches, 
