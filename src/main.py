@@ -31,6 +31,7 @@ def _run(subcommand: Subcommand):
     import mirror.callbacks  # noqa: F401
     import mirror.datasets  # noqa: F401
     import mirror.models  # noqa: F401
+    import mirror.optimization  # noqa: F401
     import mirror.preprocessors  # noqa: F401
     import mirror.schedulers  # noqa: F401
     import mirror.interventions  # noqa: F401

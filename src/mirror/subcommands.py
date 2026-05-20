@@ -1,4 +1,5 @@
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.models.mirror_model import MirrorModel
@@ -23,6 +24,7 @@ def fit(
         val_check_interval: int = 1,
         configure_scheduler: ConfigureScheduler | None = None,
         shuffle: bool = True,
+        optimization_strategy: OptimizationStrategy | None = None,
 ):
     trainer.fit(
         model=model,
@@ -38,6 +40,7 @@ def fit(
         val_check_interval=val_check_interval,
         configure_scheduler=configure_scheduler,
         shuffle=shuffle,
+        optimization_strategy=optimization_strategy,
     )
 
 def preprocess(

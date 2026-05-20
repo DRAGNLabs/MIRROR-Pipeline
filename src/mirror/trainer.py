@@ -18,6 +18,8 @@ from mirror.callbacks.print_step_callback import PrintStepCallback
 from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.optimization.default_optimization_strategy import DefaultOptimizationStrategy
+from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
@@ -97,7 +99,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             val_check_interval: int = 1,
             configure_scheduler: ConfigureScheduler | None = None,
             shuffle: bool = True,
+            optimization_strategy: OptimizationStrategy | None = None,
     ):
+        optimization_strategy = optimization_strategy or DefaultOptimizationStrategy()
         training_run_id = datetime.datetime.now().isoformat()
         rank_zero_log(self.fabric, f"Training run ID: {training_run_id}\n")
 
@@ -110,7 +114,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
 
         dataloader = make_dataloader(dataset, preprocessor, batch_size, do_preprocess,
-                                    shuffle, num_nodes=self.num_nodes, fabric=self.fabric)
+                                    shuffle, fabric=self.fabric)
 
         start_epoch = 0
         start_batch = 0
@@ -121,6 +125,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             'model': model,
             'optimizer': optimizer,
             'global_step': 0,
+            'optimization_step': 0,
         }
 
         if checkpoint:
@@ -142,6 +147,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             state = self.requeue_monitor.load_requeue_checkpoint_if_present(self.fabric, state)
 
         global_step : int = cast(int, state["global_step"])
+        optimization_step : int = cast(int, state["optimization_step"] or 0)
 
         start_epoch = global_step // n_batches
         start_batch = (global_step % n_batches) + 1
@@ -154,12 +160,12 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         val_dataloader = None
         if val_dataset is not None:
             val_dataloader = make_dataloader(val_dataset, preprocessor, batch_size, do_preprocess,
-                                             False, num_nodes=self.num_nodes, fabric=self.fabric)
+                                             False, fabric=self.fabric)
 
         test_dataloader = None
         if test_dataset is not None:
             test_dataloader = make_dataloader(test_dataset, preprocessor, batch_size, do_preprocess,
-                                              False, num_nodes=self.num_nodes, fabric=self.fabric)
+                                              False, fabric=self.fabric)
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, 
                          dataset=dataset, training_run_id=training_run_id, n_batches=n_batches, 
@@ -176,20 +182,32 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
                     batch: BatchT = batch
 
-                    optimizer.zero_grad()
                     train_step_output = model.training_step(batch)
                     loss_value = train_step_output.loss.item()
-                    self.fabric.backward(train_step_output.loss)
-                    optimizer.step()
-                    if scheduler is not None:
-                        scheduler.step()
+                    optimizer_stepped = optimization_strategy.step(
+                        fabric=self.fabric,
+                        optimizer=optimizer,
+                        loss=train_step_output.loss,
+                        batch_idx=batch_idx,
+                    )
+                    if optimizer_stepped:
+                        optimization_step += 1
+                        if scheduler is not None:
+                            scheduler.step()
 
                     global_step = epoch_idx * n_batches + batch_idx
                     state['global_step'] = global_step
+                    state['optimization_step'] = optimization_step
 
-                    self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer,
-                                     loss=loss_value, training_run_id=training_run_id, epochs=epochs, 
-                                     n_batches=n_batches, batch_idx=batch_idx, global_step = global_step)
+                    callback_kwargs = dict(
+                        fabric=self.fabric, model=model, optimizer=optimizer,
+                        loss=loss_value, training_run_id=training_run_id, epochs=epochs,
+                        n_batches=n_batches, batch_idx=batch_idx, global_step=global_step,
+                        optimization_step=optimization_step,
+                    )
+                    if optimizer_stepped:
+                        self.fabric.call('on_optimization_step', **callback_kwargs)
+                    self.fabric.call('on_train_batch_end', **callback_kwargs)
 
                     if self.requeue_monitor:
                         self.requeue_monitor.on_train_batch_end(
