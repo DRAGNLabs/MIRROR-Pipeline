@@ -6,7 +6,7 @@ from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, PreTrained
 from typing import Literal, Type
 
 from mirror.download_util import assert_can_download
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 from mirror.util import mirror_data_path
 
 IGNORE_ID = -100 
@@ -78,12 +78,12 @@ def build_causal_lm(
             model = AutoModelForCausalLM.from_config(config)
     return model
 
-def instantiate_model(model: object, fabric: Fabric | None) -> MirrorModel:
-    if isinstance(model, MirrorModel):
+def instantiate_model(model: object, fabric: Fabric | None) -> TrainableModel:
+    if isinstance(model, TrainableModel):
         return model
-    
+
     model_parser = ArgumentParser()
-    model_parser.add_subclass_arguments(MirrorModel, "model", required=True, instantiate=True)
+    model_parser.add_subclass_arguments(TrainableModel, "model", required=True, instantiate=True)
 
     if fabric is None:
         return model_parser.instantiate_classes(Namespace(model=model)).model

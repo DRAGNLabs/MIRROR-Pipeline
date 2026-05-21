@@ -12,7 +12,6 @@ from torch.optim import Optimizer
 
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.fabric_util import rank_zero_log
-from mirror.models.mirror_model import MirrorModel
 from mirror.slurm_util import get_job_id
 from mirror.dict_types import StateDict
 from mirror.util import is_power_of_ten, mirror_data_path
@@ -26,7 +25,7 @@ def requeue_handoff_path():
 RequeueHandoff = Dict[Literal['previous_training_run_id'], str]
 
 
-class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
+class RequeueMonitor[RawT, ProcessedT, BatchT]:
     def __init__(self, fabric: Fabric, requeue_signal: int = signal.SIGHUP) -> None:
         self.requeue_signal = requeue_signal
         self.requeue_signal_recieved = False
@@ -42,7 +41,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
             self,
             *,
             fabric: Fabric,
-            state: StateDict[RawT, ProcessedT, BatchT, ModelOutputT],
+            state: StateDict[RawT, ProcessedT, BatchT],
             training_run_id: str,
     ):
         self._warn_if_iteration_too_long(fabric)
@@ -56,8 +55,8 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
     def load_requeue_checkpoint_if_present(
             self,
             fabric: Fabric,
-            state: StateDict[RawT, ProcessedT, BatchT, ModelOutputT],
-    ) -> StateDict[RawT, ProcessedT, BatchT, ModelOutputT]:
+            state: StateDict[RawT, ProcessedT, BatchT],
+    ) -> StateDict[RawT, ProcessedT, BatchT]:
         path = requeue_handoff_path()
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -79,7 +78,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            state: StateDict[RawT, ProcessedT, BatchT, ModelOutputT],
+            state: StateDict[RawT, ProcessedT, BatchT],
             training_run_id: str,
     ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')

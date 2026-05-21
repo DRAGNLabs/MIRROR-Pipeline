@@ -17,5 +17,5 @@ class TrainerConstructor:
         self.num_nodes = num_nodes
         self.callbacks = callbacks
 
-    def construct_trainer[RawT, ProcessedT, BatchT, ModelOutputT](self) -> Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
+    def construct_trainer[RawT, ProcessedT, BatchT](self) -> Trainer[RawT, ProcessedT, BatchT]:
         return Trainer(self.strategy, self.devices, self.num_nodes, self.callbacks)

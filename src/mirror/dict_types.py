@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, TypedDict
 from torch.optim import Optimizer
 
 if TYPE_CHECKING:
-    from mirror.models.mirror_model import MirrorModel
+    from mirror.models.trainable_model import TrainableModel
 
 class TextRow(TypedDict):
   text: str
@@ -11,7 +11,7 @@ class TextRow(TypedDict):
 class TextLabelRow(TextRow):
   label: str
 
-class StateDict[RawT, ProcessedT, BatchT, ModelOutputT](TypedDict):
-  model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]
+class StateDict[RawT, ProcessedT, BatchT](TypedDict):
+  model: TrainableModel[RawT, ProcessedT, BatchT]
   optimizer: Optimizer
   global_step: int | None

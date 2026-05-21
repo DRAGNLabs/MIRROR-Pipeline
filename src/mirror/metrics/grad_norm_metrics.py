@@ -4,11 +4,11 @@ import torch
 from lightning import Fabric
 
 from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 
 
 class GradNormMetrics(ExtraMetricsGetter):
-    def get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict:
+    def get_metrics(self, model: TrainableModel, fabric: Fabric) -> dict:
         grads = [p.grad.detach() for p in model.parameters() if p.grad is not None]
         if not grads:
             return {"grad_norm": 0.0}

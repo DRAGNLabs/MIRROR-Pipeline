@@ -23,18 +23,18 @@ from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
 from mirror.fabric_util import rank_zero_log
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.requeue_monitor import RequeueMonitor
 from mirror.dict_types import StateDict
 
-class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
+class Trainer[RawT, ProcessedT, BatchT]:
     def __init__(
             self,
             strategy: Strategy | None = None,
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
+            callbacks: List[Callback[RawT, ProcessedT, BatchT]] = [],
     ) -> None:
         if strategy is None:
             strategy = FSDPStrategy()
@@ -47,7 +47,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
+        default_callbacks: List[Callback[RawT, ProcessedT, BatchT]] = [
             CheckpointCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
@@ -56,7 +56,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
             default_callbacks.append(PrintStepCallback())
 
-        self.requeue_monitor: RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT] | None = None
+        self.requeue_monitor: RequeueMonitor[RawT, ProcessedT, BatchT] | None = None
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
         input_singleton_cbs, input_non_singleton_cbs = separate_singletons(callbacks)
@@ -84,7 +84,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
     def fit(
             self,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: TrainableModel[RawT, ProcessedT, BatchT],
             dataset: MirrorDataset[RawT],
             preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT] | None = None,
             checkpoint: CheckpointIdentifier | None = None,
@@ -117,7 +117,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         
         n_batches = len(dataloader)
 
-        state : StateDict[RawT, ProcessedT, BatchT, ModelOutputT] = {
+        state : StateDict[RawT, ProcessedT, BatchT] = {
             'model': model,
             'optimizer': optimizer,
             'global_step': 0,
@@ -136,7 +136,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     )
 
         if self.config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
-            self.requeue_monitor = RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT](self.fabric)
+            self.requeue_monitor = RequeueMonitor[RawT, ProcessedT, BatchT](self.fabric)
 
         if self.requeue_monitor:
             state = self.requeue_monitor.load_requeue_checkpoint_if_present(self.fabric, state)
@@ -177,9 +177,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                     batch: BatchT = batch
 
                     optimizer.zero_grad()
-                    train_step_output = model.training_step(batch)
-                    loss_value = train_step_output.loss.item()
-                    self.fabric.backward(train_step_output.loss)
+                    loss = model.training_step(batch)
+                    loss_value = loss.item()
+                    self.fabric.backward(loss)
                     optimizer.step()
                     if scheduler is not None:
                         scheduler.step()
@@ -222,8 +222,8 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         n_batches = 0
         with torch.no_grad():
             for batch in dataloader:
-                output = model.training_step(batch)
-                total_loss += output.loss.item()
+                loss = model.training_step(batch)
+                total_loss += loss.item()
                 n_batches += 1
         model.train()
         if n_batches == 0:
@@ -240,11 +240,11 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             accelerator=accelerator,
         )
 
-def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
-        callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+def separate_singletons[RawT, ProcessedT, BatchT](
+        callbacks: List[Callback[RawT, ProcessedT, BatchT]]
 ) -> tuple[
-        List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
-        List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+        List[Callback[RawT, ProcessedT, BatchT]],
+        List[Callback[RawT, ProcessedT, BatchT]]
 ]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
