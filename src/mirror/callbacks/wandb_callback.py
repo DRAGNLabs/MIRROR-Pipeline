@@ -23,12 +23,14 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         self,
         extra_metrics_getters: list[ExtraMetricsGetter] = [],
         log_every_n_steps: int = 1,
+        project: str = "mirror",
     ) -> None:
         super().__init__(is_singleton=True)
         self.run: WandbRun | None = None
         self.step = 0
         self.extra_metrics_getters = extra_metrics_getters
         self.log_every_n_steps = log_every_n_steps
+        self.project = project
 
     def on_fit_start(
         self,
@@ -49,7 +51,7 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         wandb_dir.mkdir(parents=True, exist_ok=True)
 
         self.run = wandb.init(
-            project="mirror",
+            project=self.project,
             name=training_run_id,
             mode=self._mode(),
             dir=str(wandb_dir),
