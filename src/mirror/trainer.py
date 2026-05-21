@@ -154,7 +154,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
         scheduler = None
         if configure_scheduler is not None:
-            total_training_steps = epochs * len(dataloader)
+            total_training_steps = optimization_strategy.expected_optimization_steps(epochs * len(dataloader))
             scheduler = configure_scheduler(optimizer, total_training_steps)
 
         val_dataloader = None

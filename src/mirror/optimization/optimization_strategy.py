@@ -19,3 +19,11 @@ class OptimizationStrategy(ABC):
 
         Returns True when the optimizer was actually stepped.
         """
+
+    def expected_optimization_steps(self, total_batches: int) -> int:
+        """How many times step() will return True over `total_batches` batches.
+
+        Used to size the LR scheduler. Override in strategies that step less often
+        than every batch.
+        """
+        return total_batches

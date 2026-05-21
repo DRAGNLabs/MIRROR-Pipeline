@@ -27,3 +27,6 @@ class GradientAccumulationStrategy(OptimizationStrategy):
             self._batches_accumulated = 0
             return True
         return False
+
+    def expected_optimization_steps(self, total_batches: int) -> int:
+        return total_batches // self.accumulation_steps
