@@ -150,6 +150,10 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         if configure_scheduler is not None:
             total_training_steps = epochs * len(dataloader)
             scheduler = configure_scheduler(optimizer, total_training_steps)
+            if global_step > 0: # Set optimizer._opt_called to reflect checkpoint resuming 
+                optimizer._opt_called = True  # type: ignore[attr-defined]
+                for _ in range(global_step):
+                    scheduler.step()
 
         val_dataloader = None
         if val_dataset is not None:
