@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from sys import stderr
-from typing import Callable, Sequence, Sized
+from typing import Callable, Sequence, Sized, cast
 from torch.utils.data import Dataset
 from datasets import Dataset as HFDataset
 from mirror.util import _ds_cache_path_context
@@ -25,12 +25,15 @@ def preprocess_dataset[RawT, ProcessedT](
     preprocessor_function: Callable[[RawT], ProcessedT],
 ) -> Sequence[ProcessedT]:
     def mappable_preprocessor_function(row: dict) -> dict:
-        return {"input_ids": preprocessor_function(dataset.to_row_type(row))}
+        return cast(dict, preprocessor_function(dataset.to_row_type(row)))
 
     with _ds_cache_path_context():
-        mapped = dataset.ds.map(mappable_preprocessor_function)
+        mapped = dataset.ds.map(
+            mappable_preprocessor_function,
+            remove_columns=dataset.ds.column_names,
+        )
 
     print("Preprocessing complete.", file=stderr)
-    mapped.set_format(type="torch", columns=["input_ids"])
+    mapped.set_format(type="torch", columns=["input_ids", "labels"])
 
-    return mapped["input_ids"]
+    return cast(Sequence[ProcessedT], mapped)

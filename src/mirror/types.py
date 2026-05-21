@@ -13,12 +13,26 @@ class TextLabelRow(TextRow):
     label: str
 
 
+class PromptResponseRow(TypedDict):
+    prompt: str
+    response: str
+
+
 TokenTensor = list[int]
 AttentionMask = Int[Tensor, "T"]
 
 TokenBatch = Int[Tensor, "b t"]
 AttentionMaskBatch = Int[Tensor, "b t"]
+LabelsBatch = Int[Tensor, "b t"]
 Loss = Float[Tensor, ""]
+
+
+class LabeledTokens(TypedDict):
+    input_ids: list[int]
+    labels: list[int]
+
+
+IGNORE_ID = -100
 
 
 @dataclass

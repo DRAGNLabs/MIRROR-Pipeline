@@ -2,10 +2,11 @@ import os
 import shutil
 from typing import cast
 
+import torch
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from mirror.download_util import assert_can_download
-from mirror.types import TokenBatch, AttentionMaskBatch
+from mirror.types import AttentionMaskBatch, IGNORE_ID, LabeledTokens, LabelsBatch, TokenBatch
 from mirror.util import get_device, mirror_data_path
 
 tokenizers_path = mirror_data_path / "tokenizers"
@@ -37,10 +38,24 @@ def load_hf_tokenizer(
 
 def collate_tokens(
     tokenizer: PreTrainedTokenizerBase,
-    examples: list[list[int]],
-) -> tuple[TokenBatch, AttentionMaskBatch]:
+    examples: list[LabeledTokens],
+) -> tuple[TokenBatch, AttentionMaskBatch, LabelsBatch]:
     device = get_device()
-    batch = tokenizer.pad({"input_ids": examples}, padding=True, return_tensors="pt").to(device)
-    tokens = cast(TokenBatch, batch["input_ids"])
+    batch = tokenizer.pad(
+        {"input_ids": [e["input_ids"] for e in examples]},
+        padding=True,
+        return_tensors="pt",
+    ).to(device)
+    input_ids = cast(TokenBatch, batch["input_ids"])
     attention_mask = cast(AttentionMaskBatch, batch["attention_mask"])
-    return tokens, attention_mask
+
+    padded_len = input_ids.shape[1]
+    pad_left = getattr(tokenizer, "padding_side", "right") == "left"
+    labels = torch.full((len(examples), padded_len), IGNORE_ID, dtype=torch.long, device=device)
+    for i, e in enumerate(examples):
+        row = torch.as_tensor(e["labels"], dtype=torch.long, device=device)
+        if pad_left:
+            labels[i, padded_len - row.shape[0]:] = row
+        else:
+            labels[i, :row.shape[0]] = row
+    return input_ids, attention_mask, cast(LabelsBatch, labels)

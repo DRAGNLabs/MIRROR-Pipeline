@@ -1,19 +1,18 @@
 import hashlib
 import os
 from pathlib import Path
-from typing import cast
 
 from tokenizers import ByteLevelBPETokenizer, Tokenizer
 from transformers import PreTrainedTokenizerFast
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens
-from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch, TextRow
+from mirror.types import LabeledTokens, LabelsBatch, TokenBatch, AttentionMaskBatch, TextRow
 
 from mirror.util import mirror_data_path
 
 class BPEPreprocessor(
-    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
+    MirrorPreprocessor[TextRow, LabeledTokens, tuple[TokenBatch, AttentionMaskBatch, LabelsBatch]]
 ):
     def __init__(self, file_path: Path, vocab_size: int) -> None:
         file_hash = hashlib.md5(str(file_path).encode()).hexdigest()[:8]
@@ -45,15 +44,15 @@ class BPEPreprocessor(
             pad_token="<pad>",
         )
 
-    def preprocess_example(self, example: TextRow) -> TokenTensor:
+    def preprocess_example(self, example: TextRow) -> LabeledTokens:
         encoding = self._raw_tokenizer.encode(example['text'], add_special_tokens=True)
         ids = encoding.ids
         if len(ids) < 2:
             eos = self._raw_tokenizer.token_to_id("</s>")
             ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
-        return cast(TokenTensor, ids)
+        return LabeledTokens(input_ids=ids, labels=list(ids))
 
-    def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
+    def collate(self, examples: list[LabeledTokens]) -> tuple[TokenBatch, AttentionMaskBatch, LabelsBatch]:
         return collate_tokens(self._tokenizer, examples)
 
     @property
