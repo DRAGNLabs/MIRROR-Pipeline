@@ -150,7 +150,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         optimization_step : int = cast(int, state["optimization_step"] or 0)
 
         start_epoch = global_step // n_batches
-        start_batch = (global_step % n_batches) + 1
+        start_batch = global_step % n_batches
 
         scheduler = None
         if configure_scheduler is not None:
@@ -195,7 +195,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
                         if scheduler is not None:
                             scheduler.step()
 
-                    global_step = epoch_idx * n_batches + batch_idx
+                    global_step = epoch_idx * n_batches + batch_idx + 1
                     state['global_step'] = global_step
                     state['optimization_step'] = optimization_step
 
