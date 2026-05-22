@@ -24,6 +24,7 @@ AttentionMask = Int[Tensor, "T"]
 TokenBatch = Int[Tensor, "b t"]
 AttentionMaskBatch = Int[Tensor, "b t"]
 LabelsBatch = Int[Tensor, "b t"]
+StandardBatch = tuple[TokenBatch, AttentionMaskBatch, LabelsBatch]
 Loss = Float[Tensor, ""]
 
 

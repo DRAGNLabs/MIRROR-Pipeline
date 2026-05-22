@@ -4,12 +4,12 @@ from transformers import PreTrainedTokenizerBase
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
-from mirror.types import AttentionMaskBatch, LabeledTokens, LabelsBatch, TextRow, TokenBatch, TokenTensor
+from mirror.types import LabeledTokens, StandardBatch, TextRow, TokenTensor
 
 
 
 class MirrorGPTPreprocessor(
-    MirrorPreprocessor[TextRow, LabeledTokens, tuple[TokenBatch, AttentionMaskBatch, LabelsBatch]]
+    MirrorPreprocessor[TextRow, LabeledTokens, StandardBatch]
 ):
     def __init__(self, max_length: int | None = 2048) -> None:
         self._hf_model_name = "openai-community/gpt2"
@@ -31,7 +31,7 @@ class MirrorGPTPreprocessor(
         token_ids = cast(TokenTensor, ids)
         return LabeledTokens(input_ids=token_ids, labels=list(token_ids))
 
-    def collate(self, examples: list[LabeledTokens]) -> tuple[TokenBatch, AttentionMaskBatch, LabelsBatch]:
+    def collate(self, examples: list[LabeledTokens]) -> StandardBatch:
         return collate_tokens(self._tokenizer, examples)
 
     @property

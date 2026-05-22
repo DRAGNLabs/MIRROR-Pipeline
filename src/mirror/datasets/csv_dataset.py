@@ -47,11 +47,14 @@ class CsvSftDataset(MirrorDataset[PromptResponseRow]):
     """
     Loads a CSV for supervised fine-tuning. Each row produces a
     PromptResponseRow by rendering separate prompt and response templates
-    against the CSV columns. Example for a (query, response, sources) CSV:
+    against the CSV columns. The prompt is the user-message content and the
+    response is the assistant-message content; role markers and special
+    tokens are added later by the SFT preprocessor's chat template (when
+    the tokenizer has one). Example for a (query, response, sources) CSV:
 
         CsvSftDataset(
             file_path,
-            prompt_template="Query: {query}\\nSources: {sources}\\nResponse: ",
+            prompt_template="{query}\\nSources: {sources}",
             response_template="{response}",
         )
     """
@@ -71,20 +74,19 @@ class CsvSftDataset(MirrorDataset[PromptResponseRow]):
         self._prompt_template = prompt_template
         self._response_template = response_template
         self._ds = cast(Dataset, load_dataset("csv", data_files=str(file_path), split="train"))
-        self._ds = self._ds.filter(lambda row: len(self._render_response(row)) > 0)
+        self._ds = self._ds.filter(
+            lambda row: len(self._render(self._response_template, row)) > 0
+        )
         if head:
             self._ds = self._ds.select(range(head))
 
     def _render(self, template: str, row: dict) -> str:
         return template.format(**{k: ("" if v is None else v) for k, v in row.items()})
 
-    def _render_response(self, row: dict) -> str:
-        return self._render(self._response_template, row)
-
     def to_row_type(self, ds_row: dict) -> PromptResponseRow:
         return PromptResponseRow(
             prompt=self._render(self._prompt_template, ds_row),
-            response=self._render_response(ds_row),
+            response=self._render(self._response_template, ds_row),
         )
 
     def __len__(self) -> int:

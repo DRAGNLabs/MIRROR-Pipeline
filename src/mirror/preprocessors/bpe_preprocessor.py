@@ -7,12 +7,12 @@ from transformers import PreTrainedTokenizerFast
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens
-from mirror.types import LabeledTokens, LabelsBatch, TokenBatch, AttentionMaskBatch, TextRow
+from mirror.types import LabeledTokens, StandardBatch, TextRow
 
 from mirror.util import mirror_data_path
 
 class BPEPreprocessor(
-    MirrorPreprocessor[TextRow, LabeledTokens, tuple[TokenBatch, AttentionMaskBatch, LabelsBatch]]
+    MirrorPreprocessor[TextRow, LabeledTokens, StandardBatch]
 ):
     def __init__(self, file_path: Path, vocab_size: int) -> None:
         file_hash = hashlib.md5(str(file_path).encode()).hexdigest()[:8]
@@ -52,7 +52,7 @@ class BPEPreprocessor(
             ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
         return LabeledTokens(input_ids=ids, labels=list(ids))
 
-    def collate(self, examples: list[LabeledTokens]) -> tuple[TokenBatch, AttentionMaskBatch, LabelsBatch]:
+    def collate(self, examples: list[LabeledTokens]) -> StandardBatch:
         return collate_tokens(self._tokenizer, examples)
 
     @property

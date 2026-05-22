@@ -2,11 +2,10 @@ import os
 import shutil
 from typing import cast
 
-import torch
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from mirror.download_util import assert_can_download
-from mirror.types import AttentionMaskBatch, IGNORE_ID, LabeledTokens, LabelsBatch, TokenBatch
+from mirror.types import AttentionMaskBatch, IGNORE_ID, LabeledTokens, LabelsBatch, StandardBatch, TokenBatch
 from mirror.util import get_device, mirror_data_path
 
 tokenizers_path = mirror_data_path / "tokenizers"
@@ -39,7 +38,7 @@ def load_hf_tokenizer(
 def collate_tokens(
     tokenizer: PreTrainedTokenizerBase,
     examples: list[LabeledTokens],
-) -> tuple[TokenBatch, AttentionMaskBatch, LabelsBatch]:
+) -> StandardBatch:
     device = get_device()
     batch = tokenizer.pad(
         {"input_ids": [e["input_ids"] for e in examples]},
@@ -49,13 +48,12 @@ def collate_tokens(
     input_ids = cast(TokenBatch, batch["input_ids"])
     attention_mask = cast(AttentionMaskBatch, batch["attention_mask"])
 
-    padded_len = input_ids.shape[1]
-    pad_left = getattr(tokenizer, "padding_side", "right") == "left"
-    labels = torch.full((len(examples), padded_len), IGNORE_ID, dtype=torch.long, device=device)
-    for i, e in enumerate(examples):
-        row = torch.as_tensor(e["labels"], dtype=torch.long, device=device)
-        if pad_left:
-            labels[i, padded_len - row.shape[0]:] = row
-        else:
-            labels[i, :row.shape[0]] = row
+    # Pad labels via the same tokenizer.pad call so padding direction/length stay
+    # in sync with input_ids, then overwrite padded positions with IGNORE_ID.
+    padded_labels = cast(LabelsBatch, tokenizer.pad(
+        {"input_ids": [e["labels"] for e in examples]},
+        padding=True,
+        return_tensors="pt",
+    ).to(device)["input_ids"])
+    labels = padded_labels.masked_fill(attention_mask == 0, IGNORE_ID)
     return input_ids, attention_mask, cast(LabelsBatch, labels)
