@@ -68,6 +68,5 @@ def evaluation(
 def preprocess(
         data: MirrorDataset,
         preprocessor: MirrorPreprocessor,
-        slurm: SlurmConfig = SlurmConfig()
 ) -> None:
-    preprocess_dataset(data, preprocessor.preprocess_example, slurm.nodes or 1)
+    preprocess_dataset(data, preprocessor.preprocess_example)

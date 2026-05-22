@@ -1,5 +1,5 @@
 from torch.optim import Optimizer
-import torch.nn as nn
+from torch import nn
 from abc import ABC, abstractmethod
 from mirror.types import TrainStepOutput
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
