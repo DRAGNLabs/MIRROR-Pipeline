@@ -27,6 +27,11 @@ class BitsPerByteMetric[ModelOutputT](
             model: MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT],
             fabric: Fabric,
     ) -> dict:
+        """
+        This is slightly imprecise because we are calculating the tokens for the whole row rather than 
+        the length of the row - 1. It is still a useful metric for comparing models by running them through
+        this specific metric, but it does not generalize to bits per byte calculated by others.
+        """
         preprocessor = self.preprocessor or model.preprocessor
         local_indices = range(fabric.global_rank, len(self.data), fabric.world_size)
 
@@ -45,7 +50,7 @@ class BitsPerByteMetric[ModelOutputT](
                 loss_nats = model.training_step(batch).loss.item()
 
                 total_bits += loss_nats / math.log(2) * (num_tokens - 1)
-                total_bytes += num_bytes - 1
+                total_bytes += num_bytes
 
         total_bits_global = cast(torch.Tensor, fabric.all_reduce(torch.tensor(total_bits, device=fabric.device), reduce_op="sum")).item()
         total_bytes_global = cast(torch.Tensor, fabric.all_reduce(torch.tensor(total_bytes, device=fabric.device), reduce_op="sum")).item()
