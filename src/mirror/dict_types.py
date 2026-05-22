@@ -15,3 +15,4 @@ class StateDict[RawT, ProcessedT, BatchT](TypedDict):
   model: TrainableModel[RawT, ProcessedT, BatchT]
   optimizer: Optimizer
   global_step: int | None
+  optimization_step: int | None

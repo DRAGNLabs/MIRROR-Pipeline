@@ -36,12 +36,12 @@ class Callback[RawT, ProcessedT, BatchT]:
         pass
 
     def on_fit_end(
-        self,
-        *,
-        fabric: Fabric,
-        model: TrainableModel[RawT, ProcessedT, BatchT],
-        optimizer: Optimizer,
-        training_run_id: str
+            self,
+            *,
+            fabric: Fabric,
+            model: TrainableModel[RawT, ProcessedT, BatchT],
+            optimizer: Optimizer,
+            training_run_id: str
     ):
         pass
 
@@ -57,6 +57,23 @@ class Callback[RawT, ProcessedT, BatchT]:
             n_batches: int,
             batch_idx: int,
             global_step: int,
+            optimization_step: int,
+    ):
+        pass
+
+    def on_optimization_step(
+            self,
+            *,
+            fabric: Fabric,
+            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            loss: float,
+            training_run_id: str,
+            epochs: int,
+            n_batches: int,
+            batch_idx: int,
+            global_step: int,
+            optimization_step: int,
     ):
         pass
 

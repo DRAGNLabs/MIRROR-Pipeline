@@ -18,6 +18,8 @@ from mirror.callbacks.print_step_callback import PrintStepCallback
 from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.optimization.default_optimization_strategy import DefaultOptimizationStrategy
+from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
@@ -97,7 +99,9 @@ class Trainer[RawT, ProcessedT, BatchT]:
             val_check_interval: int = 1,
             configure_scheduler: ConfigureScheduler | None = None,
             shuffle: bool = True,
+            optimization_strategy: OptimizationStrategy | None = None,
     ):
+        optimization_strategy = optimization_strategy or DefaultOptimizationStrategy()
         training_run_id = datetime.datetime.now().isoformat()
         rank_zero_log(self.fabric, f"Training run ID: {training_run_id}\n")
 
@@ -121,6 +125,7 @@ class Trainer[RawT, ProcessedT, BatchT]:
             'model': model,
             'optimizer': optimizer,
             'global_step': 0,
+            'optimization_step': 0,
         }
 
         if checkpoint:
@@ -142,13 +147,14 @@ class Trainer[RawT, ProcessedT, BatchT]:
             state = self.requeue_monitor.load_requeue_checkpoint_if_present(self.fabric, state)
 
         global_step : int = cast(int, state["global_step"])
+        optimization_step : int = cast(int, state["optimization_step"] or 0)
 
         start_epoch = global_step // n_batches
         start_batch = global_step % n_batches
 
         scheduler = None
         if configure_scheduler is not None:
-            total_training_steps = epochs * len(dataloader)
+            total_training_steps = optimization_strategy.expected_optimization_steps(epochs * len(dataloader))
             scheduler = configure_scheduler(optimizer, total_training_steps)
 
         val_dataloader = None
@@ -176,20 +182,33 @@ class Trainer[RawT, ProcessedT, BatchT]:
 
                     batch: BatchT = batch
 
-                    optimizer.zero_grad()
                     loss = model.training_step(batch)
                     loss_value = loss.item()
-                    self.fabric.backward(loss)
-                    optimizer.step()
-                    if scheduler is not None:
-                        scheduler.step()
+                    optimizer_stepped = optimization_strategy.step(
+                        fabric=self.fabric,
+                        optimizer=optimizer,
+                        loss=loss,
+                        batch_idx=batch_idx,
+                    )   
+                    if optimizer_stepped:
+                        optimization_step += 1
+                        if scheduler is not None:
+                            scheduler.step()
+
 
                     global_step = epoch_idx * n_batches + batch_idx + 1
                     state['global_step'] = global_step
+                    state['optimization_step'] = optimization_step
 
-                    self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer,
-                                     loss=loss_value, training_run_id=training_run_id, epochs=epochs, 
-                                     n_batches=n_batches, batch_idx=batch_idx, global_step = global_step)
+                    callback_kwargs = dict(
+                        fabric=self.fabric, model=model, optimizer=optimizer,
+                        loss=loss_value, training_run_id=training_run_id, epochs=epochs,
+                        n_batches=n_batches, batch_idx=batch_idx, global_step=global_step,
+                        optimization_step=optimization_step,
+                    )
+                    if optimizer_stepped:
+                        self.fabric.call('on_optimization_step', **callback_kwargs)
+                    self.fabric.call('on_train_batch_end', **callback_kwargs)
 
                     if self.requeue_monitor:
                         self.requeue_monitor.on_train_batch_end(
