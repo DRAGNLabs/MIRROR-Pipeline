@@ -2,12 +2,13 @@ from typing import cast
 
 import torch
 
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.preprocessors.mirror_preprocessor import DillablePreprocessorMixin, MirrorPreprocessor
 from mirror.util import get_device
 from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor
 
 class PlaceholderPreprocessor(
-    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
+    DillablePreprocessorMixin,
+    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]],
 ):
     def preprocess_example(self, example: TextRow) -> TokenTensor:
         return [1, 2, 3, 4]
