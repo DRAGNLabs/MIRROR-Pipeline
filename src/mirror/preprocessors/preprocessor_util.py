@@ -38,8 +38,11 @@ def load_hf_tokenizer(
 def collate_tokens(
     tokenizer: PreTrainedTokenizerBase,
     examples: list[list[int]],
+    max_length: int | None = None,
 ) -> tuple[TokenBatch, AttentionMaskBatch]:
     device = get_device()
+    if max_length is not None:
+        examples = [ex[:max_length] for ex in examples]
     batch = tokenizer.pad({"input_ids": examples}, padding=True, return_tensors="pt").to(device)
     tokens = cast(TokenBatch, batch["input_ids"])
     attention_mask = cast(AttentionMaskBatch, batch["attention_mask"])

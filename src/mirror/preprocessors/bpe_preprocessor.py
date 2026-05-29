@@ -15,7 +15,8 @@ from mirror.util import mirror_data_path
 class BPEPreprocessor(
     MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
 ):
-    def __init__(self, file_path: Path, vocab_size: int) -> None:
+    def __init__(self, file_path: Path, vocab_size: int, max_length: int | None = None) -> None:
+        self._max_length = max_length
         file_hash = hashlib.md5(str(file_path).encode()).hexdigest()[:8]
         tokenizer_path = f"{mirror_data_path}/tokenizers/bpe_{file_hash}_{vocab_size}/"
         os.makedirs(tokenizer_path, exist_ok=True)
@@ -54,7 +55,7 @@ class BPEPreprocessor(
         return cast(TokenTensor, ids)
 
     def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
-        return collate_tokens(self._tokenizer, examples)
+        return collate_tokens(self._tokenizer, examples, max_length=self._max_length)
 
     @property
     def pad_token_id(self) -> int:

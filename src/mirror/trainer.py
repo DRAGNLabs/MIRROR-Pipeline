@@ -35,7 +35,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             devices: int = 1,
             num_nodes: int = 1,
             callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
+            precision: str | None = None,
     ) -> None:
+        self.precision = precision
         if strategy is None:
             strategy = FSDPStrategy()
 
@@ -232,12 +234,14 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         return total_loss / n_batches
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
+        precision_kwargs = {"precision": self.precision} if self.precision else {}
         return Fabric(
             strategy=strategy,
             devices=self.devices,
             num_nodes=self.num_nodes,
             callbacks=self.callbacks,
             accelerator=accelerator,
+            **precision_kwargs,
         )
 
 def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](

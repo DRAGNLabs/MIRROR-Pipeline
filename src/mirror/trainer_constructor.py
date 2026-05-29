@@ -11,11 +11,13 @@ class TrainerConstructor:
             devices: int = 1,
             num_nodes: int = 1,
             callbacks: list[Callback] = [],
+            precision: str | None = None,
     ) -> None:
         self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
         self.callbacks = callbacks
+        self.precision = precision
 
     def construct_trainer[RawT, ProcessedT, BatchT, ModelOutputT](self) -> Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
-        return Trainer(self.strategy, self.devices, self.num_nodes, self.callbacks)
+        return Trainer(self.strategy, self.devices, self.num_nodes, self.callbacks, self.precision)
