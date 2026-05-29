@@ -6,14 +6,15 @@ from typing import cast
 from tokenizers import ByteLevelBPETokenizer, Tokenizer
 from transformers import PreTrainedTokenizerFast
 
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.preprocessors.mirror_preprocessor import InferenceFriendlyPreprocessor, MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens
 from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch, TextRow
 
 from mirror.util import mirror_data_path
 
 class BPEPreprocessor(
-    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
+    InferenceFriendlyPreprocessor,
+    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]],
 ):
     def __init__(self, file_path: Path, vocab_size: int) -> None:
         file_hash = hashlib.md5(str(file_path).encode()).hexdigest()[:8]
@@ -55,6 +56,10 @@ class BPEPreprocessor(
 
     def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
         return collate_tokens(self._tokenizer, examples)
+
+    @property
+    def tokenizer(self) -> PreTrainedTokenizerFast:
+        return self._tokenizer
 
     @property
     def pad_token_id(self) -> int:

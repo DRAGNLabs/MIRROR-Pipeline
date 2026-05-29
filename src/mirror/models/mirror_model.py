@@ -5,7 +5,7 @@ from mirror.types import TrainStepOutput
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 
 
-class MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT](ABC, nn.Module):
+class MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT](nn.Module, ABC):
     @property
     @abstractmethod
     def preprocessor(self) -> MirrorPreprocessor[RawT, ProcessedT, BatchT]:
