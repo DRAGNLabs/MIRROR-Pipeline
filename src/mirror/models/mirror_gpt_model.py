@@ -5,8 +5,8 @@ from typing import Literal, Union, cast
 
 from transformers import GPT2LMHeadModel
 
-from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhiteboxTransformer
 from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTransformerExecutor
+from mirror.models.inference_model import InferenceFriendlyModel
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
@@ -17,7 +17,7 @@ hf_model_name = "openai-community/gpt2"
 
 class MirrorGPTModel(
     MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None],
-    HFWhiteboxTransformer    
+    InferenceFriendlyModel,
 ):
     def __init__(self, weights: Literal["pretrained", "random"] = "pretrained") -> None:
         super().__init__()

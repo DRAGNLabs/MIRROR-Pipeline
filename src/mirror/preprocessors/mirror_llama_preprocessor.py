@@ -2,12 +2,13 @@ from typing import cast
 
 from transformers import PreTrainedTokenizerBase
 
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.preprocessors.mirror_preprocessor import InferenceFriendlyPreprocessor, MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
 from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor
 
 class MirrorLlamaPreprocessor(
-    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
+    InferenceFriendlyPreprocessor,
+    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]],
 ):
     def __init__(self, max_length: int | None = 2048) -> None:
         self._hf_model_name = "meta-llama/Llama-3.2-1B-Instruct"
@@ -30,6 +31,10 @@ class MirrorLlamaPreprocessor(
 
     def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
         return collate_tokens(self._tokenizer, examples)
+
+    @property
+    def tokenizer(self) -> PreTrainedTokenizerBase:
+        return self._tokenizer
 
     @property
     def pad_token_id(self) -> int:
