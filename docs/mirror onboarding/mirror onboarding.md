@@ -107,6 +107,7 @@ An example YAML config can be found in [config-example.md](config-example.md).
 This module implements the pipeline's subcommands. The two main subcommands:
 - `fit()` — The main training subcommand. If running on a login node with `job_type=compute`, it submits a training job to the supercomputer; otherwise (i.e. either we're training locally/on a login node, or we're already on a compute node), it executes training directly via `trainer.fit()`.
 - `preprocess()` — Applies a preprocessor to a dataset and caches the result, without running training.
+- `eval` — Runs a set of `MirrorMetric`s against a model and prints the results. Accepts a model, a `metrics` dict (mapping string labels to `MirrorMetric` instances), an optional `checkpoint_path` to load weights before evaluating, and SLURM/device settings. Sets the model to eval mode, then calls `metric.get_metrics(model, fabric)` for each metric and prints each label/result pair.
 
 The `templates/` directory contains `slurm.jinja`, a Jinja2 SBATCH template. When submitting a job from a login node, `subcommands.py` fills in this template and passes the result to `sbatch` to submit a training job to the supercomputer.
 
@@ -154,11 +155,13 @@ Future model interventions will be implemented in this module.
 
 ### Metrics
 
-By default, Wandb (`WandbCallback`) only logs `train/loss`, `val/loss`, and `test/loss`. To log additional per-step values to Wandb, pass an `ExtraMetricsGetter` into `WandbCallback`. An `ExtraMetricsGetter` is an abstract base class with a single method, `get_metrics(self, model: MirrorModel) -> dict`, which is called once per training step; whatever dict it returns is merged into that step's wandb log alongside `train/loss`.
+By default, Wandb (`WandbCallback`) only logs `train/loss`, `val/loss`, and `test/loss`. To log additional per-step values to Wandb, pass a `MirrorMetric` into `WandbCallback`. A `MirrorMetric` is an abstract base class with a single method, `get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict`, which is called once per training step; whatever dict it returns is merged into that step's wandb log alongside `train/loss`.
 
 To change how often `train/loss` and any extra metrics are logged, pass `log_every_n_steps` (defaults to 1) to `WandbCallback`. 
 
-Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(ExtraMetricsGetter)` reads the model's gradients and returns `{"grad_norm": ...}`; to use it, you would [pass `WandbCallback(extra_metrics_getter=GradNormMetrics())` to the trainer's `callbacks=` list](config-example.md), which will override the default `WandbCallback`.
+Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(MirrorMetric)` reads the model's gradients and returns `{"grad_norm": ...}`; to use it, you would [pass `WandbCallback(extra_metrics_getter=GradNormMetrics())` to the trainer's `callbacks=` list](config-example.md), which will override the default `WandbCallback`.
+
+`MirrorMetric`s are also used to evaluate model performance and fluency outside of training runs (using the `eval` subcommand). Note that `get_metrics` must be called on every rank in distributed settings — implementations may use collectives like `fabric.all_reduce`, so skipping the call on non-zero ranks will deadlock.
 
 ## Pipeline Developer Information
 
@@ -276,6 +279,11 @@ Vim is the default editor for commit message files (e.g. git merge).
 - `python src/main.py preprocess --config <config-file>`: Preprocess a dataset without training
     - Useful for preparing data separately before running a training job
     - Requires `--data` and `--preprocessor` to be specified (either in the config file or as command-line arguments)
+
+- `python src/main.py eval --config <config-file>`: Run evaluation metrics on a trained model
+    - Requires a `model` and a `metrics` dict (mapping string labels to `MirrorMetric` instances) to be specified in the config file
+    - Optionally accepts a `checkpoint_path` (a direct path to a `.ckpt` file or FSDP checkpoint directory) to load trained weights before evaluating
+    - Also accepts a `device` (`cpu`/`cuda`) and a `strategy` (Lightning Fabric strategy) for device/distributed configuration
 
 - `python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
     - Jupyter notebooks allow for significantly decreased startup time on repeat job runs
