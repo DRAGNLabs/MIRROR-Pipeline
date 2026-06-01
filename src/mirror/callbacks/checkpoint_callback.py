@@ -23,7 +23,14 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             training_run_id: str,
             **kwargs,
     ):
-        self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'start'), 0)
+        self._save_checkpoint(
+            fabric=fabric, 
+            model=model,
+            optimizer=optimizer, 
+            checkpoint_identifier=CheckpointIdentifier(training_run_id, 'start'),
+            global_step=0, 
+            optimization_step=0,
+        )
 
     def on_fit_end(
             self,
@@ -33,9 +40,16 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             optimizer: Optimizer,
             training_run_id: str,
     ):
-        self._save_checkpoint(fabric, model, optimizer, CheckpointIdentifier(training_run_id, 'end'), None)
+        self._save_checkpoint(
+            fabric=fabric, 
+            model=model,
+            optimizer=optimizer, 
+            checkpoint_identifier=CheckpointIdentifier(training_run_id, 'end'),
+            global_step=None, 
+            optimization_step=None,
+        )
 
-    def on_train_batch_end(
+    def on_optimization_step(
             self,
             *,
             fabric: Fabric,
@@ -45,17 +59,19 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             epochs: int,
             n_batches: int,
             global_step: int,
+            optimization_step: int,
             **kwargs,
     ):
         n_print_digits = len(str(epochs*n_batches)) + 1
 
-        if self.every_n_training_steps and (global_step + 1) % (self.every_n_training_steps) == 0:
+        if self.every_n_training_steps and optimization_step % self.every_n_training_steps == 0:
             self._save_checkpoint(
                 fabric,
                 model,
                 optimizer,
-                CheckpointIdentifier(training_run_id, f"{global_step:0{n_print_digits}d}"),
+                CheckpointIdentifier(training_run_id, f"{optimization_step:0{n_print_digits}d}"),
                 global_step,
+                optimization_step,
             )
 
     def _save_checkpoint(
@@ -65,10 +81,12 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             optimizer: Optimizer,
             checkpoint_identifier: CheckpointIdentifier,
             global_step: int | None,
+            optimization_step: int | None,
     ):
         state : StateDict[RawT, ProcessedT, BatchT, ModelOutputT] = {
             'model': model,
             'optimizer': optimizer,
             'global_step': global_step,
+            'optimization_step': optimization_step,
         }
         fabric.save(checkpoint_identifier.path, cast(dict[str, Module | Optimizer | Any], state))

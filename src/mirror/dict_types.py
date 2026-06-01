@@ -15,3 +15,4 @@ class StateDict[RawT, ProcessedT, BatchT, ModelOutputT](TypedDict):
   model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]
   optimizer: Optimizer
   global_step: int | None
+  optimization_step: int | None
