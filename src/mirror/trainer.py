@@ -24,7 +24,7 @@ from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
-from mirror.fabric_util import rank_zero_log
+from mirror.fabric_util import make_fabric, rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.requeue_monitor import RequeueMonitor
@@ -254,13 +254,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         return total_loss / n_batches
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
-        return Fabric(
-            strategy=strategy,
-            devices=self.devices,
-            num_nodes=self.num_nodes,
-            callbacks=self.callbacks,
-            accelerator=accelerator,
-        )
+        return make_fabric(strategy, accelerator, devices=self.devices, num_nodes=self.num_nodes, callbacks=self.callbacks)
 
 def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
         callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
