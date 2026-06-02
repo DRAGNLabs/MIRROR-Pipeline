@@ -72,4 +72,4 @@ def preprocess(
         data: MirrorDataset,
         preprocessor: MirrorPreprocessor,
 ) -> None:
-    preprocess_dataset(data, preprocessor.preprocess_example)
+    preprocess_dataset(data, preprocessor)
