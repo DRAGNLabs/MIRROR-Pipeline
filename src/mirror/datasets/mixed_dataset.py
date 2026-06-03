@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import math
-from typing import cast
+from typing import Any, Mapping
 
-from datasets import Dataset as HFDataset
-from datasets import concatenate_datasets
+from typed_datasets import TypedDataset, concatenate
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 
 
-class MixedDataset[RawT](MirrorDataset[RawT]):
+class MixedDataset[RawT: Mapping[str, Any]](MirrorDataset[RawT]):
+    # NOTE: parallel `datasets` + `weights` lists rather than the upstream
+    # `weighted_datasets: Sequence[tuple[MirrorDataset, float]]` — jsonargparse can't
+    # resolve a generic `MirrorDataset[RawT]` nested inside a tuple, so the tuple form
+    # fails to parse from YAML. See the SSP mixed config.
     def __init__(
         self,
         datasets: list[MirrorDataset],
@@ -30,7 +33,7 @@ class MixedDataset[RawT](MirrorDataset[RawT]):
         normalized_weights = [w / total_weight for w in weights]
         scale = max(len(ds) / w for ds, w in zip(datasets, normalized_weights))
 
-        selected: list[HFDataset] = []
+        selected: list[TypedDataset[RawT]] = []
 
         for ds, w in zip(datasets, normalized_weights):
             target_count = math.ceil(scale * w)
@@ -40,17 +43,11 @@ class MixedDataset[RawT](MirrorDataset[RawT]):
             upsampled = [i % ds_len for i in range(start, end)]
             selected.append(ds.ds.select(upsampled))
 
-        self._ds = concatenate_datasets(selected)
+        self._ds = concatenate(selected)
 
     @property
-    def ds(self) -> HFDataset:
+    def ds(self) -> TypedDataset[RawT]:
         return self._ds
-
-    def to_row_type(self, ds_row: dict) -> RawT:
-        return cast(RawT, ds_row)
-
-    def __getitem__(self, index: int) -> RawT:
-        return cast(RawT, self._ds[index])
 
     def __len__(self) -> int:
         return len(self.ds)

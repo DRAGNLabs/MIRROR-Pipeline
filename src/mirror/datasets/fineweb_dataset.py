@@ -1,20 +1,34 @@
 from typing import Literal, cast
 
 import numpy as np
-from datasets import Dataset, DatasetDict
+from datasets import DatasetDict
+from typed_datasets import TypedDataset
 
-from mirror.datasets.dataset_util import load_hf_dataset, slice_by_fraction, take
+from mirror.datasets.dataset_util import load_hf_dataset, just_text_row, slice_by_fraction
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import TextRow
+from mirror.util import _ds_cache_path_context
 
 hf_dataset_path = 'HuggingFaceFW/fineweb-edu'
 hf_dataset_name = 'sample-10BT'
 target_token_count = 2_000_000_000
 
 
+class FinewebRow(TextRow):
+    id: str
+    dump: str
+    url: str
+    file_path: str
+    language: str
+    language_score: float
+    token_count: int
+    score: float
+    int_score: int
+
+
 class FinewebDataset(MirrorDataset[TextRow]):
     @property
-    def ds(self) -> Dataset:
+    def ds(self) -> TypedDataset[TextRow]:
         return self._ds
 
     def __init__(
@@ -27,26 +41,22 @@ class FinewebDataset(MirrorDataset[TextRow]):
     ):
         super().__init__()
 
-        self._ds = cast(DatasetDict, load_hf_dataset(
-            hf_dataset_path,
-            hf_dataset_name,
-            self._process,
-        ))[split]
+        raw = cast(DatasetDict, load_hf_dataset(hf_dataset_path, hf_dataset_name))[split]
+        ds = self._truncate(TypedDataset[FinewebRow](raw))
+        ds = slice_by_fraction(ds, start_fraction, end_fraction)
 
-        self._ds = slice_by_fraction(self._ds, start_fraction, end_fraction)
-        self._ds = take(self._ds, skip, head)
+        if skip:
+            ds = ds.skip(skip)
+        if head:
+            ds = ds.take(head)
 
-    def _process(self, ds: DatasetDict | Dataset) -> DatasetDict:
-        assert isinstance(ds, DatasetDict)
-        return DatasetDict({split: self._truncate(d) for split, d in ds.items()})
+        with _ds_cache_path_context():
+            self._ds = ds.map(just_text_row, remove_columns=list(ds.columns))
 
-    def _truncate(self, ds: Dataset) -> Dataset:
-        cumulative = np.cumsum(np.asarray(ds['token_count'], dtype=np.int64))
+    def _truncate(self, ds: TypedDataset[FinewebRow]) -> TypedDataset[FinewebRow]:
+        cumulative = np.cumsum(np.asarray(ds.unwrap()['token_count'], dtype=np.int64))
         cutoff = int(np.searchsorted(cumulative, target_token_count, side='right')) + 1
-        return ds.select(range(cutoff))
-
-    def to_row_type(self, ds_row: dict) -> TextRow:
-        return TextRow(text=ds_row['text'])
+        return ds.take(cutoff)
 
     def __len__(self) -> int:
         return len(self.ds)

@@ -2,7 +2,7 @@ import datetime
 import os
 import warnings
 from itertools import islice
-from typing import Any, List, cast
+from typing import Any, List, Mapping, cast
 
 import torch
 from lightning import Fabric
@@ -30,7 +30,7 @@ from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.requeue_monitor import RequeueMonitor
 from mirror.dict_types import StateDict
 
-class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
+class Trainer[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT]:
     def __init__(
             self,
             strategy: Strategy | None = None,
@@ -259,7 +259,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         return make_fabric(strategy, accelerator, devices=self.devices, num_nodes=self.num_nodes,
                            callbacks=self.callbacks, precision=self.precision)
 
-def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
+def separate_singletons[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
         callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ) -> tuple[
         List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
@@ -270,7 +270,7 @@ def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
     return singletons, non_singletons
 
 
-def make_dataloader[RawT, ProcessedT, BatchT](
+def make_dataloader[RawT: Mapping[str, Any], ProcessedT, BatchT](
         dataset: MirrorDataset[RawT],
         preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT],
         batch_size: int,

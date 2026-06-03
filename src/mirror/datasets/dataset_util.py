@@ -1,19 +1,23 @@
 import os
 import shutil
 from sys import stderr
-from typing import Callable, Sequence
+from typing import Any, Callable, Mapping, Sequence
 from pathlib import Path
 
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
+from typed_datasets import TypedDataset
 from mirror.util import is_compute_node
 
 from mirror.download_util import assert_can_download
 from mirror.util import mirror_data_path
+from mirror.types import TextRow
 
 datasets_path = mirror_data_path / 'datasets'
 
 
-def slice_by_fraction(ds: Dataset, start_fraction: float, end_fraction: float) -> Dataset:
+def slice_by_fraction[RowT: Mapping[str, Any]](
+    ds: TypedDataset[RowT], start_fraction: float, end_fraction: float
+) -> TypedDataset[RowT]:
     if not 0.0 <= start_fraction <= end_fraction <= 1.0:
         raise ValueError(f"Invalid fractions: start={start_fraction}, end={end_fraction}")
     if start_fraction == 0.0 and end_fraction == 1.0:
@@ -22,16 +26,8 @@ def slice_by_fraction(ds: Dataset, start_fraction: float, end_fraction: float) -
     return ds.select(range(int(start_fraction * n), int(end_fraction * n)))
 
 
-def take(
-        ds: Dataset, 
-        skip: int | None = None, 
-        head: int | None = None
-) -> Dataset:
-    start = min(skip or 0, len(ds))
-    stop = len(ds) if head is None else min(start + head, len(ds))
-    if start == 0 and stop == len(ds):
-        return ds
-    return ds.select(range(start, stop))
+def just_text_row(row: TextRow) -> TextRow:
+    return TextRow(text=row['text'])
 
 
 def load_hf_dataset(
