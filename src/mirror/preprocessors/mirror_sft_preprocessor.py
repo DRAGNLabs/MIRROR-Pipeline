@@ -1,6 +1,6 @@
 from typing import cast
 
-from transformers import PreTrainedTokenizerBase
+from transformers import BatchEncoding, PreTrainedTokenizerBase
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
@@ -38,11 +38,19 @@ class MirrorSftPreprocessor(
 
     def _tokenize_split(self, example: PromptResponseRow) -> tuple[list[int], list[int]]:
         if self._tokenizer.chat_template is not None:
-            prompt_msgs = [{"role": "user", "content": example['prompt']}]
-            full_msgs = [*prompt_msgs, {"role": "assistant", "content": example['response']}]
-            prompt_ids = self._chat_token_ids(prompt_msgs, add_generation_prompt=True)
-            full_ids = self._chat_token_ids(full_msgs)
-            return prompt_ids, full_ids[len(prompt_ids):]
+            full_msgs = [
+                {"role": "user", "content": example['prompt']},
+                {"role": "assistant", "content": example['response']},
+            ]
+            out = cast(BatchEncoding, self._tokenizer.apply_chat_template(
+                full_msgs,
+                return_dict=True,
+                return_assistant_tokens_mask=True,
+            ))
+            full_ids = list(cast(list[int], out["input_ids"]))
+            mask = cast(list[int], out["assistant_tokens_mask"])
+            split = next((i for i, m in enumerate(mask) if m == 1), len(full_ids))
+            return full_ids[:split], full_ids[split:]
 
         prompt_ids = self._tokenizer.encode(example['prompt'], add_special_tokens=True)
         response_ids = self._tokenizer.encode(example['response'], add_special_tokens=False)
@@ -51,19 +59,9 @@ class MirrorSftPreprocessor(
             response_ids = [*response_ids, eos_id]
         return cast(TokenTensor, list(prompt_ids)), cast(TokenTensor, list(response_ids))
 
-    def _chat_token_ids(self, messages: list[dict], add_generation_prompt: bool = False) -> list[int]:
-        """
-        apply_chat_template returns either a list[int] or a BatchEncoding
-        (depending on tokenizer backend / transformers version). Normalize
-        to list[int].
-        """
-        out = self._tokenizer.apply_chat_template(messages, add_generation_prompt=add_generation_prompt)
-        ids = cast(dict, out)["input_ids"] if hasattr(out, "keys") else out
-        return list(cast(TokenTensor, ids))
-
     def collate(self, examples: list[LabeledTokens]) -> StandardBatch:
         return collate_tokens(self._tokenizer, examples)
 
     @property
     def pad_token_id(self) -> int:
-        return int(self._tokenizer.pad_token_id)  # type: ignore[arg-type]
+        return cast(int, self._tokenizer.pad_token_id)
