@@ -1,15 +1,15 @@
 from abc import abstractmethod
 from sys import stderr
-from typing import Any, Callable, Sequence, Sized
+from typing import Any, Callable, Mapping, Sequence, Sized
 from torch.utils.data import Dataset
 from typed_datasets import TypedDataset
 from mirror.util import _ds_cache_path_context
 
 
-class MirrorDataset[RawT](Dataset[RawT], Sized):
+class MirrorDataset[RawT: Mapping[str, Any]](Dataset[RawT], Sized):
     @property
     @abstractmethod
-    def ds(self) -> TypedDataset[Any]:
+    def ds(self) -> TypedDataset[RawT]:
         pass
 
     def to_row_type(self, ds_row: RawT) -> RawT:
@@ -19,7 +19,7 @@ class MirrorDataset[RawT](Dataset[RawT], Sized):
         return self.to_row_type(self.ds[index])
 
 
-def preprocess_dataset[RawT, ProcessedT](
+def preprocess_dataset[RawT: Mapping[str, Any], ProcessedT](
     dataset: MirrorDataset[RawT],
     preprocessor_function: Callable[[RawT], ProcessedT],
 ) -> Sequence[ProcessedT]:
