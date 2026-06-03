@@ -3,7 +3,7 @@ from typing import Literal, cast
 from datasets import DatasetDict
 from typed_datasets import TypedDataset
 
-from mirror.datasets.dataset_util import load_hf_dataset, to_text_row
+from mirror.datasets.dataset_util import load_hf_dataset, just_text_row
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import TextRow
 from mirror.util import _ds_cache_path_context
@@ -32,15 +32,15 @@ class ImdbDataset(MirrorDataset[TextRow]):
         super().__init__()
 
         raw = cast(DatasetDict, load_hf_dataset(hf_dataset_path))[split]
-        typed: TypedDataset[TextRow] = TypedDataset(raw)
+        ds = TypedDataset[TextRow](raw)
 
         if skip:
-            typed = typed.skip(skip)
+            ds = ds.skip(skip)
         if head:
-            typed = typed.take(head)
+            ds = ds.take(head)
 
         with _ds_cache_path_context():
-            self._ds = typed.map(to_text_row, remove_columns=list(typed.columns))
+            self._ds = ds.map(just_text_row, remove_columns=list(ds.columns))
 
     def __len__(self) -> int:
         return len(self.ds)

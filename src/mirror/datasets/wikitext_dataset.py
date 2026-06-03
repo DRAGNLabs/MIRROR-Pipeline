@@ -3,7 +3,7 @@ from typing import Literal, cast
 from datasets import DatasetDict
 from typed_datasets import TypedDataset
 
-from mirror.datasets.dataset_util import load_hf_dataset, to_text_row
+from mirror.datasets.dataset_util import load_hf_dataset, just_text_row
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import TextRow
 from mirror.util import _ds_cache_path_context
@@ -32,16 +32,15 @@ class WikitextDataset(MirrorDataset[TextRow]):
         super().__init__()
 
         raw = cast(DatasetDict, load_hf_dataset(hf_dataset_path, hf_dataset_name))[split]
-        typed: TypedDataset[TextRow] = TypedDataset(raw)
-
-        if skip:
-            typed = typed.skip(skip)
-        if head:
-            typed = typed.take(head)
+        ds = TypedDataset[TextRow](raw)
 
         with _ds_cache_path_context():
-            typed = typed.filter(lambda row: len(row['text']) > 0)
-            self._ds = typed.map(to_text_row, remove_columns=list(typed.columns))
+            ds = ds.filter(lambda row: len(row['text']) > 0)
+            if skip:
+                ds = ds.skip(skip)
+            if head:
+                ds = ds.take(head)
+            self._ds = ds.map(just_text_row, remove_columns=list(ds.columns))
 
     def __len__(self) -> int:
         return len(self.ds)

@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import cast
 
 from datasets import Dataset, load_dataset
-from typed_datasets import TypedDataset, load_typed
+from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import TextRow
@@ -22,21 +22,18 @@ class TxtDataset(MirrorDataset[TextRow]):
         """
         Args:
             file_path: path to a .txt file where each line is one example.
-            head: how many non-empty examples to include. None includes the whole file.
+            head: how many examples to include. None includes the whole file.
         """
         super().__init__()
 
-        if head is not None:
-            stream = load_typed(
-                "text", row_type=TextRow, split="train",
-                streaming=True, data_files=str(file_path),
-            )
-            rows = list(stream.filter(lambda row: len(row['text']) > 0).take(head))
-            self._ds = TypedDataset.from_list(rows)
-        else:
-            raw = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
-            with _ds_cache_path_context():
-                self._ds = TypedDataset(raw).filter(lambda row: len(row['text']) > 0)
+        raw = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
+        ds = TypedDataset[TextRow](raw)
+
+        with _ds_cache_path_context():
+            ds = ds.filter(lambda row: len(row['text']) > 0)
+            if head:
+                ds = ds.take(head)
+            self._ds = ds
 
     def __len__(self) -> int:
         return len(self.ds)
