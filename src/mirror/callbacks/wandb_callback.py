@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal, Mapping
 import os
 
 import wandb
@@ -16,7 +16,7 @@ from wandb.sdk.wandb_run import Run as WandbRun
 WandbMode = Literal["online", "offline"]
 
 
-class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+class WandbCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
     Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(

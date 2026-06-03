@@ -1,4 +1,4 @@
-from typing import cast, Any
+from typing import cast, Any, Mapping
 from lightning import Fabric
 from torch.nn import Module
 from torch.optim import Optimizer
@@ -7,7 +7,7 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.models.mirror_model import MirrorModel
 from mirror.dict_types import StateDict
 
-class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
        Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(self, every_n_training_steps: int | None = None) -> None:
