@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import cast
 
 from datasets import Dataset, load_dataset
-from mirror.datasets.dataset_util import slice_by_fraction
+from mirror.datasets.dataset_util import slice_by_fraction, take
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import TextRow
 
@@ -30,8 +30,7 @@ class TxtDataset(MirrorDataset[TextRow]):
         self._ds = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
         self._ds = self._ds.filter(lambda row: len(row["text"]) > 0)
         self._ds = slice_by_fraction(self._ds, start_fraction, end_fraction)
-        if head:
-            self._ds = self._ds.select(range(head))
+        self._ds = take(self._ds, head=head)
 
     def to_row_type(self, ds_row: dict) -> TextRow:
         return TextRow(text=ds_row['text'])

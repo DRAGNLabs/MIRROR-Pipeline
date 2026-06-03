@@ -3,7 +3,7 @@ from typing import Literal, cast
 import numpy as np
 from datasets import Dataset, DatasetDict
 
-from mirror.datasets.dataset_util import load_hf_dataset, slice_by_fraction
+from mirror.datasets.dataset_util import load_hf_dataset, slice_by_fraction, take
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import TextRow
 
@@ -34,12 +34,7 @@ class FinewebDataset(MirrorDataset[TextRow]):
         ))[split]
 
         self._ds = slice_by_fraction(self._ds, start_fraction, end_fraction)
-
-        if skip:
-            self._ds = self._ds.select(range(skip, len(self._ds)))
-
-        if head:
-            self._ds = self._ds.select(range(head))
+        self._ds = take(self._ds, skip, head)
 
     def _process(self, ds: DatasetDict | Dataset) -> DatasetDict:
         assert isinstance(ds, DatasetDict)

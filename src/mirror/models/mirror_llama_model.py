@@ -38,7 +38,7 @@ class MirrorLlamaModel(
             self._hf_model = cast(LlamaForCausalLM, build_causal_lm(hf_model_name, weights="pretrained"))
         self._lr = lr
         self._weight_decay = weight_decay
-        self._betas = tuple(betas)
+        self._betas: tuple[float, float] = (betas[0], betas[1])
 
     @property
     def hf_model(self) -> LlamaForCausalLM:

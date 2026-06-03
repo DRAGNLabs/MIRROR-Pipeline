@@ -22,6 +22,18 @@ def slice_by_fraction(ds: Dataset, start_fraction: float, end_fraction: float) -
     return ds.select(range(int(start_fraction * n), int(end_fraction * n)))
 
 
+def take(
+        ds: Dataset, 
+        skip: int | None = None, 
+        head: int | None = None
+) -> Dataset:
+    start = min(skip or 0, len(ds))
+    stop = len(ds) if head is None else min(start + head, len(ds))
+    if start == 0 and stop == len(ds):
+        return ds
+    return ds.select(range(start, stop))
+
+
 def load_hf_dataset(
         hf_dataset_path: str,
         hf_dataset_name: str | None = None,

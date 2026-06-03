@@ -1,6 +1,8 @@
 import sys
+from typing import cast
 
 from lightning import Fabric
+from lightning.fabric.connector import _PRECISION_INPUT
 from lightning.fabric.strategies.strategy import Strategy
 
 
@@ -12,14 +14,13 @@ def make_fabric(
         callbacks: list = [],
         precision: str | None = None,
 ) -> Fabric:
-    precision_kwargs = {"precision": precision} if precision else {}
     return Fabric(
         strategy=strategy,
         devices=devices,
         num_nodes=num_nodes,
         callbacks=callbacks,
         accelerator=accelerator,
-        **precision_kwargs,
+        precision=cast("_PRECISION_INPUT | None", precision),
     )
 
 
