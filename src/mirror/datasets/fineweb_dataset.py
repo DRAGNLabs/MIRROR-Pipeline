@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict, cast
+from typing import Literal, cast
 
 import numpy as np
 from datasets import DatasetDict
@@ -14,8 +14,7 @@ hf_dataset_name = 'sample-10BT'
 target_token_count = 2_000_000_000
 
 
-class FinewebRow(TypedDict):
-    text: str
+class FinewebRow(TextRow):
     id: str
     dump: str
     url: str

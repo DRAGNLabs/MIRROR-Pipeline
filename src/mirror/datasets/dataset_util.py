@@ -1,7 +1,7 @@
 import os
 import shutil
 from sys import stderr
-from typing import Any, Callable, Mapping, Sequence
+from typing import Callable, Sequence
 from pathlib import Path
 
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk
@@ -14,7 +14,7 @@ from mirror.types import TextRow
 datasets_path = mirror_data_path / 'datasets'
 
 
-def just_text_row(row: Mapping[str, Any]) -> TextRow:
+def just_text_row(row: TextRow) -> TextRow:
     return TextRow(text=row['text'])
 
 
