@@ -9,8 +9,13 @@ from mirror.util import is_compute_node
 
 from mirror.download_util import assert_can_download
 from mirror.util import mirror_data_path
+from mirror.types import TextRow
 
 datasets_path = mirror_data_path / 'datasets'
+
+
+def to_text_row(row: TextRow) -> TextRow:
+    return TextRow(text=row['text'])
 
 
 def load_hf_dataset(
