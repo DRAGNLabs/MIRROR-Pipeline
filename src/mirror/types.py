@@ -13,6 +13,10 @@ class TextLabelRow(TextRow):
     label: str
 
 
+class TokenRow(TypedDict):
+    input_ids: list[int]
+
+
 TokenTensor = list[int]
 AttentionMask = Int[Tensor, "T"]
 
