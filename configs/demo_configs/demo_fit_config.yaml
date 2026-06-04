@@ -18,9 +18,7 @@ data:
 #     split: test
 #     head: 5
 
-do_preprocess: True
-
-# preprocessor: 
+# preprocessor:
 #   class_path: MirrorLlamaPreprocessor
 
 # interventions:
