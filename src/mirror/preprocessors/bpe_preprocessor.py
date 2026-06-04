@@ -8,12 +8,12 @@ from transformers import PreTrainedTokenizerFast
 
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens
-from mirror.types import TokenTensor, TokenBatch, AttentionMaskBatch, TextRow
+from mirror.types import TokenRow, TokenBatch, AttentionMaskBatch, TextRow
 
 from mirror.util import mirror_data_path
 
 class BPEPreprocessor(
-    MirrorPreprocessor[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]]
+    MirrorPreprocessor[TextRow, TokenRow, tuple[TokenBatch, AttentionMaskBatch]]
 ):
     def __init__(self, file_path: Path, vocab_size: int) -> None:
         file_hash = hashlib.md5(str(file_path).encode()).hexdigest()[:8]
@@ -45,16 +45,16 @@ class BPEPreprocessor(
             pad_token="<pad>",
         )
 
-    def preprocess_example(self, example: TextRow) -> TokenTensor:
+    def preprocess_example(self, example: TextRow) -> TokenRow:
         encoding = self._raw_tokenizer.encode(example['text'], add_special_tokens=True)
         ids = encoding.ids
         if len(ids) < 2:
             eos = self._raw_tokenizer.token_to_id("</s>")
             ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
-        return cast(TokenTensor, ids)
+        return {"input_ids": cast(list[int], ids)}
 
-    def collate(self, examples: list[TokenTensor]) -> tuple[TokenBatch, AttentionMaskBatch]:
-        return collate_tokens(self._tokenizer, examples)
+    def collate(self, examples: list[TokenRow]) -> tuple[TokenBatch, AttentionMaskBatch]:
+        return collate_tokens(self._tokenizer, [e["input_ids"] for e in examples])
 
     @property
     def pad_token_id(self) -> int:

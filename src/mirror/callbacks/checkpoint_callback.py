@@ -7,7 +7,7 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.models.mirror_model import MirrorModel
 from mirror.dict_types import StateDict
 
-class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
+class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](
        Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(self, every_n_training_steps: int | None = None) -> None:

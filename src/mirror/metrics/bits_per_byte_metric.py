@@ -8,11 +8,11 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor
+from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenRow
 
 
 class BitsPerByteMetric[ModelOutputT](
-    MirrorMetric[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT]
+    MirrorMetric[TextRow, TokenRow, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT]
 ):
     def __init__(
             self,
@@ -24,7 +24,7 @@ class BitsPerByteMetric[ModelOutputT](
 
     def get_metrics(
             self,
-            model: MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT],
+            model: MirrorModel[TextRow, TokenRow, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT],
             fabric: Fabric,
     ) -> dict:
         """
@@ -44,7 +44,7 @@ class BitsPerByteMetric[ModelOutputT](
                 tokens = preprocessor.preprocess_example(row)
                 batch = preprocessor.collate([tokens])
 
-                num_tokens = len(tokens)
+                num_tokens = len(tokens["input_ids"])
                 num_bytes = len(row['text'].encode('utf-8'))
 
                 loss_nats = model.training_step(batch).loss.item()

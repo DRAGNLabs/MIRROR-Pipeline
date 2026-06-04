@@ -1,3 +1,4 @@
+from typing import Any, Mapping
 from torch.optim import Optimizer
 import torch.nn as nn
 
@@ -6,7 +7,7 @@ from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.types import TrainStepOutput
 
 
-class Intervention[RawT, ProcessedT, BatchT, ModelOutputT](
+class Intervention[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](
     MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(self, target: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]):

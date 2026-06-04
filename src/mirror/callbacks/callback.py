@@ -5,7 +5,7 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
 
 
-class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT]:
+class Callback[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT]:
     """
     The names of the methods here are based on those of Lightning's
     Callback class: https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.Callback.html#lightning.pytorch.callbacks.Callback

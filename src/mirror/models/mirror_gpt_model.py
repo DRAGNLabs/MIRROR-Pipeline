@@ -10,13 +10,13 @@ from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTr
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
-from mirror.types import AttentionMaskBatch, Loss, TextRow, TokenBatch, TokenTensor, TrainStepOutput
+from mirror.types import AttentionMaskBatch, Loss, TextRow, TokenBatch, TokenRow, TrainStepOutput
 
 
 hf_model_name = "openai-community/gpt2"
 
 class MirrorGPTModel(
-    MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None],
+    MirrorModel[TextRow, TokenRow, tuple[TokenBatch, AttentionMaskBatch], None],
     HFWhiteboxTransformer    
 ):
     def __init__(self, weights: Literal["pretrained", "random"] = "pretrained") -> None:

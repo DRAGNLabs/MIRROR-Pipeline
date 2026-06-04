@@ -30,7 +30,7 @@ from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.requeue_monitor import RequeueMonitor
 from mirror.dict_types import StateDict
 
-class Trainer[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT]:
+class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT]:
     def __init__(
             self,
             strategy: Strategy | None = None,
@@ -256,7 +256,7 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT]:
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
         return make_fabric(strategy, accelerator, devices=self.devices, num_nodes=self.num_nodes, callbacks=self.callbacks)
 
-def separate_singletons[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
+def separate_singletons[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](
         callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ) -> tuple[
         List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
@@ -267,7 +267,7 @@ def separate_singletons[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutput
     return singletons, non_singletons
 
 
-def make_dataloader[RawT: Mapping[str, Any], ProcessedT, BatchT](
+def make_dataloader[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT](
         dataset: MirrorDataset[RawT],
         preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT],
         batch_size: int,

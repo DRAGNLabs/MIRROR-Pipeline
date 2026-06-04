@@ -11,10 +11,10 @@ from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm, IGNORE_ID
 from mirror.models.configuration_llama import LlamaConfig
 from mirror.preprocessors.mirror_llama_preprocessor import MirrorLlamaPreprocessor
-from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor, TrainStepOutput
+from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenRow, TrainStepOutput
 
 class MirrorLlamaModel(
-    MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None],
+    MirrorModel[TextRow, TokenRow, tuple[TokenBatch, AttentionMaskBatch], None],
     HFWhiteboxTransformer
 ):
     def __init__(

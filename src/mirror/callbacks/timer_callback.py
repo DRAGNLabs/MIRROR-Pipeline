@@ -50,7 +50,7 @@ def benchmark_lock_path(lock_dir: Path, num_nodes: int, devices_per_node: int, b
     return lock_dir / f"{benchmark_run_key(num_nodes, devices_per_node, batch_size, param_count)}.lock"
 
 
-class TimerCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
+class TimerCallback[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](
     Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(

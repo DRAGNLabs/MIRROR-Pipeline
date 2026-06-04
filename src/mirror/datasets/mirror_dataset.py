@@ -19,17 +19,18 @@ class MirrorDataset[RawT: Mapping[str, Any]](Dataset[RawT], Sized):
         return self.to_row_type(self.ds[index])
 
 
-def preprocess_dataset[RawT: Mapping[str, Any], ProcessedT](
+def preprocess_dataset[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any]](
     dataset: MirrorDataset[RawT],
     preprocessor_function: Callable[[RawT], ProcessedT],
 ) -> Sequence[ProcessedT]:
-    def mappable_preprocessor_function(row: dict) -> dict:
-        return {"input_ids": preprocessor_function(dataset.to_row_type(row))}
+    raw = dataset.ds.unwrap()
+
+    def mappable_preprocessor_function(row: dict) -> ProcessedT:
+        return preprocessor_function(dataset.to_row_type(row))
 
     with _ds_cache_path_context():
-        mapped = dataset.ds.unwrap().map(mappable_preprocessor_function)
+        mapped = raw.map(mappable_preprocessor_function, remove_columns=raw.column_names)
 
     print("Preprocessing complete.", file=stderr)
-    mapped.set_format(type="torch", columns=["input_ids"])
 
-    return mapped["input_ids"]
+    return cast(Sequence[ProcessedT], mapped)
