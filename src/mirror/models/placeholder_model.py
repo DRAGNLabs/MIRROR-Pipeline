@@ -2,12 +2,17 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.inference_model import InferenceModel
+from mirror.models.trainable_model import TrainableModel
 from mirror.preprocessors.placeholder_preprocessor import PlaceholderPreprocessor
-from mirror.types import AttentionMaskBatch, Loss, TextRow, TokenBatch, TokenTensor, TrainStepOutput
+from mirror.types import AttentionMaskBatch, Loss, TextRow, TokenBatch, TokenTensor
 from mirror.util import get_device
 
-class PlaceholderModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None]):
+
+class PlaceholderModel(
+    TrainableModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]],
+    InferenceModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None],
+):
     def __init__(self) -> None:
         super().__init__()
         self.parameter = nn.Parameter(torch.tensor([0.0], device=get_device()))
@@ -15,11 +20,13 @@ class PlaceholderModel(MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, Atten
 
     @property
     def preprocessor(self) -> PlaceholderPreprocessor:
-        return self._preprocessor    
+        return self._preprocessor
 
-    def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> TrainStepOutput[None]:
-        tokens, attention_mask = batch
-        return TrainStepOutput(loss=self.parameter, output=None)
+    def forward(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> None:
+        return None
+
+    def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
+        return self.parameter
 
     def configure_optimizers(self) -> optim.Optimizer:
         return optim.AdamW(self.parameters())

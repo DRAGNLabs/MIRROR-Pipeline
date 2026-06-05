@@ -2,8 +2,8 @@ from typing import Any, Mapping
 from mirror.callbacks.callback import Callback
 
 
-class PrintStepCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
-    Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+class PrintStepCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
+    Callback[RawT, ProcessedT, BatchT]
 ):
     def on_train_batch_end(
             self,

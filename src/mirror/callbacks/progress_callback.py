@@ -3,8 +3,8 @@ from lightning import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
 
-class ProgressCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
-       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+class ProgressCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
+       Callback[RawT, ProcessedT, BatchT]
 ):
     def __init__(self, bar_refresh_interval: int = 5) -> None:
         super().__init__(is_singleton=True)

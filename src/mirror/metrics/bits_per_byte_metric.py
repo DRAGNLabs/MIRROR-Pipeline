@@ -6,14 +6,12 @@ from lightning import Fabric
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.metrics.mirror_metric import MirrorMetric
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor
+from mirror.types import TextRow
 
 
-class BitsPerByteMetric[ModelOutputT](
-    MirrorMetric[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT]
-):
+class BitsPerByteMetric(MirrorMetric):
     def __init__(
             self,
             data: MirrorDataset,
@@ -24,7 +22,7 @@ class BitsPerByteMetric[ModelOutputT](
 
     def get_metrics(
             self,
-            model: MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT],
+            model: TrainableModel,
             fabric: Fabric,
     ) -> dict:
         """
@@ -47,7 +45,7 @@ class BitsPerByteMetric[ModelOutputT](
                 num_tokens = len(tokens)
                 num_bytes = len(row['text'].encode('utf-8'))
 
-                loss_nats = model.training_step(batch).loss.item()
+                loss_nats = model.training_step(batch).item()
 
                 total_bits += loss_nats / math.log(2) * (num_tokens - 1)
                 total_bytes += num_bytes

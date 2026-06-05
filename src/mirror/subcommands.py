@@ -5,7 +5,7 @@ from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.slurm_util import SlurmConfig
 from mirror.trainer import Trainer
@@ -13,7 +13,7 @@ from mirror.trainer import Trainer
 
 def fit(
         data: MirrorDataset,
-        model: MirrorModel,
+        model: TrainableModel,
         trainer: Trainer,
         preprocessor: MirrorPreprocessor | None = None,
         checkpoint: CheckpointIdentifier | None = None,
@@ -47,7 +47,7 @@ def fit(
     )
 
 def evaluation(
-        model: MirrorModel,
+        model: TrainableModel,
         metrics: dict[str, MirrorMetric],
         fabric: Fabric,
         checkpoint_path: str | None = None,
