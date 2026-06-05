@@ -1,10 +1,11 @@
+from typing import Any, Mapping
 from lightning import Fabric
 from torch.optim import Optimizer
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.trainable_model import TrainableModel
 
 
-class Callback[RawT, ProcessedT, BatchT]:
+class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT]:
     """
     The names of the methods here are based on those of Lightning's
     Callback class: https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.Callback.html#lightning.pytorch.callbacks.Callback

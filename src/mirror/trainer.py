@@ -2,7 +2,7 @@ import datetime
 import os
 import warnings
 from itertools import islice
-from typing import Any, List, cast
+from typing import Any, List, Mapping, cast
 
 import torch
 from lightning import Fabric
@@ -24,13 +24,13 @@ from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
-from mirror.fabric_util import rank_zero_log
+from mirror.fabric_util import make_fabric, rank_zero_log
 from mirror.models.trainable_model import TrainableModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.requeue_monitor import RequeueMonitor
 from mirror.dict_types import StateDict
 
-class Trainer[RawT, ProcessedT, BatchT]:
+class Trainer[RawT: Mapping[str, Any], ProcessedT, BatchT]:
     def __init__(
             self,
             strategy: Strategy | None = None,
@@ -156,6 +156,10 @@ class Trainer[RawT, ProcessedT, BatchT]:
         if configure_scheduler is not None:
             total_training_steps = optimization_strategy.expected_optimization_steps(epochs * len(dataloader))
             scheduler = configure_scheduler(optimizer, total_training_steps)
+            if global_step > 0: # Resuming from checkpoint
+                optimizer._opt_called = True  # type: ignore[attr-defined]
+                for _ in range(global_step):
+                    scheduler.step()
 
         val_dataloader = None
         if val_dataset is not None:
@@ -251,15 +255,9 @@ class Trainer[RawT, ProcessedT, BatchT]:
         return total_loss / n_batches
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
-        return Fabric(
-            strategy=strategy,
-            devices=self.devices,
-            num_nodes=self.num_nodes,
-            callbacks=self.callbacks,
-            accelerator=accelerator,
-        )
+        return make_fabric(strategy, accelerator, devices=self.devices, num_nodes=self.num_nodes, callbacks=self.callbacks)
 
-def separate_singletons[RawT, ProcessedT, BatchT](
+def separate_singletons[RawT: Mapping[str, Any], ProcessedT, BatchT](
         callbacks: List[Callback[RawT, ProcessedT, BatchT]]
 ) -> tuple[
         List[Callback[RawT, ProcessedT, BatchT]],
@@ -270,7 +268,7 @@ def separate_singletons[RawT, ProcessedT, BatchT](
     return singletons, non_singletons
 
 
-def make_dataloader[RawT, ProcessedT, BatchT](
+def make_dataloader[RawT: Mapping[str, Any], ProcessedT, BatchT](
         dataset: MirrorDataset[RawT],
         preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT],
         batch_size: int,

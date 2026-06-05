@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal, Mapping
 import os
 
 import wandb
@@ -7,7 +7,7 @@ from lightning import Fabric
 
 from mirror.callbacks.callback import Callback
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
+from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.trainable_model import TrainableModel
 from mirror.util import mirror_data_path
 
@@ -16,12 +16,12 @@ from wandb.sdk.wandb_run import Run as WandbRun
 WandbMode = Literal["online", "offline"]
 
 
-class WandbCallback[RawT, ProcessedT, BatchT](
+class WandbCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
     Callback[RawT, ProcessedT, BatchT]
 ):
     def __init__(
         self,
-        extra_metrics_getters: list[ExtraMetricsGetter] = [],
+        extra_metrics_getters: list[MirrorMetric] = [],
         log_every_n_steps: int = 1,
         project: str = "mirror",
     ) -> None:

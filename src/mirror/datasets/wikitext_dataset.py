@@ -1,10 +1,12 @@
 from typing import Literal, cast
 
-from datasets import Dataset, DatasetDict
+from datasets import DatasetDict
+from typed_datasets import TypedDataset
 
-from mirror.datasets.dataset_util import load_hf_dataset
+from mirror.datasets.dataset_util import load_hf_dataset, just_text_row
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import TextRow
+from mirror.util import _ds_cache_path_context
 
 hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
@@ -12,7 +14,7 @@ hf_dataset_name = 'wikitext-2-raw-v1'
 
 class WikitextDataset(MirrorDataset[TextRow]):
     @property
-    def ds(self) -> Dataset:
+    def ds(self) -> TypedDataset[TextRow]:
         return self._ds
 
     def __init__(
@@ -29,23 +31,16 @@ class WikitextDataset(MirrorDataset[TextRow]):
         """
         super().__init__()
 
-        self._ds = cast(DatasetDict, load_hf_dataset(
-            hf_dataset_path,
-            hf_dataset_name,
-            self._process,
-        ))[split]
+        raw = cast(DatasetDict, load_hf_dataset(hf_dataset_path, hf_dataset_name))[split]
+        ds = TypedDataset[TextRow](raw)
 
-        if skip:
-            self._ds = self._ds.select(range(skip, len(self._ds)))
-
-        if head:
-            self._ds = self._ds.select(range(head))
-
-    def _process(self, ds: DatasetDict | Dataset) -> DatasetDict | Dataset:
-        return ds.filter(lambda row: len(row['text']) > 0)
-
-    def to_row_type(self, ds_row: dict) -> TextRow:
-        return TextRow(text=ds_row['text'])
+        with _ds_cache_path_context():
+            ds = ds.filter(lambda row: len(row['text']) > 0)
+            if skip:
+                ds = ds.skip(skip)
+            if head:
+                ds = ds.take(head)
+            self._ds = ds.map(just_text_row, remove_columns=list(ds.columns))
 
     def __len__(self) -> int:
         return len(self.ds)

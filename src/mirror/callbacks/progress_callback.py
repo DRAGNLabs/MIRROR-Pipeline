@@ -1,8 +1,9 @@
+from typing import Any, Mapping
 from lightning import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
 
-class ProgressCallback[RawT, ProcessedT, BatchT](
+class ProgressCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
        Callback[RawT, ProcessedT, BatchT]
 ):
     def __init__(self, bar_refresh_interval: int = 5) -> None:
