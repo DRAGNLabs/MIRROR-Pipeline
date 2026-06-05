@@ -65,7 +65,7 @@ class Callback[RawT, ProcessedT, BatchT]:
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: TrainableModel[RawT, ProcessedT, BatchT],
             optimizer: Optimizer,
             loss: float,
             training_run_id: str,
