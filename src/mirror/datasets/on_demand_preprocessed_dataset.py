@@ -1,10 +1,10 @@
 from __future__ import annotations
-from typing import Callable
+from typing import Any, Callable, Mapping
 from torch.utils.data import Dataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 
-class OnDemandPreprocessedDataset[RawT, ProcessedT](Dataset[ProcessedT]):
+class OnDemandPreprocessedDataset[RawT: Mapping[str, Any], ProcessedT](Dataset[ProcessedT]):
     def __init__(
             self, 
             raw_dataset: MirrorDataset[RawT], 

@@ -2,13 +2,16 @@ from pathlib import Path
 from typing import cast
 
 from datasets import Dataset, load_dataset
+from typed_datasets import TypedDataset
+
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import TextRow
+from mirror.util import _ds_cache_path_context
 
 
 class TxtDataset(MirrorDataset[TextRow]):
     @property
-    def ds(self) -> Dataset:
+    def ds(self) -> TypedDataset[TextRow]:
         return self._ds
 
     def __init__(
@@ -19,17 +22,18 @@ class TxtDataset(MirrorDataset[TextRow]):
         """
         Args:
             file_path: path to a .txt file where each line is one example.
-            head: how many examples to include. None includes the whole split.
+            head: how many examples to include. None includes the whole file.
         """
         super().__init__()
 
-        self._ds = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
-        self._ds = self._ds.filter(lambda row: len(row["text"]) > 0)
-        if head:
-            self._ds = self._ds.select(range(head))
+        raw = cast(Dataset, load_dataset("text", data_files=str(file_path), split="train"))
+        ds = TypedDataset[TextRow](raw)
 
-    def to_row_type(self, ds_row: dict) -> TextRow:
-        return TextRow(text=ds_row['text'])
+        with _ds_cache_path_context():
+            ds = ds.filter(lambda row: len(row['text']) > 0)
+            if head:
+                ds = ds.take(head)
+            self._ds = ds
 
     def __len__(self) -> int:
         return len(self.ds)

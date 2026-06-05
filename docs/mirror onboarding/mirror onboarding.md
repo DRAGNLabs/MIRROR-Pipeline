@@ -107,6 +107,7 @@ An example YAML config can be found in [config-example.md](config-example.md).
 This module implements the pipeline's subcommands. The two main subcommands:
 - `fit()` — The main training subcommand. If running on a login node with `job_type=compute`, it submits a training job to the supercomputer; otherwise (i.e. either we're training locally/on a login node, or we're already on a compute node), it executes training directly via `trainer.fit()`.
 - `preprocess()` — Applies a preprocessor to a dataset and caches the result, without running training.
+- `eval` — Runs a set of `MirrorMetric`s against a model and prints the results. Accepts a model, a `metrics` dict (mapping string labels to `MirrorMetric` instances), an optional `checkpoint_path` to load weights before evaluating, and SLURM/device settings. Sets the model to eval mode, then calls `metric.get_metrics(model, fabric)` for each metric and prints each label/result pair.
 
 The `templates/` directory contains `slurm.jinja`, a Jinja2 SBATCH template. When submitting a job from a login node, `subcommands.py` fills in this template and passes the result to `sbatch` to submit a training job to the supercomputer.
 
@@ -288,6 +289,11 @@ Vim is the default editor for commit message files (e.g. git merge).
 - `python src/main.py preprocess --config <config-file>`: Preprocess a dataset without training
     - Useful for preparing data separately before running a training job
     - Requires `--data` and `--preprocessor` to be specified (either in the config file or as command-line arguments)
+
+- `python src/main.py eval --config <config-file>`: Run evaluation metrics on a trained model
+    - Requires a `model` and a `metrics` dict (mapping string labels to `MirrorMetric` instances) to be specified in the config file
+    - Optionally accepts a `checkpoint_path` (a direct path to a `.ckpt` file or FSDP checkpoint directory) to load trained weights before evaluating
+    - Also accepts a `device` (`cpu`/`cuda`) and a `strategy` (Lightning Fabric strategy) for device/distributed configuration
 
 - `python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
     - Jupyter notebooks allow for significantly decreased startup time on repeat job runs

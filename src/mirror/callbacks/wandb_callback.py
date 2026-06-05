@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal, Mapping
 import os
 
 import wandb
@@ -7,7 +7,7 @@ from lightning import Fabric
 
 from mirror.callbacks.callback import Callback
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
+from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 from mirror.util import mirror_data_path
 
@@ -16,19 +16,21 @@ from wandb.sdk.wandb_run import Run as WandbRun
 WandbMode = Literal["online", "offline"]
 
 
-class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+class WandbCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
     Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(
         self,
-        extra_metrics_getters: list[ExtraMetricsGetter] = [],
+        extra_metrics_getters: list[MirrorMetric] = [],
         log_every_n_steps: int = 1,
+        project: str = "mirror",
     ) -> None:
         super().__init__(is_singleton=True)
         self.run: WandbRun | None = None
         self.step = 0
         self.extra_metrics_getters = extra_metrics_getters
         self.log_every_n_steps = log_every_n_steps
+        self.project = project
 
     def on_fit_start(
         self,
@@ -49,7 +51,7 @@ class WandbCallback[RawT, ProcessedT, BatchT, ModelOutputT](
         wandb_dir.mkdir(parents=True, exist_ok=True)
 
         self.run = wandb.init(
-            project="mirror",
+            project=self.project,
             name=training_run_id,
             mode=self._mode(),
             dir=str(wandb_dir),

@@ -1,3 +1,4 @@
+from typing import Any, Mapping
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from mirror.callbacks.callback import Callback
@@ -17,10 +18,5 @@ class TrainerConstructor:
         self.num_nodes = num_nodes
         self.callbacks = callbacks
 
-    def construct_trainer(self) -> Trainer:
-        return Trainer(
-            self.strategy,
-            self.devices,
-            self.num_nodes,
-            self.callbacks,
-        )
+    def construct_trainer[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](self) -> Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
+        return Trainer(self.strategy, self.devices, self.num_nodes, self.callbacks)

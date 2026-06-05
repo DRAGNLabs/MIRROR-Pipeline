@@ -1,10 +1,11 @@
+from typing import Any, Mapping
 from lightning import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
 from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
 from mirror.models.mirror_model import MirrorModel
 
-class ProgressCallback[RawT, ProcessedT, BatchT, ModelOutputT](
+class ProgressCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
        Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(

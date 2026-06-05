@@ -1,0 +1,2 @@
+slurm:
+  job_type: "compute"
