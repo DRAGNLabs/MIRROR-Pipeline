@@ -1,4 +1,8 @@
+from lightning import Fabric
+
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.metrics.mirror_metric import MirrorMetric
+from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.models.mirror_model import MirrorModel
@@ -23,6 +27,7 @@ def fit(
         val_check_interval: int = 1,
         configure_scheduler: ConfigureScheduler | None = None,
         shuffle: bool = True,
+        optimization_strategy: OptimizationStrategy | None = None,
 ):
     trainer.fit(
         model=model,
@@ -38,7 +43,30 @@ def fit(
         val_check_interval=val_check_interval,
         configure_scheduler=configure_scheduler,
         shuffle=shuffle,
+        optimization_strategy=optimization_strategy,
     )
+
+def evaluation(
+        model: MirrorModel,
+        metrics: dict[str, MirrorMetric],
+        fabric: Fabric,
+        checkpoint_path: str | None = None,
+        slurm: SlurmConfig = SlurmConfig(),
+) -> None:
+    model = fabric.setup(model)
+
+    if checkpoint_path:
+        fabric.load(checkpoint_path, {'model': model})
+
+    model.eval()
+
+    results = {}
+    for label, metric in metrics.items():
+        result = metric.get_metrics(model, fabric)
+        results[label] = result
+
+    for label, result in results.items():
+        print(f"{label}: {result}")
 
 def preprocess(
         data: MirrorDataset,

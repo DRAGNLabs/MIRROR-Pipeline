@@ -11,7 +11,7 @@ from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm
 from mirror.models.configuration_llama import LlamaConfig
 from mirror.preprocessors.mirror_llama_preprocessor import MirrorLlamaPreprocessor
-from mirror.types import AttentionMaskBatch, LabeledTokens, LabelsBatch, Loss, StandardBatch, TextRow, TokenBatch, TrainStepOutput
+from mirror.types import LabeledTokens, StandardBatch, TextRow, TrainStepOutput
 
 class MirrorLlamaModel(
     MirrorModel[TextRow, LabeledTokens, StandardBatch, None],

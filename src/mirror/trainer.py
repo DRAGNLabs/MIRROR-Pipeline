@@ -2,7 +2,7 @@ import datetime
 import os
 import warnings
 from itertools import islice
-from typing import Any, List, cast
+from typing import Any, List, Mapping, cast
 
 import torch
 from lightning import Fabric
@@ -18,17 +18,19 @@ from mirror.callbacks.print_step_callback import PrintStepCallback
 from mirror.callbacks.progress_callback import ProgressCallback
 from mirror.callbacks.wandb_callback import WandbCallback
 from mirror.checkpoint_identifier import CheckpointIdentifier
+from mirror.optimization.default_optimization_strategy import DefaultOptimizationStrategy
+from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset, preprocess_dataset
 from mirror.datasets.on_demand_preprocessed_dataset import OnDemandPreprocessedDataset
-from mirror.fabric_util import rank_zero_log
+from mirror.fabric_util import make_fabric, rank_zero_log
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.requeue_monitor import RequeueMonitor
 from mirror.dict_types import StateDict
 
-class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
+class Trainer[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT]:
     def __init__(
             self,
             strategy: Strategy | None = None,
@@ -97,7 +99,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             val_check_interval: int = 1,
             configure_scheduler: ConfigureScheduler | None = None,
             shuffle: bool = True,
+            optimization_strategy: OptimizationStrategy | None = None,
     ):
+        optimization_strategy = optimization_strategy or DefaultOptimizationStrategy()
         training_run_id = datetime.datetime.now().isoformat()
         rank_zero_log(self.fabric, f"Training run ID: {training_run_id}\n")
 
@@ -121,6 +125,7 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             'model': model,
             'optimizer': optimizer,
             'global_step': 0,
+            'optimization_step': 0,
         }
 
         if checkpoint:
@@ -142,14 +147,19 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
             state = self.requeue_monitor.load_requeue_checkpoint_if_present(self.fabric, state)
 
         global_step : int = cast(int, state["global_step"])
+        optimization_step : int = cast(int, state["optimization_step"] or 0)
 
         start_epoch = global_step // n_batches
         start_batch = global_step % n_batches
 
         scheduler = None
         if configure_scheduler is not None:
-            total_training_steps = epochs * len(dataloader)
+            total_training_steps = optimization_strategy.expected_optimization_steps(epochs * len(dataloader))
             scheduler = configure_scheduler(optimizer, total_training_steps)
+            if global_step > 0: # Resuming from checkpoint
+                optimizer._opt_called = True  # type: ignore[attr-defined]
+                for _ in range(global_step):
+                    scheduler.step()
 
         val_dataloader = None
         if val_dataset is not None:
@@ -176,20 +186,32 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
 
                     batch: BatchT = batch
 
-                    optimizer.zero_grad()
                     train_step_output = model.training_step(batch)
                     loss_value = train_step_output.loss.item()
-                    self.fabric.backward(train_step_output.loss)
-                    optimizer.step()
-                    if scheduler is not None:
-                        scheduler.step()
+                    optimizer_stepped = optimization_strategy.step(
+                        fabric=self.fabric,
+                        optimizer=optimizer,
+                        loss=train_step_output.loss,
+                        batch_idx=batch_idx,
+                    )
+                    if optimizer_stepped:
+                        optimization_step += 1
+                        if scheduler is not None:
+                            scheduler.step()
 
                     global_step = epoch_idx * n_batches + batch_idx + 1
                     state['global_step'] = global_step
+                    state['optimization_step'] = optimization_step
 
-                    self.fabric.call('on_train_batch_end', fabric=self.fabric, model=model, optimizer=optimizer,
-                                     loss=loss_value, training_run_id=training_run_id, epochs=epochs, 
-                                     n_batches=n_batches, batch_idx=batch_idx, global_step = global_step)
+                    callback_kwargs = dict(
+                        fabric=self.fabric, model=model, optimizer=optimizer,
+                        loss=loss_value, training_run_id=training_run_id, epochs=epochs,
+                        n_batches=n_batches, batch_idx=batch_idx, global_step=global_step,
+                        optimization_step=optimization_step,
+                    )
+                    if optimizer_stepped:
+                        self.fabric.call('on_optimization_step', **callback_kwargs)
+                    self.fabric.call('on_train_batch_end', **callback_kwargs)
 
                     if self.requeue_monitor:
                         self.requeue_monitor.on_train_batch_end(
@@ -232,15 +254,9 @@ class Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         return total_loss / n_batches
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
-        return Fabric(
-            strategy=strategy,
-            devices=self.devices,
-            num_nodes=self.num_nodes,
-            callbacks=self.callbacks,
-            accelerator=accelerator,
-        )
+        return make_fabric(strategy, accelerator, devices=self.devices, num_nodes=self.num_nodes, callbacks=self.callbacks)
 
-def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
+def separate_singletons[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
         callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
 ) -> tuple[
         List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
@@ -251,7 +267,7 @@ def separate_singletons[RawT, ProcessedT, BatchT, ModelOutputT](
     return singletons, non_singletons
 
 
-def make_dataloader[RawT, ProcessedT, BatchT](
+def make_dataloader[RawT: Mapping[str, Any], ProcessedT, BatchT](
         dataset: MirrorDataset[RawT],
         preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT],
         batch_size: int,
