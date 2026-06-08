@@ -2,9 +2,11 @@ from pathlib import Path
 from typing import cast
 
 from datasets import Dataset, load_dataset
+from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.types import PromptResponseRow, TextRow
+from mirror.util import _ds_cache_path_context
 
 
 class CsvDataset(MirrorDataset[TextRow]):
@@ -17,7 +19,7 @@ class CsvDataset(MirrorDataset[TextRow]):
     """
 
     @property
-    def ds(self) -> Dataset:
+    def ds(self) -> TypedDataset[TextRow]:
         return self._ds
 
     def __init__(
@@ -27,32 +29,33 @@ class CsvDataset(MirrorDataset[TextRow]):
         head: int | None = None,
     ) -> None:
         super().__init__()
-        self._template = template
-        self._ds = cast(Dataset, load_dataset("csv", data_files=str(file_path), split="train"))
-        self._ds = self._ds.filter(lambda row: len(self._render(row)) > 0)
-        if head:
-            self._ds = self._ds.select(range(head))
+        tmpl = template
 
-    def _render(self, row: dict) -> str:
-        return self._template.format(**{k: ("" if v is None else v) for k, v in row.items()})
+        def render(row: dict) -> TextRow:
+            return TextRow(text=tmpl.format(**{k: ("" if v is None else v) for k, v in row.items()}))
 
-    def to_row_type(self, ds_row: dict) -> TextRow:
-        return TextRow(text=self._render(ds_row))
+        raw = cast(Dataset, load_dataset("csv", data_files=str(file_path), split="train"))
+        with _ds_cache_path_context():
+            ds = TypedDataset[TextRow](raw.map(render, remove_columns=raw.column_names))
+            ds = ds.filter(lambda row: len(row['text']) > 0)
+            if head:
+                ds = ds.take(head)
+        self._ds = ds
 
     def __len__(self) -> int:
         return len(self.ds)
 
 
-class CsvSftDataset(MirrorDataset[PromptResponseRow]):
+class CsvInstructDataset(MirrorDataset[PromptResponseRow]):
     """
     Loads a CSV for supervised fine-tuning. Each row produces a
     PromptResponseRow by rendering separate prompt and response templates
     against the CSV columns. The prompt is the user-message content and the
     response is the assistant-message content; role markers and special
-    tokens are added later by the SFT preprocessor's chat template (when
+    tokens are added later by the instruct preprocessor's chat template (when
     the tokenizer has one). Example for a (query, response, sources) CSV:
 
-        CsvSftDataset(
+        CsvInstructDataset(
             file_path,
             prompt_template="{query}\\nSources: {sources}",
             response_template="{response}",
@@ -60,7 +63,7 @@ class CsvSftDataset(MirrorDataset[PromptResponseRow]):
     """
 
     @property
-    def ds(self) -> Dataset:
+    def ds(self) -> TypedDataset[PromptResponseRow]:
         return self._ds
 
     def __init__(
@@ -71,23 +74,23 @@ class CsvSftDataset(MirrorDataset[PromptResponseRow]):
         head: int | None = None,
     ) -> None:
         super().__init__()
-        self._prompt_template = prompt_template
-        self._response_template = response_template
-        self._ds = cast(Dataset, load_dataset("csv", data_files=str(file_path), split="train"))
-        self._ds = self._ds.filter(
-            lambda row: len(self._render(self._response_template, row)) > 0
-        )
-        if head:
-            self._ds = self._ds.select(range(head))
+        ptmpl = prompt_template
+        rtmpl = response_template
 
-    def _render(self, template: str, row: dict) -> str:
-        return template.format(**{k: ("" if v is None else v) for k, v in row.items()})
+        def render(row: dict) -> PromptResponseRow:
+            cleaned = {k: ("" if v is None else v) for k, v in row.items()}
+            return PromptResponseRow(
+                prompt=ptmpl.format(**cleaned),
+                response=rtmpl.format(**cleaned),
+            )
 
-    def to_row_type(self, ds_row: dict) -> PromptResponseRow:
-        return PromptResponseRow(
-            prompt=self._render(self._prompt_template, ds_row),
-            response=self._render(self._response_template, ds_row),
-        )
+        raw = cast(Dataset, load_dataset("csv", data_files=str(file_path), split="train"))
+        with _ds_cache_path_context():
+            ds = TypedDataset[PromptResponseRow](raw.map(render, remove_columns=raw.column_names))
+            ds = ds.filter(lambda row: len(row['response']) > 0)
+            if head:
+                ds = ds.take(head)
+        self._ds = ds
 
     def __len__(self) -> int:
         return len(self.ds)

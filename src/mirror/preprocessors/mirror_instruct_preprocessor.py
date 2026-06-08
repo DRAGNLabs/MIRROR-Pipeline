@@ -7,7 +7,7 @@ from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_token
 from mirror.types import IGNORE_ID, LabeledTokens, PromptResponseRow, StandardBatch, TokenTensor
 
 
-class MirrorSftPreprocessor(
+class MirrorInstructPreprocessor(
     MirrorPreprocessor[PromptResponseRow, LabeledTokens, StandardBatch]
 ):
     """
