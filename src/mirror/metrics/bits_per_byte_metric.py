@@ -8,11 +8,11 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenRow
+from mirror.types import LabeledTokens, StandardBatch, TextRow
 
 
 class BitsPerByteMetric[ModelOutputT](
-    MirrorMetric[TextRow, TokenRow, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT]
+    MirrorMetric[TextRow, LabeledTokens, StandardBatch, ModelOutputT]
 ):
     def __init__(
             self,
@@ -24,7 +24,7 @@ class BitsPerByteMetric[ModelOutputT](
 
     def get_metrics(
             self,
-            model: MirrorModel[TextRow, TokenRow, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT],
+            model: MirrorModel[TextRow, LabeledTokens, StandardBatch, ModelOutputT],
             fabric: Fabric,
     ) -> dict:
         """
