@@ -8,13 +8,13 @@ from typing import Literal, cast
 from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhiteboxTransformer
 from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTransformerExecutor
 from mirror.models.mirror_model import MirrorModel
-from mirror.models.model_util import build_causal_lm, IGNORE_ID
+from mirror.models.model_util import build_causal_lm
 from mirror.models.configuration_llama import LlamaConfig
 from mirror.preprocessors.mirror_llama_preprocessor import MirrorLlamaPreprocessor
-from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenRow, TrainStepOutput
+from mirror.types import LabeledTokens, StandardBatch, TextRow, TrainStepOutput
 
 class MirrorLlamaModel(
-    MirrorModel[TextRow, TokenRow, tuple[TokenBatch, AttentionMaskBatch], None],
+    MirrorModel[TextRow, LabeledTokens, StandardBatch, None],
     HFWhiteboxTransformer
 ):
     def __init__(
@@ -39,15 +39,10 @@ class MirrorLlamaModel(
     @property
     def preprocessor(self) -> MirrorLlamaPreprocessor:
         return self._preprocessor
-   
-    def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> TrainStepOutput[None]:
-        input_ids, attention_mask = batch
-        labels = input_ids
-        if attention_mask is not None:
-            labels = labels.masked_fill(attention_mask == 0, IGNORE_ID)
-        labels = cast(torch.Tensor, labels)
 
-        output = WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute(batch)
+    def training_step(self, batch: StandardBatch) -> TrainStepOutput[None]:
+        input_ids, attention_mask, labels = batch
+        output = WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute((input_ids, attention_mask))
         return TrainStepOutput(loss=output.loss, output=None)
 
     def configure_optimizers(self):

@@ -5,7 +5,7 @@ from typing import cast
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
 from mirror.download_util import assert_can_download
-from mirror.types import TokenBatch, AttentionMaskBatch
+from mirror.types import AttentionMaskBatch, IGNORE_ID, LabeledTokens, LabelsBatch, StandardBatch, TokenBatch
 from mirror.util import get_device, mirror_data_path
 
 tokenizers_path = mirror_data_path / "tokenizers"
@@ -37,10 +37,23 @@ def load_hf_tokenizer(
 
 def collate_tokens(
     tokenizer: PreTrainedTokenizerBase,
-    examples: list[list[int]],
-) -> tuple[TokenBatch, AttentionMaskBatch]:
+    examples: list[LabeledTokens],
+) -> StandardBatch:
     device = get_device()
-    batch = tokenizer.pad({"input_ids": examples}, padding=True, return_tensors="pt").to(device)
-    tokens = cast(TokenBatch, batch["input_ids"])
+    batch = tokenizer.pad(
+        {"input_ids": [e["input_ids"] for e in examples]},
+        padding=True,
+        return_tensors="pt",
+    ).to(device)
+    input_ids = cast(TokenBatch, batch["input_ids"])
     attention_mask = cast(AttentionMaskBatch, batch["attention_mask"])
-    return tokens, attention_mask
+
+    # Pad labels via the same tokenizer.pad call so padding direction/length stay
+    # in sync with input_ids, then overwrite padded positions with IGNORE_ID.
+    padded_labels = cast(LabelsBatch, tokenizer.pad(
+        {"input_ids": [e["labels"] for e in examples]},
+        padding=True,
+        return_tensors="pt",
+    ).to(device)["input_ids"])
+    labels = padded_labels.masked_fill(attention_mask == 0, IGNORE_ID)
+    return input_ids, attention_mask, cast(LabelsBatch, labels)

@@ -1,7 +1,6 @@
 import hashlib
 import os
 from pathlib import Path
-from typing import cast
 
 from tokenizers import ByteLevelBPETokenizer, Tokenizer
 from transformers import PreTrainedTokenizerFast
@@ -10,12 +9,12 @@ from typed_datasets import TypedDataset
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens
-from mirror.types import TokenRow, TokenBatch, AttentionMaskBatch, TextRow
+from mirror.types import LabeledTokens, StandardBatch, TextRow
 
 from mirror.util import _ds_cache_path_context, mirror_data_path
 
 class BPEPreprocessor(
-    MirrorPreprocessor[TextRow, TokenRow, tuple[TokenBatch, AttentionMaskBatch]]
+    MirrorPreprocessor[TextRow, LabeledTokens, StandardBatch]
 ):
     def __init__(self, file_path: Path, vocab_size: int) -> None:
         file_hash = hashlib.md5(str(file_path).encode()).hexdigest()[:8]
@@ -47,22 +46,22 @@ class BPEPreprocessor(
             pad_token="<pad>",
         )
 
-    def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[TokenRow]:
+    def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
         raw_tokenizer = self._raw_tokenizer
 
-        def tokenize(row: TextRow) -> TokenRow:
+        def tokenize(row: TextRow) -> LabeledTokens:
             encoding = raw_tokenizer.encode(row['text'], add_special_tokens=True)
             ids = encoding.ids
             if len(ids) < 2:
                 eos = raw_tokenizer.token_to_id("</s>")
                 ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
-            return {"input_ids": cast(list[int], ids)}
+            return LabeledTokens(input_ids=ids, labels=list(ids))
 
         with _ds_cache_path_context():
             return data_source.ds.map(tokenize, remove_columns=list(data_source.ds.columns))
 
-    def collate(self, examples: list[TokenRow]) -> tuple[TokenBatch, AttentionMaskBatch]:
-        return collate_tokens(self._tokenizer, [e["input_ids"] for e in examples])
+    def collate(self, examples: list[LabeledTokens]) -> StandardBatch:
+        return collate_tokens(self._tokenizer, examples)
 
     @property
     def pad_token_id(self) -> int:
