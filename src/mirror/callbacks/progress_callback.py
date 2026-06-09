@@ -2,16 +2,16 @@ from typing import Any, Mapping
 from lightning import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
-from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
+from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 
-class ProgressCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
+class ProgressCallback[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](
        Callback[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def __init__(
             self,
             bar_refresh_interval: int = 5,
-            extra_metrics_getter: ExtraMetricsGetter | None = None,
+            extra_metrics_getter: MirrorMetric | None = None,
             extra_metrics_every_n_steps: int = 1,
     ) -> None:
         super().__init__(is_singleton=True)
