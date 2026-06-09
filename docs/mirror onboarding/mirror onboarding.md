@@ -155,13 +155,23 @@ Future model interventions will be implemented in this module.
 
 ### Metrics
 
-By default, Wandb (`WandbCallback`) only logs `train/loss`, `val/loss`, and `test/loss`. To log additional per-step values to Wandb, pass a `MirrorMetric` into `WandbCallback`. A `MirrorMetric` is an abstract base class with a single method, `get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict`, which is called once per training step; whatever dict it returns is merged into that step's wandb log alongside `train/loss`.
+By default, things that track metrics (Wandb and the `ProgressCallback` tqdm bar) only show loss. To report additional per-step values, pass an `ExtraMetricsGetter` to whichever callback should consume it. An `ExtraMetricsGetter` is an abstract base class with a single method, `get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict`, which the callback calls as often as specified. The returned dict is merged into the wandb log or the progress bar postfix alongside `loss`.
 
-To change how often `train/loss` and any extra metrics are logged, pass `log_every_n_steps` (defaults to 1) to `WandbCallback`. 
+`WandbCallback` and `ProgressCallback` each take their own `extra_metrics_getter`, so you can give them different metrics, or the same metric at different frequencies. `WandbCallback` computes its getter only on log steps (every `log_every_n_steps`). `ProgressCallback` accepts `extra_metrics_every_n_steps`, defaulting to 1.
 
-Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(MirrorMetric)` reads the model's gradients and returns `{"grad_norm": ...}`; to use it, you would [pass `WandbCallback(extra_metrics_getter=GradNormMetrics())` to the trainer's `callbacks=` list](config-example.md), which will override the default `WandbCallback`.
+(Important implementation note: `get_metrics` must run on every rank, even ranks that won't display the result. Implementations may invoke collectives like `fabric.all_reduce`, and skipping the call on non-zero ranks will deadlock NCCL. Each callback's interval check is deterministic per step, so all ranks call the getter on the same steps.)
 
-`MirrorMetric`s are also used to evaluate model performance and fluency outside of training runs (using the `eval` subcommand). Note that `get_metrics` must be called on every rank in distributed settings — implementations may use collectives like `fabric.all_reduce`, so skipping the call on non-zero ranks will deadlock.
+Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(ExtraMetricsGetter)` computes the global gradient norm and returns `{"grad_norm": ...}`. To log it to wandb every 5 steps:
+
+```yaml
+trainer:
+  callbacks:
+    - class_path: WandbCallback
+      init_args:
+        log_every_n_steps: 5
+        extra_metrics_getter:
+          class_path: GradNormMetrics
+```
 
 ## Pipeline Developer Information
 
