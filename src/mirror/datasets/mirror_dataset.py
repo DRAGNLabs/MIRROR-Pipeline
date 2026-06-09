@@ -24,12 +24,12 @@ def preprocess_dataset[RawT: Mapping[str, Any], ProcessedT](
     preprocessor_function: Callable[[RawT], ProcessedT],
 ) -> Sequence[ProcessedT]:
     def mappable_preprocessor_function(row: dict) -> dict:
-        return {"input_ids": preprocessor_function(dataset.to_row_type(row))}
+        return cast(dict, preprocessor_function(dataset.to_row_type(row)))
 
     with _ds_cache_path_context():
         mapped = dataset.ds.unwrap().map(mappable_preprocessor_function)
 
     print("Preprocessing complete.", file=stderr)
-    mapped.set_format(type="torch", columns=["input_ids"])
+    mapped.set_format(type="torch", columns=["input_ids", "labels"])
 
-    return mapped["input_ids"]
+    return cast(Sequence[ProcessedT], mapped)
