@@ -4,7 +4,7 @@ import signal
 import time
 from subprocess import call
 from types import FrameType
-from typing import cast, Dict, Literal, Any
+from typing import cast, Dict, Literal, Any, Mapping
 
 from lightning import Fabric
 from torch.nn import Module
@@ -26,7 +26,7 @@ def requeue_handoff_path():
 RequeueHandoff = Dict[Literal['previous_training_run_id'], str]
 
 
-class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
+class RequeueMonitor[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT]:
     def __init__(self, fabric: Fabric, requeue_signal: int = signal.SIGHUP) -> None:
         self.requeue_signal = requeue_signal
         self.requeue_signal_recieved = False

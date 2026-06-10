@@ -4,12 +4,14 @@ from pathlib import Path
 
 from tokenizers import ByteLevelBPETokenizer, Tokenizer
 from transformers import PreTrainedTokenizerFast
+from typed_datasets import TypedDataset
 
+from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens
 from mirror.types import LabeledTokens, StandardBatch, TextRow
 
-from mirror.util import mirror_data_path
+from mirror.util import _ds_cache_path_context, mirror_data_path
 
 class BPEPreprocessor(
     MirrorPreprocessor[TextRow, LabeledTokens, StandardBatch]
@@ -44,13 +46,19 @@ class BPEPreprocessor(
             pad_token="<pad>",
         )
 
-    def preprocess_example(self, example: TextRow) -> LabeledTokens:
-        encoding = self._raw_tokenizer.encode(example['text'], add_special_tokens=True)
-        ids = encoding.ids
-        if len(ids) < 2:
-            eos = self._raw_tokenizer.token_to_id("</s>")
-            ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
-        return LabeledTokens(input_ids=ids, labels=list(ids))
+    def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
+        raw_tokenizer = self._raw_tokenizer
+
+        def tokenize(row: TextRow) -> LabeledTokens:
+            encoding = raw_tokenizer.encode(row['text'], add_special_tokens=True)
+            ids = encoding.ids
+            if len(ids) < 2:
+                eos = raw_tokenizer.token_to_id("</s>")
+                ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
+            return LabeledTokens(input_ids=ids, labels=list(ids))
+
+        with _ds_cache_path_context():
+            return data_source.ds.map(tokenize, remove_columns=list(data_source.ds.columns))
 
     def collate(self, examples: list[LabeledTokens]) -> StandardBatch:
         return collate_tokens(self._tokenizer, examples)

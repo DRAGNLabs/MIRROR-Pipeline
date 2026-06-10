@@ -8,11 +8,11 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor
+from mirror.types import LabeledTokens, StandardBatch, TextRow
 
 
 class BitsPerByteMetric[ModelOutputT](
-    MirrorMetric[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT]
+    MirrorMetric[TextRow, LabeledTokens, StandardBatch, ModelOutputT]
 ):
     def __init__(
             self,
@@ -24,7 +24,7 @@ class BitsPerByteMetric[ModelOutputT](
 
     def get_metrics(
             self,
-            model: MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], ModelOutputT],
+            model: MirrorModel[TextRow, LabeledTokens, StandardBatch, ModelOutputT],
             fabric: Fabric,
     ) -> dict:
         """
@@ -33,6 +33,7 @@ class BitsPerByteMetric[ModelOutputT](
         this specific metric, but it does not generalize to bits per byte calculated by others.
         """
         preprocessor = self.preprocessor or model.preprocessor
+        formatted = preprocessor.format_data(self.data)
         local_indices = range(fabric.global_rank, len(self.data), fabric.world_size)
 
         total_bits = 0.0
@@ -41,10 +42,10 @@ class BitsPerByteMetric[ModelOutputT](
         with torch.no_grad():
             for i in local_indices:
                 row: TextRow = self.data[i]
-                tokens = preprocessor.preprocess_example(row)
-                batch = preprocessor.collate([tokens])
+                token_row = formatted[i]
+                batch = preprocessor.collate([token_row])
 
-                num_tokens = len(tokens)
+                num_tokens = len(token_row["input_ids"])
                 num_bytes = len(row['text'].encode('utf-8'))
 
                 loss_nats = model.training_step(batch).loss.item()

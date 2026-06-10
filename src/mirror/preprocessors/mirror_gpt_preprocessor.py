@@ -1,10 +1,13 @@
 from typing import cast
 
 from transformers import PreTrainedTokenizerBase
+from typed_datasets import TypedDataset
 
+from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
 from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
 from mirror.types import LabeledTokens, StandardBatch, TextRow, TokenTensor
+from mirror.util import _ds_cache_path_context
 
 
 
@@ -18,18 +21,25 @@ class MirrorGPTPreprocessor(
             self._tokenizer.pad_token = self._tokenizer.eos_token
         self._max_length = max_length
 
-    def preprocess_example(self, example: TextRow) -> LabeledTokens:
-        ids = self._tokenizer.encode(
-            example['text'],
-            add_special_tokens=True,
-            max_length=self._max_length,
-            truncation=self._max_length is not None,
-        )
-        if len(ids) < 2:
-            eos = self._tokenizer.eos_token_id
-            ids = [eos, eos] if len(ids) == 0 else [*ids, eos] # GPT causal LM loss shifts labels by 1, so seq_len=1 produces zero training targets
-        token_ids = cast(TokenTensor, ids)
-        return LabeledTokens(input_ids=token_ids, labels=list(token_ids))
+    def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
+        tokenizer = self._tokenizer
+        max_length = self._max_length
+
+        def tokenize(row: TextRow) -> LabeledTokens:
+            ids = tokenizer.encode(
+                row['text'],
+                add_special_tokens=True,
+                max_length=max_length,
+                truncation=max_length is not None,
+            )
+            if len(ids) < 2:
+                eos = tokenizer.eos_token_id
+                ids = [eos, eos] if len(ids) == 0 else [*ids, eos] # GPT causal LM loss shifts labels by 1, so seq_len=1 produces zero training targets
+            token_ids = cast(TokenTensor, ids)
+            return LabeledTokens(input_ids=token_ids, labels=list(token_ids))
+
+        with _ds_cache_path_context():
+            return data_source.ds.map(tokenize, remove_columns=list(data_source.ds.columns))
 
     def collate(self, examples: list[LabeledTokens]) -> StandardBatch:
         return collate_tokens(self._tokenizer, examples)

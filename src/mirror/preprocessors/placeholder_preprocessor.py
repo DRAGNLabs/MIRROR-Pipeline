@@ -1,17 +1,23 @@
 from typing import cast
 
 import torch
+from typed_datasets import TypedDataset
 
+from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.util import get_device
+from mirror.util import _ds_cache_path_context, get_device
 from mirror.types import AttentionMaskBatch, LabeledTokens, LabelsBatch, StandardBatch, TextRow, TokenBatch
 
 class PlaceholderPreprocessor(
     MirrorPreprocessor[TextRow, LabeledTokens, StandardBatch]
 ):
-    def preprocess_example(self, example: TextRow) -> LabeledTokens:
-        ids = [1, 2, 3, 4]
-        return LabeledTokens(input_ids=ids, labels=list(ids))
+    def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
+        def to_tokens(row: TextRow) -> LabeledTokens:
+            ids = [1, 2, 3, 4]
+            return LabeledTokens(input_ids=ids, labels=list(ids))
+
+        with _ds_cache_path_context():
+            return data_source.ds.map(to_tokens, remove_columns=list(data_source.ds.columns))
 
     def collate(self, examples: list[LabeledTokens]) -> StandardBatch:
         device = get_device()

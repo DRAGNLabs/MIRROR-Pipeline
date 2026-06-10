@@ -1,4 +1,4 @@
-from typing import cast
+from typing import Any, Mapping, cast
 
 import torch
 from lightning import Fabric
@@ -7,7 +7,7 @@ from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 
 
-class GradNormMetrics[RawT, ProcessedT, BatchT, ModelOutputT](
+class GradNormMetrics[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](
     MirrorMetric[RawT, ProcessedT, BatchT, ModelOutputT]
 ):
     def get_metrics(self, model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], fabric: Fabric) -> dict:

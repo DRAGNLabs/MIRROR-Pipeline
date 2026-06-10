@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, Mapping, TypedDict
 from torch.optim import Optimizer
 
 if TYPE_CHECKING:
@@ -11,7 +11,7 @@ class TextRow(TypedDict):
 class TextLabelRow(TextRow):
   label: str
 
-class StateDict[RawT, ProcessedT, BatchT, ModelOutputT](TypedDict):
+class StateDict[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](TypedDict):
   model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]
   optimizer: Optimizer
   global_step: int | None
