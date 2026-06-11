@@ -8,9 +8,9 @@ from transformers import PreTrainedTokenizerFast
 from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.preprocessors.infer_friendly_preprocessor import InferFriendlyPreprocessor
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.preprocessors.preprocessor_util import collate_tokens
+from mirror.formatters.infer_friendly_preprocessor import InferFriendlyPreprocessor
+from mirror.formatters.mirror_formatter import MirrorFormatter
+from mirror.formatters.formatter_util import collate_tokens
 from mirror.types import LabeledTokens, StandardBatch, TextRow
 
 from mirror.util import _ds_cache_path_context, mirror_data_path
@@ -29,9 +29,9 @@ _CHAT_TEMPLATE = (
 )
 
 
-class BPEPreprocessor(
+class BPEFormatter(
     InferFriendlyPreprocessor,
-    MirrorPreprocessor[TextRow, LabeledTokens, StandardBatch],
+    MirrorFormatter[TextRow, LabeledTokens, StandardBatch],
 ):
     def __init__(self, file_path: Path, vocab_size: int) -> None:
         file_hash = hashlib.md5(f"{str(file_path)}_v1.2".encode()).hexdigest()[:8]

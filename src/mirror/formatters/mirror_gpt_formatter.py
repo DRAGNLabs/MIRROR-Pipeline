@@ -4,18 +4,19 @@ from transformers import PreTrainedTokenizerBase
 from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.preprocessors.infer_friendly_preprocessor import InferFriendlyPreprocessor
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
+from mirror.formatters.infer_friendly_preprocessor import InferFriendlyPreprocessor
+from mirror.formatters.mirror_formatter import MirrorFormatter
+from mirror.formatters.formatter_util import collate_tokens, load_hf_tokenizer
 from mirror.types import LabeledTokens, StandardBatch, TextRow, TokenTensor
 from mirror.util import _ds_cache_path_context
 
-class MirrorLlamaPreprocessor(
+
+class MirrorGPTFormatter(
     InferFriendlyPreprocessor,
-    MirrorPreprocessor[TextRow, LabeledTokens, StandardBatch],
+    MirrorFormatter[TextRow, LabeledTokens, StandardBatch],
 ):
     def __init__(self, max_length: int | None = 2048) -> None:
-        self._hf_model_name = "meta-llama/Llama-3.2-1B-Instruct"
+        self._hf_model_name = "openai-community/gpt2"
         self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(self._hf_model_name)
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
@@ -34,9 +35,9 @@ class MirrorLlamaPreprocessor(
             )
             if len(ids) < 2:
                 eos = tokenizer.eos_token_id
-                ids = [eos, eos] if len(ids) == 0 else [*ids, eos]
+                ids = [eos, eos] if len(ids) == 0 else [*ids, eos] # GPT causal LM loss shifts labels by 1, so seq_len=1 produces zero training targets
             token_ids = cast(TokenTensor, ids)
-            return LabeledTokens(input_ids=(token_ids), labels=list(token_ids))
+            return LabeledTokens(input_ids=token_ids, labels=list(token_ids))
 
         with _ds_cache_path_context():
             return data_source.ds.map(tokenize, remove_columns=list(data_source.ds.columns))

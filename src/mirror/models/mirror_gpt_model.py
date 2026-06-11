@@ -8,7 +8,7 @@ from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhite
 from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTransformerExecutor
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm
-from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
+from mirror.formatters.mirror_gpt_formatter import MirrorGPTFormatter
 from mirror.types import LabeledTokens, StandardBatch, TextRow, TrainStepOutput
 
 
@@ -21,15 +21,15 @@ class MirrorGPTModel(
     def __init__(self, weights: Literal["pretrained", "random"] = "pretrained") -> None:
         super().__init__()
         self._hf_model = cast(GPT2LMHeadModel, build_causal_lm(hf_model_name, weights))
-        self._preprocessor = MirrorGPTPreprocessor()
+        self._formatter = MirrorGPTFormatter()
 
     @property
     def hf_model(self) -> GPT2LMHeadModel:
         return self._hf_model
 
     @property
-    def preprocessor(self) -> MirrorGPTPreprocessor:
-        return self._preprocessor
+    def formatter(self) -> MirrorGPTFormatter:
+        return self._formatter
 
     def training_step(self, batch: StandardBatch) -> TrainStepOutput[None]:
         input_ids, attention_mask, labels = batch
