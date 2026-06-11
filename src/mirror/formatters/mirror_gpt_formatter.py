@@ -4,7 +4,7 @@ from transformers import PreTrainedTokenizerBase
 from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.formatters.infer_friendly_preprocessor import InferFriendlyPreprocessor
+from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.formatters.formatter_util import collate_tokens, load_hf_tokenizer
 from mirror.types import LabeledTokens, StandardBatch, TextRow, TokenTensor
@@ -12,7 +12,7 @@ from mirror.util import _ds_cache_path_context
 
 
 class MirrorGPTFormatter(
-    InferFriendlyPreprocessor,
+    InferFriendlyFormatter,
     MirrorFormatter[TextRow, LabeledTokens, StandardBatch],
 ):
     def __init__(self, max_length: int | None = 2048) -> None:

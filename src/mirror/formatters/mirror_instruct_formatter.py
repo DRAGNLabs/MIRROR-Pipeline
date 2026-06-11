@@ -4,7 +4,7 @@ from transformers import BatchEncoding
 from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.formatters.infer_friendly_preprocessor import InferFriendlyPreprocessor
+from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.formatters.formatter_util import collate_tokens
 from mirror.types import IGNORE_ID, LabeledTokens, PromptResponseRow, StandardBatch, TokenTensor
@@ -23,7 +23,7 @@ class MirrorInstructFormatter(
     sequence with IGNORE_ID over prompt positions.
     """
 
-    def __init__(self, formatter: InferFriendlyPreprocessor, max_length: int | None = 2048) -> None:
+    def __init__(self, formatter: InferFriendlyFormatter, max_length: int | None = 2048) -> None:
         self._tokenizer = formatter.tokenizer
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
