@@ -10,7 +10,7 @@ from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTr
 from mirror.models.mirror_model import MirrorModel
 from mirror.models.model_util import build_causal_lm
 from mirror.models.configuration_llama import LlamaConfig
-from mirror.preprocessors.mirror_llama_preprocessor import MirrorLlamaPreprocessor
+from mirror.formatters.mirror_llama_formatter import MirrorLlamaFormatter
 from mirror.types import LabeledTokens, StandardBatch, TextRow, TrainStepOutput
 
 class MirrorLlamaModel(
@@ -23,7 +23,7 @@ class MirrorLlamaModel(
         seed: int | None = None,
     ) -> None:
         super().__init__()
-        self._preprocessor = MirrorLlamaPreprocessor()
+        self._formatter = MirrorLlamaFormatter()
         if isinstance(initialization, LlamaConfig):
             if seed is not None:
                 torch.manual_seed(seed)
@@ -37,8 +37,8 @@ class MirrorLlamaModel(
         return self._hf_model
 
     @property
-    def preprocessor(self) -> MirrorLlamaPreprocessor:
-        return self._preprocessor
+    def formatter(self) -> MirrorLlamaFormatter:
+        return self._formatter
 
     def training_step(self, batch: StandardBatch) -> TrainStepOutput[None]:
         input_ids, attention_mask, labels = batch

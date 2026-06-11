@@ -1,7 +1,7 @@
 import sys
 from typing import Literal
 
-Subcommand = Literal['fit'] | Literal['test'] | Literal['preprocess'] | Literal['eval']
+Subcommand = Literal['fit'] | Literal['test'] | Literal['format'] | Literal['eval']
 
 
 def main(subcommand: Subcommand):
@@ -22,7 +22,7 @@ def _run(subcommand: Subcommand):
     from mirror.config import init_config
     from mirror.models.mirror_model import MirrorModel
     from mirror.models.model_util import instantiate_model
-    from mirror.subcommands import evaluation, fit, preprocess
+    from mirror.subcommands import evaluation, fit, format
     from mirror.trainer_constructor import TrainerConstructor
     from mirror.util import is_login_node, resolve_config_args
 
@@ -33,7 +33,7 @@ def _run(subcommand: Subcommand):
     import mirror.datasets  # noqa: F401
     import mirror.models  # noqa: F401
     import mirror.optimization  # noqa: F401
-    import mirror.preprocessors  # noqa: F401
+    import mirror.formatters  # noqa: F401
     import mirror.schedulers  # noqa: F401
     import mirror.interventions  # noqa: F401
     import mirror.metrics  # noqa: F401
@@ -79,17 +79,17 @@ def _run(subcommand: Subcommand):
 
             fit(**{**init, "model": model, "trainer": trainer, "run_config_yaml": run_config_yaml})
 
-        case 'preprocess':
+        case 'format':
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_function_arguments(preprocess, as_positional=False)
+            parser.add_function_arguments(format, as_positional=False)
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
             if hasattr(cfg, 'config'):
                 del cfg.config  # pyright: ignore
 
             init = parser.instantiate_classes(cfg)
-            preprocess(**init)
+            format(**init)
 
         case 'eval':
             parser = ArgumentParser()

@@ -3,13 +3,13 @@ from torch.optim import Optimizer
 from torch import nn
 from abc import ABC, abstractmethod
 from mirror.types import TrainStepOutput
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.formatters.mirror_formatter import MirrorFormatter
 
 
-class MirrorModel[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](ABC, nn.Module):
+class MirrorModel[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](ABC, nn.Module):
     @property
     @abstractmethod
-    def preprocessor(self) -> MirrorPreprocessor[RawT, ProcessedT, BatchT]:
+    def formatter(self) -> MirrorFormatter[RawT, FormattedT, BatchT]:
         pass
 
     @abstractmethod

@@ -25,17 +25,17 @@ from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.fabric_util import make_fabric, rank_zero_log
 from mirror.models.mirror_model import MirrorModel
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.requeue_monitor import RequeueMonitor
 from mirror.dict_types import StateDict
 
-class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT]:
+class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT]:
     def __init__(
             self,
             strategy: Strategy | None = None,
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
+            callbacks: List[Callback[RawT, FormattedT, BatchT, ModelOutputT]] = [],
     ) -> None:
         if strategy is None:
             strategy = FSDPStrategy()
@@ -48,7 +48,7 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, Mo
             self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [
+        default_callbacks: List[Callback[RawT, FormattedT, BatchT, ModelOutputT]] = [
             CheckpointCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
@@ -57,7 +57,7 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, Mo
         if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
             default_callbacks.append(PrintStepCallback())
 
-        self.requeue_monitor: RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT] | None = None
+        self.requeue_monitor: RequeueMonitor[RawT, FormattedT, BatchT, ModelOutputT] | None = None
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
         input_singleton_cbs, input_non_singleton_cbs = separate_singletons(callbacks)
@@ -85,9 +85,9 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, Mo
 
     def fit(
             self,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT],
             dataset: MirrorDataset[RawT],
-            preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT] | None = None,
+            formatter: MirrorFormatter[RawT, FormattedT, BatchT] | None = None,
             checkpoint: CheckpointIdentifier | None = None,
             epochs: int = 1,
             batch_size: int = 1,
@@ -103,7 +103,7 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, Mo
         training_run_id = datetime.datetime.now().isoformat()
         rank_zero_log(self.fabric, f"Training run ID: {training_run_id}\n")
 
-        preprocessor = preprocessor or model.preprocessor
+        formatter = formatter or model.formatter
         model, optimizer = self.fabric.setup(
             model,
             model.configure_optimizers(),
@@ -111,7 +111,7 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, Mo
         )
 
 
-        dataloader = make_dataloader(dataset, preprocessor, batch_size,
+        dataloader = make_dataloader(dataset, formatter, batch_size,
                                     shuffle, fabric=self.fabric)
 
         start_epoch = 0
@@ -119,7 +119,7 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, Mo
         
         n_batches = len(dataloader)
 
-        state : StateDict[RawT, ProcessedT, BatchT, ModelOutputT] = {
+        state : StateDict[RawT, FormattedT, BatchT, ModelOutputT] = {
             'model': model,
             'optimizer': optimizer,
             'global_step': 0,
@@ -139,7 +139,7 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, Mo
                     )
 
         if self.config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
-            self.requeue_monitor = RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT](self.fabric)
+            self.requeue_monitor = RequeueMonitor[RawT, FormattedT, BatchT, ModelOutputT](self.fabric)
 
         if self.requeue_monitor:
             state = self.requeue_monitor.load_requeue_checkpoint_if_present(self.fabric, state)
@@ -161,12 +161,12 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, Mo
 
         val_dataloader = None
         if val_dataset is not None:
-            val_dataloader = make_dataloader(val_dataset, preprocessor, batch_size,
+            val_dataloader = make_dataloader(val_dataset, formatter, batch_size,
                                              False, fabric=self.fabric)
 
         test_dataloader = None
         if test_dataset is not None:
-            test_dataloader = make_dataloader(test_dataset, preprocessor, batch_size,
+            test_dataloader = make_dataloader(test_dataset, formatter, batch_size,
                                               False, fabric=self.fabric)
 
         self.fabric.call('on_fit_start', fabric=self.fabric, model=model, optimizer=optimizer, 
@@ -254,29 +254,29 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, Mo
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
         return make_fabric(strategy, accelerator, devices=self.devices, num_nodes=self.num_nodes, callbacks=self.callbacks)
 
-def separate_singletons[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](
-        callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+def separate_singletons[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
+        callbacks: List[Callback[RawT, FormattedT, BatchT, ModelOutputT]]
 ) -> tuple[
-        List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]],
-        List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]]
+        List[Callback[RawT, FormattedT, BatchT, ModelOutputT]],
+        List[Callback[RawT, FormattedT, BatchT, ModelOutputT]]
 ]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]
     return singletons, non_singletons
 
 
-def make_dataloader[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT](
+def make_dataloader[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
         dataset: MirrorDataset[RawT],
-        preprocessor: MirrorPreprocessor[RawT, ProcessedT, BatchT],
+        formatter: MirrorFormatter[RawT, FormattedT, BatchT],
         batch_size: int,
         shuffle: bool,
         fabric: Fabric | None = None,
 ) -> DataLoader:
-    formatted = preprocessor.format_data(dataset)
+    formatted = formatter.format_data(dataset)
     dataloader = DataLoader(
         cast(Dataset, formatted.unwrap()),
         batch_size=batch_size,
-        collate_fn=preprocessor.collate,
+        collate_fn=formatter.collate,
         drop_last=False,
         shuffle=shuffle,
     )

@@ -6,7 +6,7 @@ from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.mirror_model import MirrorModel
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.slurm_util import SlurmConfig
 from mirror.trainer import Trainer
 
@@ -15,7 +15,7 @@ def fit(
         data: MirrorDataset,
         model: MirrorModel,
         trainer: Trainer,
-        preprocessor: MirrorPreprocessor | None = None,
+        formatter: MirrorFormatter | None = None,
         checkpoint: CheckpointIdentifier | None = None,
         slurm: SlurmConfig = SlurmConfig(),
         epochs: int = 1,
@@ -31,7 +31,7 @@ def fit(
     trainer.fit(
         model=model,
         dataset=data,
-        preprocessor=preprocessor,
+        formatter=formatter,
         checkpoint=checkpoint,
         epochs=epochs,
         batch_size=batch_size,
@@ -66,8 +66,8 @@ def evaluation(
     for label, result in results.items():
         print(f"{label}: {result}")
 
-def preprocess(
+def format(
         data: MirrorDataset,
-        preprocessor: MirrorPreprocessor,
+        formatter: MirrorFormatter,
 ) -> None:
-    preprocessor.format_data(data)
+    formatter.format_data(data)

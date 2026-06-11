@@ -5,8 +5,8 @@ from mirror.callbacks.callback import Callback
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 
-class ProgressCallback[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](
-       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+class ProgressCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
+       Callback[RawT, FormattedT, BatchT, ModelOutputT]
 ):
     def __init__(
             self,
