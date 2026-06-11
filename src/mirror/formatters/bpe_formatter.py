@@ -1,24 +1,42 @@
 import hashlib
 import os
 from pathlib import Path
+from typing import cast
 
 from tokenizers import ByteLevelBPETokenizer, Tokenizer
 from transformers import PreTrainedTokenizerFast
 from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.formatters.formatter_util import collate_tokens
 from mirror.types import LabeledTokens, StandardBatch, TextRow
 
 from mirror.util import _ds_cache_path_context, mirror_data_path
 
+_SPECIAL_TOKENS = ["<unk>", "<s>", "</s>", "<pad>", "<|user|>", "<|assistant|>"]
+
+_CHAT_TEMPLATE = (
+    "<s>"
+    "{% for message in messages %}"
+    "{% if message['role'] == 'user' %}"
+    "<|user|>{{ message['content'] }}</s>"
+    "{% elif message['role'] == 'assistant' %}"
+    "{% generation %}<|assistant|>{{ message['content'] }}</s>{% endgeneration %}"
+    "{% endif %}"
+    "{% endfor %}"
+)
+
+
 class BPEFormatter(
-    MirrorFormatter[TextRow, LabeledTokens, StandardBatch]
+    InferFriendlyFormatter,
+    MirrorFormatter[TextRow, LabeledTokens, StandardBatch],
 ):
     def __init__(self, file_path: Path, vocab_size: int) -> None:
-        file_hash = hashlib.md5(str(file_path).encode()).hexdigest()[:8]
-        tokenizer_path = f"{mirror_data_path}/tokenizers/bpe_{file_hash}_{vocab_size}/"
+        file_hash = hashlib.md5(f"{str(file_path)}_v1.2".encode()).hexdigest()[:8]
+        tokens_hash = hashlib.md5(str(_SPECIAL_TOKENS).encode()).hexdigest()[:4]
+        tokenizer_path = f"{mirror_data_path}/tokenizers/bpe_{file_hash}_{vocab_size}_{tokens_hash}/"
         os.makedirs(tokenizer_path, exist_ok=True)
 
         tokenizer_file = tokenizer_path + "tokenizer.json"
@@ -31,7 +49,7 @@ class BPEFormatter(
                 files=[str(file_path)],
                 vocab_size=vocab_size,
                 min_frequency=5,
-                special_tokens=["<unk>", "<s>", "</s>", "<pad>"]
+                special_tokens=_SPECIAL_TOKENS,
             )
             raw_tokenizer.save(tokenizer_file)
 
@@ -44,7 +62,9 @@ class BPEFormatter(
             eos_token="</s>",
             unk_token="<unk>",
             pad_token="<pad>",
+            additional_special_tokens=["<|user|>", "<|assistant|>"],
         )
+        self._tokenizer.chat_template = _CHAT_TEMPLATE
 
     def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
         raw_tokenizer = self._raw_tokenizer
@@ -64,5 +84,9 @@ class BPEFormatter(
         return collate_tokens(self._tokenizer, examples)
 
     @property
+    def tokenizer(self) -> PreTrainedTokenizerFast:
+        return self._tokenizer
+
+    @property
     def pad_token_id(self) -> int:
-        return int(self._tokenizer.pad_token_id)  # type: ignore[arg-type]
+        return int(cast(int, self._tokenizer.pad_token_id))

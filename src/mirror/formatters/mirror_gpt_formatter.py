@@ -4,15 +4,16 @@ from transformers import PreTrainedTokenizerBase
 from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.formatters.formatter_util import collate_tokens, load_hf_tokenizer
 from mirror.types import LabeledTokens, StandardBatch, TextRow, TokenTensor
 from mirror.util import _ds_cache_path_context
 
 
-
 class MirrorGPTFormatter(
-    MirrorFormatter[TextRow, LabeledTokens, StandardBatch]
+    InferFriendlyFormatter,
+    MirrorFormatter[TextRow, LabeledTokens, StandardBatch],
 ):
     def __init__(self, max_length: int | None = 2048) -> None:
         self._hf_model_name = "openai-community/gpt2"
@@ -43,6 +44,10 @@ class MirrorGPTFormatter(
 
     def collate(self, examples: list[LabeledTokens]) -> StandardBatch:
         return collate_tokens(self._tokenizer, examples)
+
+    @property
+    def tokenizer(self) -> PreTrainedTokenizerBase:
+        return self._tokenizer
 
     @property
     def pad_token_id(self) -> int:
