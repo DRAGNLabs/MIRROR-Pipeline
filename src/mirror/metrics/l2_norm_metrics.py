@@ -7,10 +7,10 @@ from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
 
 
-class L2NormMetrics[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](
-    MirrorMetric[RawT, ProcessedT, BatchT, ModelOutputT]
+class L2NormMetrics[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
+    MirrorMetric[RawT, FormattedT, BatchT, ModelOutputT]
 ):
-    def get_metrics(self, model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT], fabric: Fabric) -> dict:
+    def get_metrics(self, model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT], fabric: Fabric) -> dict:
         params = [p.detach() for p in model.parameters()]
         if not params:
             return {"l2_norm": 0.0}

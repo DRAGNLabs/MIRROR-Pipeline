@@ -4,12 +4,12 @@ import torch
 from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.util import _ds_cache_path_context, get_device
 from mirror.types import AttentionMaskBatch, LabeledTokens, LabelsBatch, StandardBatch, TextRow, TokenBatch
 
-class PlaceholderPreprocessor(
-    MirrorPreprocessor[TextRow, LabeledTokens, StandardBatch]
+class PlaceholderFormatter(
+    MirrorFormatter[TextRow, LabeledTokens, StandardBatch]
 ):
     def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
         def to_tokens(row: TextRow) -> LabeledTokens:

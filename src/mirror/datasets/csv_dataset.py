@@ -52,7 +52,7 @@ class CsvInstructDataset(MirrorDataset[PromptResponseRow]):
     PromptResponseRow by rendering separate prompt and response templates
     against the CSV columns. The prompt is the user-message content and the
     response is the assistant-message content; role markers and special
-    tokens are added later by the instruct preprocessor's chat template (when
+    tokens are added later by the instruct formatter's chat template (when
     the tokenizer has one). Example for a (query, response, sources) CSV:
 
         CsvInstructDataset(

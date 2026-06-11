@@ -2,13 +2,13 @@ from typing import cast
 
 from transformers import BatchEncoding, PreTrainedTokenizerBase
 
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
+from mirror.formatters.mirror_formatter import MirrorFormatter
+from mirror.formatters.formatter_util import collate_tokens, load_hf_tokenizer
 from mirror.types import IGNORE_ID, LabeledTokens, PromptResponseRow, StandardBatch, TokenTensor
 
 
-class MirrorInstructPreprocessor(
-    MirrorPreprocessor[PromptResponseRow, LabeledTokens, StandardBatch]
+class MirrorInstructFormatter(
+    MirrorFormatter[PromptResponseRow, LabeledTokens, StandardBatch]
 ):
     """
     Tokenizes prompt and response separately so the loss can be masked on
@@ -25,7 +25,7 @@ class MirrorInstructPreprocessor(
             self._tokenizer.pad_token = self._tokenizer.eos_token
         self._max_length = max_length
 
-    def preprocess_example(self, example: PromptResponseRow) -> LabeledTokens:
+    def format_example(self, example: PromptResponseRow) -> LabeledTokens:
         prompt_ids, response_ids = self._tokenize_split(example)
         input_ids = prompt_ids + response_ids
         labels = [IGNORE_ID] * len(prompt_ids) + response_ids

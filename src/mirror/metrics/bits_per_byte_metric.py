@@ -7,7 +7,7 @@ from lightning import Fabric
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.mirror_model import MirrorModel
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.types import LabeledTokens, StandardBatch, TextRow
 
 
@@ -17,10 +17,10 @@ class BitsPerByteMetric[ModelOutputT](
     def __init__(
             self,
             data: MirrorDataset,
-            preprocessor: MirrorPreprocessor | None = None,
+            formatter: MirrorFormatter | None = None,
     ) -> None:
         self.data = data
-        self.preprocessor = preprocessor
+        self.formatter = formatter
 
     def get_metrics(
             self,
@@ -32,8 +32,8 @@ class BitsPerByteMetric[ModelOutputT](
         the length of the row - 1. It is still a useful metric for comparing models by running them through
         this specific metric, but it does not generalize to bits per byte calculated by others.
         """
-        preprocessor = self.preprocessor or model.preprocessor
-        formatted = preprocessor.format_data(self.data)
+        formatter = self.formatter or model.formatter
+        formatted = formatter.format_data(self.data)
         local_indices = range(fabric.global_rank, len(self.data), fabric.world_size)
 
         total_bits = 0.0
@@ -43,7 +43,7 @@ class BitsPerByteMetric[ModelOutputT](
             for i in local_indices:
                 row: TextRow = self.data[i]
                 token_row = formatted[i]
-                batch = preprocessor.collate([token_row])
+                batch = formatter.collate([token_row])
 
                 num_tokens = len(token_row["input_ids"])
                 num_bytes = len(row['text'].encode('utf-8'))

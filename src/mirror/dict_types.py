@@ -11,8 +11,8 @@ class TextRow(TypedDict):
 class TextLabelRow(TextRow):
   label: str
 
-class StateDict[RawT: Mapping[str, Any], ProcessedT: Mapping[str, Any], BatchT, ModelOutputT](TypedDict):
-  model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]
+class StateDict[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](TypedDict):
+  model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT]
   optimizer: Optimizer
   global_step: int | None
   optimization_step: int | None
