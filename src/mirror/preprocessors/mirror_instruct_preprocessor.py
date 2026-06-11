@@ -1,10 +1,14 @@
 from typing import cast
 
-from transformers import BatchEncoding, PreTrainedTokenizerBase
+from transformers import BatchEncoding
+from typed_datasets import TypedDataset
 
+from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.preprocessors.infer_friendly_preprocessor import InferFriendlyPreprocessor
 from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
-from mirror.preprocessors.preprocessor_util import collate_tokens, load_hf_tokenizer
+from mirror.preprocessors.preprocessor_util import collate_tokens
 from mirror.types import IGNORE_ID, LabeledTokens, PromptResponseRow, StandardBatch, TokenTensor
+from mirror.util import _ds_cache_path_context
 
 
 class MirrorInstructPreprocessor(
@@ -19,8 +23,8 @@ class MirrorInstructPreprocessor(
     sequence with IGNORE_ID over prompt positions.
     """
 
-    def __init__(self, hf_model_name: str, max_length: int | None = 2048) -> None:
-        self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(hf_model_name)
+    def __init__(self, preprocessor: InferFriendlyPreprocessor, max_length: int | None = 2048) -> None:
+        self._tokenizer = preprocessor.tokenizer
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
         self._max_length = max_length
@@ -48,7 +52,7 @@ class MirrorInstructPreprocessor(
                 return_assistant_tokens_mask=True,
             ))
             full_ids = list(cast(list[int], out["input_ids"]))
-            mask = cast(list[int], out["assistant_tokens_mask"])
+            mask = cast(list[int], out["assistant_masks"])
             split = next((i for i, m in enumerate(mask) if m == 1), len(full_ids))
             return full_ids[:split], full_ids[split:]
 
@@ -58,6 +62,11 @@ class MirrorInstructPreprocessor(
         if eos_id is not None and (len(response_ids) == 0 or response_ids[-1] != eos_id):
             response_ids = [*response_ids, eos_id]
         return cast(TokenTensor, list(prompt_ids)), cast(TokenTensor, list(response_ids))
+
+    def format_data(self, data_source: MirrorDataset[PromptResponseRow]) -> TypedDataset[LabeledTokens]:
+        preprocess = self.preprocess_example
+        with _ds_cache_path_context():
+            return data_source.ds.map(preprocess, remove_columns=list(data_source.ds.columns))
 
     def collate(self, examples: list[LabeledTokens]) -> StandardBatch:
         return collate_tokens(self._tokenizer, examples)
