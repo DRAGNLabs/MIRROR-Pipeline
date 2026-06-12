@@ -1,5 +1,4 @@
 import sys
-from typing import cast
 
 from lightning import Fabric
 from lightning.fabric.connector import _PRECISION_INPUT
@@ -12,7 +11,7 @@ def make_fabric(
         devices: int = 1,
         num_nodes: int = 1,
         callbacks: list = [],
-        precision: str | None = None,
+        precision: _PRECISION_INPUT | None = None,
 ) -> Fabric:
     return Fabric(
         strategy=strategy,
@@ -20,7 +19,7 @@ def make_fabric(
         num_nodes=num_nodes,
         callbacks=callbacks,
         accelerator=accelerator,
-        precision=cast("_PRECISION_INPUT | None", precision),
+        precision=precision,
     )
 
 

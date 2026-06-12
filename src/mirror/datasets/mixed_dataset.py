@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from typed_datasets import TypedDataset, concatenate
 
@@ -9,14 +9,9 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 
 
 class MixedDataset[RawT: Mapping[str, Any]](MirrorDataset[RawT]):
-    # NOTE: parallel `datasets` + `weights` lists rather than the upstream
-    # `weighted_datasets: Sequence[tuple[MirrorDataset, float]]` — jsonargparse can't
-    # resolve a generic `MirrorDataset[RawT]` nested inside a tuple, so the tuple form
-    # fails to parse from YAML. See the SSP mixed config.
     def __init__(
         self,
-        datasets: list[MirrorDataset],
-        weights: list[float] | None = None,
+        weighted_datasets: Sequence[tuple[MirrorDataset, float]],
         start_fraction: float = 0.0,
         end_fraction: float = 1.0,
     ) -> None:
@@ -24,18 +19,14 @@ class MixedDataset[RawT: Mapping[str, Any]](MirrorDataset[RawT]):
 
         if not 0.0 <= start_fraction <= end_fraction <= 1.0:
             raise ValueError(f"Invalid fractions: start={start_fraction}, end={end_fraction}")
-        if weights is None:
-            weights = [1.0] * len(datasets)
-        if len(weights) != len(datasets):
-            raise ValueError(f"weights ({len(weights)}) and datasets ({len(datasets)}) must align")
 
-        total_weight = sum(weights)
-        normalized_weights = [w / total_weight for w in weights]
-        scale = max(len(ds) / w for ds, w in zip(datasets, normalized_weights))
+        total_weight = sum(w for _, w in weighted_datasets)
+        normalized_weights = [w / total_weight for _, w in weighted_datasets]
+        scale = max(len(ds) / w for (ds, _), w in zip(weighted_datasets, normalized_weights))
 
         selected: list[TypedDataset[RawT]] = []
 
-        for ds, w in zip(datasets, normalized_weights):
+        for (ds, _), w in zip(weighted_datasets, normalized_weights):
             target_count = math.ceil(scale * w)
             start = int(start_fraction * target_count)
             end = int(end_fraction * target_count)

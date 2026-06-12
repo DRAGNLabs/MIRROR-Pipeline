@@ -1,4 +1,5 @@
 from typing import Any, Mapping
+from lightning.fabric.connector import _PRECISION_INPUT
 from lightning.fabric.strategies.strategy import Strategy
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from mirror.callbacks.callback import Callback
@@ -12,13 +13,13 @@ class TrainerConstructor:
             devices: int = 1,
             num_nodes: int = 1,
             callbacks: list[Callback] = [],
-            precision: str | None = None,
+            precision: _PRECISION_INPUT | None = None,
     ) -> None:
         self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
         self.callbacks = callbacks
-        self.precision = precision
+        self.precision: _PRECISION_INPUT | None = precision
 
     def construct_trainer[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](self) -> Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
         return Trainer(self.strategy, self.devices, self.num_nodes, self.callbacks, self.precision)

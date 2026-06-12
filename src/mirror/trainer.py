@@ -6,6 +6,7 @@ from typing import Any, List, Mapping, cast
 
 import torch
 from lightning import Fabric
+from lightning.fabric.connector import _PRECISION_INPUT
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 from lightning.fabric.strategies.strategy import Strategy
@@ -37,9 +38,9 @@ class Trainer[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT]:
             devices: int = 1,
             num_nodes: int = 1,
             callbacks: List[Callback[RawT, ProcessedT, BatchT, ModelOutputT]] = [],
-            precision: str | None = None,
+            precision: _PRECISION_INPUT | None = None,
     ) -> None:
-        self.precision = precision
+        self.precision: _PRECISION_INPUT | None = precision
         if strategy is None:
             strategy = FSDPStrategy()
 
