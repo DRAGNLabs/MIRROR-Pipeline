@@ -33,10 +33,10 @@ val_check_interval: 1.0         # Run validation every N epochs (1.0 = every epo
 #     file_path: data/my_corpus.txt  # Path to a plain-text file (one example per line)
 #     head: null
 
-do_preprocess: true     # Preprocess the whole dataset upfront (true) vs. on-the-fly (false)
+do_format: true     # Format the whole dataset upfront (true) vs. on-the-fly (false)
 
-preprocessor:      # Tokenizer/preprocessor (optional; auto-selected from model if omitted)
-  class_path: MirrorLlamaPreprocessor  # MirrorLlamaPreprocessor | MirrorGPTPreprocessor
+formatter:      # Tokenizer/formatter (optional; auto-selected from model if omitted)
+  class_path: MirrorLlamaFormatter  # MirrorLlamaFormatter | MirrorGPTFormatter
 
 model:
   class_path: mirror.models.mirror_llama_model.MirrorLlamaModel  # mirror.models.mirror_gpt_model.MirrorGPTModel
@@ -76,6 +76,10 @@ trainer:
           class_path: GradNormMetrics
     - class_path: ConfigSnapshotCallback # Snapshot the config file alongside each checkpoint
     - class_path: ProgressCallback       # Print live loss / progress to stdout
+      init_args:
+        extra_metrics_every_n_steps: 1   # Recompute extra metrics every N steps for the postfix
+        # extra_metrics_getter:          # Optional getter, independent from WandbCallback's
+        #   class_path: GradNormMetrics
 
 # checkpoint:
 #   training_run_id: "20240101_120000"   # ID of the run to resume from

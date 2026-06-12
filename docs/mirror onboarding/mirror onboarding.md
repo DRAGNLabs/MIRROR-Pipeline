@@ -84,10 +84,10 @@ The MIRROR pipeline follows a modular architecture where each component handles 
 
 ```
 main.py (CLI entry point)
-  → subcommands.py (routes to pipelines such as `fit` or `preprocess`)
+  → subcommands.py (routes to pipelines such as `fit` or `format`)
     → trainer.py (orchestrates the training loop)
       → Datasets (load raw data, e.g. text)
-      → Preprocessors (convert raw data into model-compatible format, e.g. by tokenizing and padding)
+      → Formatters (convert raw data into model-compatible format, e.g. by tokenizing and padding)
       → Models (compute forward passes)
       → Callbacks (handle checkpointing, logging, progress, etc.)
 ```
@@ -98,7 +98,7 @@ On a login node, the pipeline downloads required assets (like tokenizers/models)
 
 This is the entry point for the pipeline. It parses command-line arguments/YAML config files, then routes to the appropriate subcommand.
 
-A first parse determines which subcommand was invoked. `jsonargparse` is then used to load arguments from a YAML config file and instantiate the appropriate `MirrorModel`, `MirrorPreprocessor`, etc. On login nodes, the script downloads the model/tokenizer and submits the job to a compute node. On compute nodes, it calls `fit()` directly.
+A first parse determines which subcommand was invoked. `jsonargparse` is then used to load arguments from a YAML config file and instantiate the appropriate `MirrorModel`, `MirrorFormatter`, etc. On login nodes, the script downloads the model/tokenizer and submits the job to a compute node. On compute nodes, it calls `fit()` directly.
 
 An example YAML config can be found in [config-example.md](config-example.md).
 
@@ -106,7 +106,7 @@ An example YAML config can be found in [config-example.md](config-example.md).
 
 This module implements the pipeline's subcommands. The two main subcommands:
 - `fit()` — The main training subcommand. If running on a login node with `job_type=compute`, it submits a training job to the supercomputer; otherwise (i.e. either we're training locally/on a login node, or we're already on a compute node), it executes training directly via `trainer.fit()`.
-- `preprocess()` — Applies a preprocessor to a dataset and caches the result, without running training.
+- `format()` — Applies a formatter to a dataset and caches the result, without running training.
 - `eval` — Runs a set of `MirrorMetric`s against a model and prints the results. Accepts a model, a `metrics` dict (mapping string labels to `MirrorMetric` instances), an optional `checkpoint_path` to load weights before evaluating, and SLURM/device settings. Sets the model to eval mode, then calls `metric.get_metrics(model, fabric)` for each metric and prints each label/result pair.
 
 The `templates/` directory contains `slurm.jinja`, a Jinja2 SBATCH template. When submitting a job from a login node, `subcommands.py` fills in this template and passes the result to `sbatch` to submit a training job to the supercomputer.
@@ -115,7 +115,7 @@ The `templates/` directory contains `slurm.jinja`, a Jinja2 SBATCH template. Whe
 
 The `Trainer` class drives the training loop, built on top of PyTorch Lightning Fabric to support training distributed across nodes/GPUs. 
 
-The `fit()` method is the most important part of the class. It accepts a model, dataset, preprocessor, optional checkpoint, and training hyperparameters (epochs, batch size, etc.), as well as optional validation and test datasets. It begins by setting up the model and optimizer with Fabric, then builds the training dataloader (and optionally validation/test dataloaders). If a checkpoint is provided, it resumes training from that checkpoint. 
+The `fit()` method is the most important part of the class. It accepts a model, dataset, formatter, optional checkpoint, and training hyperparameters (epochs, batch size, etc.), as well as optional validation and test datasets. It begins by setting up the model and optimizer with Fabric, then builds the training dataloader (and optionally validation/test dataloaders). If a checkpoint is provided, it resumes training from that checkpoint. 
 
 The core loop iterates over epochs and batches: for each batch it zeroes gradients, calls `model.training_step(batch)` to get the loss, backpropagates via Fabric, and steps the optimizer.
 
@@ -123,19 +123,19 @@ The core loop iterates over epochs and batches: for each batch it zeroes gradien
 
 Datasets provide a unified interface for loading data, such as text rows, or other types of data (e.g., the [MCQA repository](https://github.com/DRAGNLabs/MIRROR-MCQA-Decisions) uses McqaRows). They all extend `MirrorDataset`, a generic typed class built on top of PyTorch's `Dataset`.
 
-Available datasets include the HuggingFace datasets `ImdbDataset` and `WikitextDataset`, which must be downloaded once using HuggingFace credentials, and thereafter will be automatically cached locally. `TxtDataset` allows plain text files, such as the Church Text Dataset, to be used as datasets as well. `OnDemandPreprocessedDataset` is a wrapper that supports "lazily" preprocessing a dataset on-the-fly rather than upfront (useful for memory efficiency).
+Available datasets include the HuggingFace datasets `ImdbDataset` and `WikitextDataset`, which must be downloaded once using HuggingFace credentials, and thereafter will be automatically cached locally. `TxtDataset` allows plain text files, such as the Church Text Dataset, to be used as datasets as well. `OnDemandFormattedDataset` is a wrapper that supports "lazily" formatting a dataset on-the-fly rather than upfront (useful for memory efficiency).
 
-### Preprocessors
+### Formatters
 
-Preprocessors convert raw data into a format suitable for model training. They extend `MirrorPreprocessor`, which defines two methods: `preprocess_example(example)` (usually converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together into a single object).
+Formatters convert raw data into a format suitable for model training. They extend `MirrorFormatter`, which defines two methods: `format_example(example)` (usually converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together into a single object).
 
-Each model has its own preprocessor because each model architecture uses a distinct tokenizer and vocab size. For example, GPT-2 has `vocab_size = 50257` while Llama 3.2-1B has `vocab_size = 128256`, so they each have their own preprocessor with the correct vocab size. However, preprocessors can be mixed and matched as long as the vocab sizes match — for example, you could use a custom Llama config with `vocab_size = 50257` and pair it with `MirrorGPTPreprocessor` instead.
+Each model has its own formatter because each model architecture uses a distinct tokenizer and vocab size. For example, GPT-2 has `vocab_size = 50257` while Llama 3.2-1B has `vocab_size = 128256`, so they each have their own formatter with the correct vocab size. However, formatters can be mixed and matched as long as the vocab sizes match — for example, you could use a custom Llama config with `vocab_size = 50257` and pair it with `MirrorGPTFormatter` instead.
 
 Tokenizers are downloaded/cached just like models and datasets.
 
 ### Models
 
-This is where specific model implementations lie. Each extends the `MirrorModel` class, requiring a `preprocessor` property, a `training_step(batch)` method that returns a loss, and a `configure_optimizers()` method.
+This is where specific model implementations lie. Each extends the `MirrorModel` class, requiring a `formatter` property, a `training_step(batch)` method that returns a loss, and a `configure_optimizers()` method.
 
 Models are downloaded and cached similarly to datasets.
 
@@ -155,13 +155,23 @@ Future model interventions will be implemented in this module.
 
 ### Metrics
 
-By default, Wandb (`WandbCallback`) only logs `train/loss`, `val/loss`, and `test/loss`. To log additional per-step values to Wandb, pass a `MirrorMetric` into `WandbCallback`. A `MirrorMetric` is an abstract base class with a single method, `get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict`, which is called once per training step; whatever dict it returns is merged into that step's wandb log alongside `train/loss`.
+By default, things that track metrics (Wandb and the `ProgressCallback` tqdm bar) only show loss. To report additional per-step values, pass a `MirrorMetric` to whichever callback should consume it. A `MirrorMetric` is an abstract base class with a single method, `get_metrics(self, model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT], fabric: Fabric) -> dict`, which the callback calls as often as specified. The returned dict is merged into the wandb log or the progress bar postfix alongside `loss`.
 
-To change how often `train/loss` and any extra metrics are logged, pass `log_every_n_steps` (defaults to 1) to `WandbCallback`. 
+`WandbCallback` and `ProgressCallback` each take their own `extra_metrics_getter`, so you can give them different metrics, or the same metric at different frequencies. `WandbCallback` computes its getter only on log steps (every `log_every_n_steps`). `ProgressCallback` accepts `extra_metrics_every_n_steps`, defaulting to 1.
 
-Subclasses live in `mirror/metrics/`. For example, `GradNormMetrics(MirrorMetric)` reads the model's gradients and returns `{"grad_norm": ...}`; to use it, you would [pass `WandbCallback(extra_metrics_getter=GradNormMetrics())` to the trainer's `callbacks=` list](config-example.md), which will override the default `WandbCallback`.
+(Important implementation note: `get_metrics` must run on every rank, even ranks that won't display the result. Implementations may invoke collectives like `fabric.all_reduce`, and skipping the call on non-zero ranks will deadlock NCCL. Each callback's interval check is deterministic per step, so all ranks call the getter on the same steps.)
 
-`MirrorMetric`s are also used to evaluate model performance and fluency outside of training runs (using the `eval` subcommand). Note that `get_metrics` must be called on every rank in distributed settings — implementations may use collectives like `fabric.all_reduce`, so skipping the call on non-zero ranks will deadlock.
+Subclasses live in `mirror/metrics/`. For example, `GradNormMetric(MirrorMetric)` computes the global gradient norm and returns `{"grad_norm": ...}`. To log it to wandb every 5 steps:
+
+```yaml
+trainer:
+  callbacks:
+    - class_path: WandbCallback
+      init_args:
+        log_every_n_steps: 5
+        extra_metrics_getter:
+          class_path: GradNormMetrics
+```
 
 ## Pipeline Developer Information
 
@@ -271,14 +281,14 @@ Vim is the default editor for commit message files (e.g. git merge).
 ### MIRROR Pipeline
 
 - `python src/main.py fit --config <config-file>`: Train a model using settings from a config file
-    - The config file specifies the dataset, model, preprocessor, training parameters, and SLURM settings
+    - The config file specifies the dataset, model, formatter, training parameters, and SLURM settings
         - Config files for personal use should be placed in `configs/user_configs/`, where they will be gitignored and resolved automatically when passed to `--config` by filename
         - `configs/demo_configs/` holds shared demo configs, and `configs/test_configs/` holds configs used by GitHub Actions PR tests
     - You can also pass arguments directly, e.g. `python src/main.py fit --data.class_path WikitextDataset --model.class_path MirrorLlamaModel --epochs 1 --batch_size 1`
 
-- `python src/main.py preprocess --config <config-file>`: Preprocess a dataset without training
+- `python src/main.py format --config <config-file>`: Format a dataset without training
     - Useful for preparing data separately before running a training job
-    - Requires `--data` and `--preprocessor` to be specified (either in the config file or as command-line arguments)
+    - Requires `--data` and `--formatter` to be specified (either in the config file or as command-line arguments)
 
 - `python src/main.py eval --config <config-file>`: Run evaluation metrics on a trained model
     - Requires a `model` and a `metrics` dict (mapping string labels to `MirrorMetric` instances) to be specified in the config file
@@ -369,19 +379,19 @@ test_data: # Test set - will be run at the end of the training run
     ... # etc
 ```
 
-#### Deciding how the data will be preprocessed
+#### Deciding how the data will be formatted
 
-The model's own preprocessor will be used by default, but it can be overridden (see [Preprocessors](#preprocessors)):
+The model's own formatter will be used by default, but it can be overridden (see [Formatters](#formatters)):
 
 ```yaml
-preprocessor:
-    class_path: <class_path> # e.g. MirrorLlamaPreprocessor
+formatter:
+    class_path: <class_path> # e.g. MirrorLlamaFormatter
 ```
 
-To preprocess up front rather than on-the-fly:
+To format up front rather than on-the-fly:
 
 ```yaml
-do_preprocess: True # False by default
+do_format: True # False by default
 ``` 
 
 #### Setting up SLURM job/training run settings
@@ -415,7 +425,7 @@ Run the following command:
 
 `python src/main.py fit --config <configfilename>.yaml`
 
-Replace `fit` with `preprocess` if you are just trying to do a preprocessing run. It's smart to make a separate config file for preprocessing, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your preprocessing config file for preprocessing runs.
+Replace `fit` with `format` if you are just trying to do a formatting run. It's smart to make a separate config file for formatting, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your formatting config file for formatting runs.
 
 ### Pre-Pull Request Checklist
 

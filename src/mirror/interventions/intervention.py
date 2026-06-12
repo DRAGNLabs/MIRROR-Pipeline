@@ -1,21 +1,22 @@
+from typing import Any, Mapping
 from torch.optim import Optimizer
 import torch.nn as nn
 
 from mirror.models.mirror_model import MirrorModel
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.types import TrainStepOutput
 
 
-class Intervention[RawT, ProcessedT, BatchT, ModelOutputT](
-    MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]
+class Intervention[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
+    MirrorModel[RawT, FormattedT, BatchT, ModelOutputT]
 ):
-    def __init__(self, target: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]):
+    def __init__(self, target: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT]):
         super().__init__()
         self.target = target
 
     @property
-    def preprocessor(self) -> MirrorPreprocessor[RawT, ProcessedT, BatchT]:
-        return self.target.preprocessor
+    def formatter(self) -> MirrorFormatter[RawT, FormattedT, BatchT]:
+        return self.target.formatter
 
     def training_step(self, batch: BatchT) -> TrainStepOutput[ModelOutputT]:
         return self.target.training_step(batch)

@@ -4,7 +4,7 @@ import signal
 import time
 from subprocess import call
 from types import FrameType
-from typing import cast, Dict, Literal, Any
+from typing import cast, Dict, Literal, Any, Mapping
 
 from lightning import Fabric
 from torch.nn import Module
@@ -26,7 +26,7 @@ def requeue_handoff_path():
 RequeueHandoff = Dict[Literal['previous_training_run_id'], str]
 
 
-class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
+class RequeueMonitor[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT]:
     def __init__(self, fabric: Fabric, requeue_signal: int = signal.SIGHUP) -> None:
         self.requeue_signal = requeue_signal
         self.requeue_signal_recieved = False
@@ -42,7 +42,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
             self,
             *,
             fabric: Fabric,
-            state: StateDict[RawT, ProcessedT, BatchT, ModelOutputT],
+            state: StateDict[RawT, FormattedT, BatchT, ModelOutputT],
             training_run_id: str,
     ):
         self._warn_if_iteration_too_long(fabric)
@@ -56,8 +56,8 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
     def load_requeue_checkpoint_if_present(
             self,
             fabric: Fabric,
-            state: StateDict[RawT, ProcessedT, BatchT, ModelOutputT],
-    ) -> StateDict[RawT, ProcessedT, BatchT, ModelOutputT]:
+            state: StateDict[RawT, FormattedT, BatchT, ModelOutputT],
+    ) -> StateDict[RawT, FormattedT, BatchT, ModelOutputT]:
         path = requeue_handoff_path()
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -79,7 +79,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT, ModelOutputT]:
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            state: StateDict[RawT, ProcessedT, BatchT, ModelOutputT],
+            state: StateDict[RawT, FormattedT, BatchT, ModelOutputT],
             training_run_id: str,
     ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')

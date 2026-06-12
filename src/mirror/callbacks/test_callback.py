@@ -1,8 +1,8 @@
 from typing import Any, Mapping
 from mirror.callbacks.callback import Callback
 
-class TestCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
-       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+class TestCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
+       Callback[RawT, FormattedT, BatchT, ModelOutputT]
 ):
     def __init__(self, is_singleton = False, test_variable: bool = False) -> None: 
         super().__init__(is_singleton=True) 

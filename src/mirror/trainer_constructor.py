@@ -21,5 +21,5 @@ class TrainerConstructor:
         self.callbacks = callbacks
         self.precision: _PRECISION_INPUT | None = precision
 
-    def construct_trainer[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](self) -> Trainer[RawT, ProcessedT, BatchT, ModelOutputT]:
+    def construct_trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](self) -> Trainer[RawT, FormattedT, BatchT, ModelOutputT]:
         return Trainer(self.strategy, self.devices, self.num_nodes, self.callbacks, self.precision)

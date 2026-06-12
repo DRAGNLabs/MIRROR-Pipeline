@@ -7,8 +7,8 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.models.mirror_model import MirrorModel
 from mirror.dict_types import StateDict
 
-class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutputT](
-       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+class CheckpointCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
+       Callback[RawT, FormattedT, BatchT, ModelOutputT]
 ):
     def __init__(self, every_n_training_steps: int | None = None) -> None:
         super().__init__(is_singleton=True)
@@ -18,7 +18,7 @@ class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutpu
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
             **kwargs,
@@ -36,7 +36,7 @@ class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutpu
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
     ):
@@ -53,7 +53,7 @@ class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutpu
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             training_run_id: str,
             epochs: int,
@@ -77,13 +77,13 @@ class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT, ModelOutpu
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT],
             optimizer: Optimizer,
             checkpoint_identifier: CheckpointIdentifier,
             global_step: int | None,
             optimization_step: int | None,
     ):
-        state : StateDict[RawT, ProcessedT, BatchT, ModelOutputT] = {
+        state : StateDict[RawT, FormattedT, BatchT, ModelOutputT] = {
             'model': model,
             'optimizer': optimizer,
             'global_step': global_step,
