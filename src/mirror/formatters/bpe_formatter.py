@@ -33,7 +33,8 @@ class BPEFormatter(
     InferFriendlyFormatter,
     MirrorFormatter[TextRow, LabeledTokens, StandardBatch],
 ):
-    def __init__(self, file_path: Path, vocab_size: int) -> None:
+    def __init__(self, file_path: Path, vocab_size: int, max_length: int | None = None) -> None:
+        self._max_length = max_length
         file_hash = hashlib.md5(f"{str(file_path)}_v1.2".encode()).hexdigest()[:8]
         tokens_hash = hashlib.md5(str(_SPECIAL_TOKENS).encode()).hexdigest()[:4]
         tokenizer_path = f"{mirror_data_path}/tokenizers/bpe_{file_hash}_{vocab_size}_{tokens_hash}/"
@@ -68,10 +69,13 @@ class BPEFormatter(
 
     def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
         raw_tokenizer = self._raw_tokenizer
+        max_length = self._max_length
 
         def tokenize(row: TextRow) -> LabeledTokens:
             encoding = raw_tokenizer.encode(row['text'], add_special_tokens=True)
             ids = encoding.ids
+            if max_length is not None:
+                ids = ids[:max_length]
             if len(ids) < 2:
                 eos = raw_tokenizer.token_to_id("</s>")
                 ids = [eos, eos] if len(ids) == 0 else [*ids, eos]

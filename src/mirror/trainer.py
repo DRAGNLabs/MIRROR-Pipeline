@@ -6,6 +6,7 @@ from typing import Any, List, Mapping, cast
 
 import torch
 from lightning import Fabric
+from lightning.fabric.connector import _PRECISION_INPUT
 from lightning.fabric.strategies.fsdp import FSDPStrategy
 from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 from lightning.fabric.strategies.strategy import Strategy
@@ -36,7 +37,9 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
             devices: int = 1,
             num_nodes: int = 1,
             callbacks: List[Callback[RawT, FormattedT, BatchT, ModelOutputT]] = [],
+            precision: _PRECISION_INPUT | None = None,
     ) -> None:
+        self.precision: _PRECISION_INPUT | None = precision
         if strategy is None:
             strategy = FSDPStrategy()
 
@@ -252,7 +255,8 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
         return total_loss / n_batches
 
     def _make_fabric(self, strategy: Strategy, accelerator: str) -> Fabric:
-        return make_fabric(strategy, accelerator, devices=self.devices, num_nodes=self.num_nodes, callbacks=self.callbacks)
+        return make_fabric(strategy, accelerator, devices=self.devices, num_nodes=self.num_nodes,
+                           callbacks=self.callbacks, precision=self.precision)
 
 def separate_singletons[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
         callbacks: List[Callback[RawT, FormattedT, BatchT, ModelOutputT]]
