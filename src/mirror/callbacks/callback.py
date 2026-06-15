@@ -5,7 +5,7 @@ from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.trainable_model import TrainableModel
 
 
-class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT]:
+class Callback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
     """
     The names of the methods here are based on those of Lightning's
     Callback class: https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.Callback.html#lightning.pytorch.callbacks.Callback
@@ -22,7 +22,7 @@ class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT]:
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             dataset: MirrorDataset[RawT],
             training_run_id: str,
@@ -40,7 +40,7 @@ class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT]:
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             training_run_id: str
     ):
@@ -50,7 +50,7 @@ class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT]:
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             loss: float,
             training_run_id: str,
@@ -66,7 +66,7 @@ class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT]:
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             loss: float,
             training_run_id: str,
@@ -82,7 +82,7 @@ class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT]:
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             val_loss: float,
             training_run_id: str,
@@ -94,7 +94,7 @@ class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT]:
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             test_loss: float,
             training_run_id: str,
@@ -105,7 +105,7 @@ class Callback[RawT: Mapping[str, Any], ProcessedT, BatchT]:
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             training_run_id: str,
             error: Exception,

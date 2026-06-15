@@ -9,43 +9,39 @@ from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhite
 from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTransformerExecutor
 from mirror.models.inference_model import InferenceModel
 from mirror.models.trainable_model import TrainableModel
-from mirror.models.model_util import build_causal_lm, IGNORE_ID
-from mirror.preprocessors.mirror_gpt_preprocessor import MirrorGPTPreprocessor
-from mirror.types import AttentionMaskBatch, Loss, TextRow, TokenBatch, TokenTensor
+from mirror.models.model_util import build_causal_lm
+from mirror.formatters.mirror_gpt_formatter import MirrorGPTFormatter
+from mirror.types import LabeledTokens, Loss, StandardBatch, TextRow
 
 
 hf_model_name = "openai-community/gpt2"
 
 
 class MirrorGPTModel(
-    TrainableModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]],
-    InferenceModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], torch.Tensor],
+    TrainableModel[TextRow, LabeledTokens, StandardBatch],
+    InferenceModel[TextRow, LabeledTokens, StandardBatch, torch.Tensor],
     HFWhiteboxTransformer,
 ):
     def __init__(self, weights: Literal["pretrained", "random"] = "pretrained") -> None:
         super().__init__()
         self._hf_model = cast(GPT2LMHeadModel, build_causal_lm(hf_model_name, weights))
-        self._preprocessor = MirrorGPTPreprocessor()
+        self._formatter = MirrorGPTFormatter()
 
     @property
     def hf_model(self) -> GPT2LMHeadModel:
         return self._hf_model
 
     @property
-    def preprocessor(self) -> MirrorGPTPreprocessor:
-        return self._preprocessor
+    def formatter(self) -> MirrorGPTFormatter:
+        return self._formatter
 
-    def forward(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> torch.Tensor:
-        return WhiteboxTransformerExecutor.fresh(self).execute(batch).logits
+    def forward(self, batch: StandardBatch) -> torch.Tensor:
+        input_ids, attention_mask, _ = batch
+        return WhiteboxTransformerExecutor.fresh(self).execute((input_ids, attention_mask)).logits
 
-    def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
-        input_ids, attention_mask = batch
-        labels = input_ids
-        if attention_mask is not None:
-            labels = labels.masked_fill(attention_mask == 0, IGNORE_ID)
-        labels = cast(torch.Tensor, labels)
-
-        return WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute(batch).loss
+    def training_step(self, batch: StandardBatch) -> Loss:
+        input_ids, attention_mask, labels = batch
+        return WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute((input_ids, attention_mask)).loss
 
     def configure_optimizers(self):
         return optim.AdamW(self.parameters())

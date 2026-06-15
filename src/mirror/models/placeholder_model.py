@@ -4,28 +4,28 @@ import torch.nn as nn
 
 from mirror.models.inference_model import InferenceModel
 from mirror.models.trainable_model import TrainableModel
-from mirror.preprocessors.placeholder_preprocessor import PlaceholderPreprocessor
-from mirror.types import AttentionMaskBatch, Loss, TextRow, TokenBatch, TokenTensor
+from mirror.formatters.placeholder_formatter import PlaceholderFormatter
+from mirror.types import LabeledTokens, Loss, StandardBatch, TextRow
 from mirror.util import get_device
 
 
 class PlaceholderModel(
-    TrainableModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch]],
-    InferenceModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None],
+    TrainableModel[TextRow, LabeledTokens, StandardBatch],
+    InferenceModel[TextRow, LabeledTokens, StandardBatch, None],
 ):
     def __init__(self) -> None:
         super().__init__()
         self.parameter = nn.Parameter(torch.tensor([0.0], device=get_device()))
-        self._preprocessor = PlaceholderPreprocessor()
+        self._formatter = PlaceholderFormatter()
 
     @property
-    def preprocessor(self) -> PlaceholderPreprocessor:
-        return self._preprocessor
+    def formatter(self) -> PlaceholderFormatter:
+        return self._formatter
 
-    def forward(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> None:
+    def forward(self, batch: StandardBatch) -> None:
         return None
 
-    def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> Loss:
+    def training_step(self, batch: StandardBatch) -> Loss:
         return self.parameter
 
     def configure_optimizers(self) -> optim.Optimizer:

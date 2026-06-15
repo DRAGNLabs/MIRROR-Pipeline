@@ -1,6 +1,7 @@
 import sys
 
 from lightning import Fabric
+from lightning.fabric.connector import _PRECISION_INPUT
 from lightning.fabric.strategies.strategy import Strategy
 
 
@@ -10,6 +11,7 @@ def make_fabric(
         devices: int = 1,
         num_nodes: int = 1,
         callbacks: list = [],
+        precision: _PRECISION_INPUT | None = None,
 ) -> Fabric:
     return Fabric(
         strategy=strategy,
@@ -17,6 +19,7 @@ def make_fabric(
         num_nodes=num_nodes,
         callbacks=callbacks,
         accelerator=accelerator,
+        precision=precision,
     )
 
 

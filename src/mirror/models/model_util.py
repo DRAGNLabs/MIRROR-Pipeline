@@ -9,8 +9,6 @@ from mirror.download_util import assert_can_download
 from mirror.models.trainable_model import TrainableModel
 from mirror.util import mirror_data_path
 
-IGNORE_ID = -100 
-
 def load_hf_model(
         hf_model_name: str,
         reset_cache: bool = False,

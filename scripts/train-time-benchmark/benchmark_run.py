@@ -14,7 +14,7 @@ from mirror.callbacks.timer_callback import TimerCallback
 from mirror.config import init_config
 from mirror.datasets.txt_dataset import TxtDataset
 from mirror.models.mirror_llama_model import MirrorLlamaModel
-from mirror.preprocessors.bpe_preprocessor import BPEPreprocessor
+from mirror.formatters.bpe_formatter import BPEFormatter
 from mirror.trainer import Trainer
 from mirror.util import mirror_data_path
 
@@ -37,7 +37,7 @@ def main() -> None:
 
     model = MirrorLlamaModel(initialization=MODEL_CONFIGS[args.model_size], seed=42)
     dataset = TxtDataset(DATASET_PATH, head=DATASET_HEAD)
-    preprocessor = BPEPreprocessor(DATASET_PATH, cast(int, MODEL_CONFIGS[args.model_size].vocab_size))
+    formatter = BPEFormatter(DATASET_PATH, cast(int, MODEL_CONFIGS[args.model_size].vocab_size))
 
     timer = TimerCallback(log_file=args.log_file, lock_dir=args.lock_dir)
     trainer = Trainer(
@@ -46,7 +46,7 @@ def main() -> None:
         callbacks=[timer],
     )
     trainer.launch()
-    trainer.fit(model, dataset, preprocessor=preprocessor, batch_size=args.batch_size, epochs=1)
+    trainer.fit(model, dataset, formatter=formatter, batch_size=args.batch_size, epochs=1)
 
 
 if __name__ == "__main__":

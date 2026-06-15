@@ -1,14 +1,15 @@
 from abc import abstractmethod
+from typing import Any, Mapping
 
 from torch import nn
 from torch.optim import Optimizer
 
-from mirror.preprocessors.has_preprocessor import HasPreprocessor
+from mirror.formatters.has_formatter import HasFormatter
 from mirror.types import Loss
 
 
-class TrainableModel[RawT, ProcessedT, BatchT](
-    HasPreprocessor[RawT, ProcessedT, BatchT],
+class TrainableModel[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
+    HasFormatter[RawT, FormattedT, BatchT],
     nn.Module,
 ):
     @abstractmethod

@@ -7,7 +7,7 @@ from lightning import Fabric
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.trainable_model import TrainableModel
-from mirror.preprocessors.mirror_preprocessor import MirrorPreprocessor
+from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.types import TextRow
 
 
@@ -15,10 +15,10 @@ class BitsPerByteMetric(MirrorMetric):
     def __init__(
             self,
             data: MirrorDataset,
-            preprocessor: MirrorPreprocessor | None = None,
+            formatter: MirrorFormatter | None = None,
     ) -> None:
         self.data = data
-        self.preprocessor = preprocessor
+        self.formatter = formatter
 
     def get_metrics(
             self,
@@ -30,7 +30,8 @@ class BitsPerByteMetric(MirrorMetric):
         the length of the row - 1. It is still a useful metric for comparing models by running them through
         this specific metric, but it does not generalize to bits per byte calculated by others.
         """
-        preprocessor = self.preprocessor or model.preprocessor
+        formatter = self.formatter or model.formatter
+        formatted = formatter.format_data(self.data)
         local_indices = range(fabric.global_rank, len(self.data), fabric.world_size)
 
         total_bits = 0.0
@@ -39,10 +40,10 @@ class BitsPerByteMetric(MirrorMetric):
         with torch.no_grad():
             for i in local_indices:
                 row: TextRow = self.data[i]
-                tokens = preprocessor.preprocess_example(row)
-                batch = preprocessor.collate([tokens])
+                token_row = formatted[i]
+                batch = formatter.collate([token_row])
 
-                num_tokens = len(tokens)
+                num_tokens = len(token_row["input_ids"])
                 num_bytes = len(row['text'].encode('utf-8'))
 
                 loss_nats = model.training_step(batch).item()

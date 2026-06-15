@@ -7,8 +7,8 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.models.trainable_model import TrainableModel
 from mirror.dict_types import StateDict
 
-class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
-       Callback[RawT, ProcessedT, BatchT]
+class CheckpointCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
+       Callback[RawT, FormattedT, BatchT]
 ):
     def __init__(self, every_n_training_steps: int | None = None) -> None:
         super().__init__(is_singleton=True)
@@ -18,7 +18,7 @@ class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             training_run_id: str,
             **kwargs,
@@ -36,7 +36,7 @@ class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             training_run_id: str,
     ):
@@ -53,7 +53,7 @@ class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             training_run_id: str,
             epochs: int,
@@ -77,13 +77,13 @@ class CheckpointCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            model: TrainableModel[RawT, ProcessedT, BatchT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             checkpoint_identifier: CheckpointIdentifier,
             global_step: int | None,
             optimization_step: int | None,
     ):
-        state : StateDict[RawT, ProcessedT, BatchT] = {
+        state : StateDict[RawT, FormattedT, BatchT] = {
             'model': model,
             'optimizer': optimizer,
             'global_step': global_step,

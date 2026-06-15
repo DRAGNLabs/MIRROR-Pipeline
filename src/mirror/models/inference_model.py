@@ -1,12 +1,13 @@
 from abc import abstractmethod
+from typing import Any, Mapping
 
 from torch import nn
 
-from mirror.preprocessors.has_preprocessor import HasPreprocessor
+from mirror.formatters.has_formatter import HasFormatter
 
 
-class InferenceModel[RawT, ProcessedT, BatchT, ModelOutputT](
-    HasPreprocessor[RawT, ProcessedT, BatchT],
+class InferenceModel[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
+    HasFormatter[RawT, FormattedT, BatchT],
     nn.Module,
 ):
     @abstractmethod

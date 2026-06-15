@@ -4,7 +4,7 @@ import signal
 import time
 from subprocess import call
 from types import FrameType
-from typing import cast, Dict, Literal, Any
+from typing import cast, Dict, Literal, Any, Mapping
 
 from lightning import Fabric
 from torch.nn import Module
@@ -25,7 +25,7 @@ def requeue_handoff_path():
 RequeueHandoff = Dict[Literal['previous_training_run_id'], str]
 
 
-class RequeueMonitor[RawT, ProcessedT, BatchT]:
+class RequeueMonitor[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
     def __init__(self, fabric: Fabric, requeue_signal: int = signal.SIGHUP) -> None:
         self.requeue_signal = requeue_signal
         self.requeue_signal_recieved = False
@@ -41,7 +41,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT]:
             self,
             *,
             fabric: Fabric,
-            state: StateDict[RawT, ProcessedT, BatchT],
+            state: StateDict[RawT, FormattedT, BatchT],
             training_run_id: str,
     ):
         self._warn_if_iteration_too_long(fabric)
@@ -55,8 +55,8 @@ class RequeueMonitor[RawT, ProcessedT, BatchT]:
     def load_requeue_checkpoint_if_present(
             self,
             fabric: Fabric,
-            state: StateDict[RawT, ProcessedT, BatchT],
-    ) -> StateDict[RawT, ProcessedT, BatchT]:
+            state: StateDict[RawT, FormattedT, BatchT],
+    ) -> StateDict[RawT, FormattedT, BatchT]:
         path = requeue_handoff_path()
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -78,7 +78,7 @@ class RequeueMonitor[RawT, ProcessedT, BatchT]:
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            state: StateDict[RawT, ProcessedT, BatchT],
+            state: StateDict[RawT, FormattedT, BatchT],
             training_run_id: str,
     ):
         rank_zero_log(fabric, f'Saving requeue checkpoint for {training_run_id}')

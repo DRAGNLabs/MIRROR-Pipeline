@@ -16,8 +16,8 @@ from wandb.sdk.wandb_run import Run as WandbRun
 WandbMode = Literal["online", "offline"]
 
 
-class WandbCallback[RawT: Mapping[str, Any], ProcessedT, BatchT](
-    Callback[RawT, ProcessedT, BatchT]
+class WandbCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
+    Callback[RawT, FormattedT, BatchT]
 ):
     def __init__(
         self,
