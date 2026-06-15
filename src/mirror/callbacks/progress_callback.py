@@ -3,10 +3,10 @@ from lightning import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
 from mirror.metrics.mirror_metric import MirrorMetric
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 
-class ProgressCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
-       Callback[RawT, FormattedT, BatchT, ModelOutputT]
+class ProgressCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
+       Callback[RawT, FormattedT, BatchT]
 ):
     def __init__(
             self,
@@ -39,7 +39,7 @@ class ProgressCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], B
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel,
+            model: TrainableModel,
             loss: float,
             **kwargs,
     ):

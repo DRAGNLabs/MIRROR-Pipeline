@@ -25,18 +25,18 @@ from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.fabric_util import make_fabric, rank_zero_log
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.requeue_monitor import RequeueMonitor
 from mirror.dict_types import StateDict
 
-class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT]:
+class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
     def __init__(
             self,
             strategy: Strategy | None = None,
             devices: int = 1,
             num_nodes: int = 1,
-            callbacks: List[Callback[RawT, FormattedT, BatchT, ModelOutputT]] = [],
+            callbacks: List[Callback[RawT, FormattedT, BatchT]] = [],
             precision: _PRECISION_INPUT | None = None,
     ) -> None:
         self.precision: _PRECISION_INPUT | None = precision
@@ -51,7 +51,7 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
             self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
-        default_callbacks: List[Callback[RawT, FormattedT, BatchT, ModelOutputT]] = [
+        default_callbacks: List[Callback[RawT, FormattedT, BatchT]] = [
             CheckpointCallback(),
             ConfigSnapshotCallback(),
             ProgressCallback(),
@@ -60,7 +60,7 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
         if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
             default_callbacks.append(PrintStepCallback())
 
-        self.requeue_monitor: RequeueMonitor[RawT, FormattedT, BatchT, ModelOutputT] | None = None
+        self.requeue_monitor: RequeueMonitor[RawT, FormattedT, BatchT] | None = None
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
         input_singleton_cbs, input_non_singleton_cbs = separate_singletons(callbacks)
@@ -88,7 +88,7 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
 
     def fit(
             self,
-            model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             dataset: MirrorDataset[RawT],
             formatter: MirrorFormatter[RawT, FormattedT, BatchT] | None = None,
             checkpoint: CheckpointIdentifier | None = None,
@@ -122,7 +122,7 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
         
         n_batches = len(dataloader)
 
-        state : StateDict[RawT, FormattedT, BatchT, ModelOutputT] = {
+        state : StateDict[RawT, FormattedT, BatchT] = {
             'model': model,
             'optimizer': optimizer,
             'global_step': 0,
@@ -142,7 +142,7 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
                     )
 
         if self.config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
-            self.requeue_monitor = RequeueMonitor[RawT, FormattedT, BatchT, ModelOutputT](self.fabric)
+            self.requeue_monitor = RequeueMonitor[RawT, FormattedT, BatchT](self.fabric)
 
         if self.requeue_monitor:
             state = self.requeue_monitor.load_requeue_checkpoint_if_present(self.fabric, state)
@@ -187,18 +187,19 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
 
                     batch: BatchT = batch
 
-                    train_step_output = model.training_step(batch)
-                    loss_value = train_step_output.loss.item()
+                    loss = model.training_step(batch)
+                    loss_value = loss.item()
                     optimizer_stepped = optimization_strategy.step(
                         fabric=self.fabric,
                         optimizer=optimizer,
-                        loss=train_step_output.loss,
+                        loss=loss,
                         batch_idx=batch_idx,
-                    )
+                    )   
                     if optimizer_stepped:
                         optimization_step += 1
                         if scheduler is not None:
                             scheduler.step()
+
 
                     global_step = epoch_idx * n_batches + batch_idx + 1
                     state['global_step'] = global_step
@@ -245,8 +246,8 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
         n_batches = 0
         with torch.no_grad():
             for batch in dataloader:
-                output = model.training_step(batch)
-                total_loss += output.loss.item()
+                loss = model.training_step(batch)
+                total_loss += loss.item()
                 n_batches += 1
         model.train()
         if n_batches == 0:
@@ -258,11 +259,11 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, Mo
         return make_fabric(strategy, accelerator, devices=self.devices, num_nodes=self.num_nodes,
                            callbacks=self.callbacks, precision=self.precision)
 
-def separate_singletons[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
-        callbacks: List[Callback[RawT, FormattedT, BatchT, ModelOutputT]]
+def separate_singletons[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
+        callbacks: List[Callback[RawT, FormattedT, BatchT]]
 ) -> tuple[
-        List[Callback[RawT, FormattedT, BatchT, ModelOutputT]],
-        List[Callback[RawT, FormattedT, BatchT, ModelOutputT]]
+        List[Callback[RawT, FormattedT, BatchT]],
+        List[Callback[RawT, FormattedT, BatchT]]
 ]:
     singletons = [c for c in callbacks if c.is_singleton]
     non_singletons = [c for c in callbacks if not c.is_singleton]

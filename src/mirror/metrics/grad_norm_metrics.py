@@ -1,16 +1,14 @@
-from typing import Any, Mapping, cast
+from typing import cast
 
 import torch
 from lightning import Fabric
 
 from mirror.metrics.mirror_metric import MirrorMetric
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 
 
-class GradNormMetrics[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
-    MirrorMetric[RawT, FormattedT, BatchT, ModelOutputT]
-):
-    def get_metrics(self, model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT], fabric: Fabric) -> dict:
+class GradNormMetrics(MirrorMetric):
+    def get_metrics(self, model: TrainableModel, fabric: Fabric) -> dict:
         grads = [p.grad.detach() for p in model.parameters() if p.grad is not None]
         if not grads:
             return {"grad_norm": 0.0}

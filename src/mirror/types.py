@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import TypedDict
 
 from jaxtyping import Float, Int
@@ -34,9 +33,3 @@ class LabeledTokens(TypedDict):
 
 
 IGNORE_ID = -100
-
-
-@dataclass
-class TrainStepOutput[ModelOutputT]:
-    loss: Tensor
-    output: ModelOutputT

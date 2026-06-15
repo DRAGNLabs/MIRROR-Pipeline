@@ -7,15 +7,18 @@ from typing import Literal, cast
 
 from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhiteboxTransformer
 from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTransformerExecutor
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.inference_model import InferenceModel
+from mirror.models.trainable_model import TrainableModel
 from mirror.models.model_util import build_causal_lm
 from mirror.models.configuration_llama import LlamaConfig
 from mirror.formatters.mirror_llama_formatter import MirrorLlamaFormatter
-from mirror.types import LabeledTokens, StandardBatch, TextRow, TrainStepOutput
+from mirror.types import LabeledTokens, Loss, StandardBatch, TextRow
+
 
 class MirrorLlamaModel(
-    MirrorModel[TextRow, LabeledTokens, StandardBatch, None],
-    HFWhiteboxTransformer
+    TrainableModel[TextRow, LabeledTokens, StandardBatch],
+    InferenceModel[TextRow, LabeledTokens, StandardBatch, torch.Tensor],
+    HFWhiteboxTransformer,
 ):
     def __init__(
         self,
@@ -48,10 +51,13 @@ class MirrorLlamaModel(
     def formatter(self) -> MirrorLlamaFormatter:
         return self._formatter
 
-    def training_step(self, batch: StandardBatch) -> TrainStepOutput[None]:
+    def forward(self, batch: StandardBatch) -> torch.Tensor:
+        input_ids, attention_mask, _ = batch
+        return WhiteboxTransformerExecutor.fresh(self).execute((input_ids, attention_mask)).logits
+
+    def training_step(self, batch: StandardBatch) -> Loss:
         input_ids, attention_mask, labels = batch
-        output = WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute((input_ids, attention_mask))
-        return TrainStepOutput(loss=output.loss, output=None)
+        return WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute((input_ids, attention_mask)).loss
 
     def configure_optimizers(self):
         return optim.AdamW(
