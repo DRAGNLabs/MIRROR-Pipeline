@@ -72,6 +72,8 @@ class CsvInstructDataset(MirrorDataset[PromptResponseRow]):
         prompt_template: str,
         response_template: str,
         head: int | None = None,
+        start_fraction: float = 0.0,
+        end_fraction: float = 1.0,
     ) -> None:
         super().__init__()
         ptmpl = prompt_template
@@ -84,7 +86,8 @@ class CsvInstructDataset(MirrorDataset[PromptResponseRow]):
                 response=rtmpl.format(**cleaned),
             )
 
-        raw = cast(Dataset, load_dataset("csv", data_files=str(file_path), split="train"))
+        split = f"train[{round(start_fraction * 100)}%:{round(end_fraction * 100)}%]"
+        raw = cast(Dataset, load_dataset("csv", data_files=str(file_path), split=split))
         with _ds_cache_path_context():
             ds = TypedDataset[PromptResponseRow](raw.map(render, remove_columns=raw.column_names))
             ds = ds.filter(lambda row: len(row['response']) > 0)

@@ -78,6 +78,21 @@ class Callback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, M
     ):
         pass
 
+    def on_epoch_end(
+            self,
+            *,
+            fabric: Fabric,
+            model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            training_run_id: str,
+            epoch: int,
+            epochs: int,
+            n_batches: int,
+            global_step: int,
+            optimization_step: int,
+    ):
+        pass
+
     def on_validation_epoch_end(
             self,
             *,
