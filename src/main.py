@@ -132,11 +132,14 @@ def _run(subcommand: Subcommand):
 
         case 'infer':
             from mirror.models.inference_model import InferenceModel
+            from mirror.config import get_config
+            from mirror.fabric_util import make_fabric
 
             parser = ArgumentParser()
             parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_function_arguments(infer, as_positional=False, skip={"model"})
+            parser.add_function_arguments(infer, as_positional=False, skip={"model", "fabric"})
             parser.add_subclass_arguments(InferenceModel, "model", required=True, instantiate=False)
+            parser.add_argument("--strategy", type=Strategy, default="fsdp")
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
@@ -146,12 +149,23 @@ def _run(subcommand: Subcommand):
             init_config(cfg.device)
             init_cfg = cfg.clone()
             init = parser.instantiate_classes(init_cfg)
-            model = instantiate_model(init.model, fabric=None)
+
+            config = get_config()
+            fabric = make_fabric(
+                init.strategy,
+                config['device'],
+                devices=init.slurm.ntasks_per_node or 1,
+                num_nodes=init.slurm.nodes or 1,
+            )
+            fabric.launch()
+
+            model = instantiate_model(init.model, fabric=fabric)
 
             del init.model  # pyright: ignore
             del init.device  # pyright: ignore
+            del init.strategy  # pyright: ignore
 
-            infer(**{**init, "model": model})
+            infer(**{**init, "model": model, "fabric": fabric})
 
         case _:
             print(f'unimplemented subcommand: {subcommand}')
