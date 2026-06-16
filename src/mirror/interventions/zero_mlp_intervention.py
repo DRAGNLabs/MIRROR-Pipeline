@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from mirror.interventions.intervention import Intervention
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 
 
 def _zero_hook(
@@ -14,7 +14,7 @@ def _zero_hook(
 
 
 class ZeroMLPIntervention(Intervention):
-    def __init__(self, target: MirrorModel):
+    def __init__(self, target: TrainableModel):
         super().__init__(target)
         mlps = self.target.mlp_modules()
         if not mlps:

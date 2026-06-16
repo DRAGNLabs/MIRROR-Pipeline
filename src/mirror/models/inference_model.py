@@ -1,17 +1,15 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from typing import Any, Mapping
 
-import torch.nn as nn
-from transformers import PreTrainedModel
+from torch import nn
 
-from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhiteboxTransformer
-from mirror.preprocessors.mirror_preprocessor import InferenceFriendlyPreprocessor
+from mirror.formatters.has_formatter import HasFormatter
 
 
-class InferenceFriendlyModel(nn.Module, HFWhiteboxTransformer, ABC):
-    @property
+class InferenceModel[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT, ModelOutputT](
+    HasFormatter[RawT, FormattedT, BatchT],
+    nn.Module,
+):
     @abstractmethod
-    def hf_model(self) -> PreTrainedModel: ...
-
-    @property
-    @abstractmethod
-    def preprocessor(self) -> InferenceFriendlyPreprocessor: ...
+    def forward(self, batch: BatchT) -> ModelOutputT:
+        pass

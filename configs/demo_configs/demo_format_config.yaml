@@ -5,8 +5,8 @@ data:
     split: train
     head: 1000
 
-preprocessor: 
-  class_path: MirrorLlamaPreprocessor
+formatter: 
+  class_path: MirrorLlamaFormatter
   init_args:
     vocab_size: 128256
 

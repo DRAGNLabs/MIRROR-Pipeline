@@ -5,16 +5,19 @@ from transformers import AutoModelForCausalLM, LlamaForCausalLM
 from typing import Literal, cast
 
 from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTransformerExecutor
-from mirror.models.inference_model import InferenceFriendlyModel
-from mirror.models.mirror_model import MirrorModel
-from mirror.models.model_util import build_causal_lm, IGNORE_ID
+from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhiteboxTransformer
+from mirror.models.inference_model import InferenceModel
+from mirror.models.trainable_model import TrainableModel
+from mirror.models.model_util import build_causal_lm
 from mirror.models.configuration_llama import LlamaConfig
-from mirror.preprocessors.mirror_llama_preprocessor import MirrorLlamaPreprocessor
-from mirror.types import AttentionMaskBatch, TextRow, TokenBatch, TokenTensor, TrainStepOutput
+from mirror.formatters.mirror_llama_formatter import MirrorLlamaFormatter
+from mirror.types import LabeledTokens, Loss, StandardBatch, TextRow
+
 
 class MirrorLlamaModel(
-    MirrorModel[TextRow, TokenTensor, tuple[TokenBatch, AttentionMaskBatch], None],
-    InferenceFriendlyModel,
+    TrainableModel[TextRow, LabeledTokens, StandardBatch],
+    InferenceModel[TextRow, LabeledTokens, StandardBatch, torch.Tensor],
+    HFWhiteboxTransformer,
 ):
     def __init__(
         self,
@@ -25,7 +28,7 @@ class MirrorLlamaModel(
         betas: tuple[float, float] | list[float] = (0.9, 0.999),
     ) -> None:
         super().__init__()
-        self._preprocessor = MirrorLlamaPreprocessor()
+        self._formatter = MirrorLlamaFormatter()
         if isinstance(initialization, dict):
             initialization = LlamaConfig(**initialization)
         if isinstance(initialization, LlamaConfig):
@@ -37,25 +40,23 @@ class MirrorLlamaModel(
             self._hf_model = cast(LlamaForCausalLM, build_causal_lm(hf_model_name, weights="pretrained"))
         self._lr = lr
         self._weight_decay = weight_decay
-        self._betas = tuple(betas)
+        self._betas: tuple[float, float] = (betas[0], betas[1])
 
     @property
     def hf_model(self) -> LlamaForCausalLM:
         return self._hf_model
 
     @property
-    def preprocessor(self) -> MirrorLlamaPreprocessor:
-        return self._preprocessor
-   
-    def training_step(self, batch: tuple[TokenBatch, AttentionMaskBatch]) -> TrainStepOutput[None]:
-        input_ids, attention_mask = batch
-        labels = input_ids
-        if attention_mask is not None:
-            labels = labels.masked_fill(attention_mask == 0, IGNORE_ID)
-        labels = cast(torch.Tensor, labels)
+    def formatter(self) -> MirrorLlamaFormatter:
+        return self._formatter
 
-        output = WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute(batch)
-        return TrainStepOutput(loss=output.loss, output=None)
+    def forward(self, batch: StandardBatch) -> torch.Tensor:
+        input_ids, attention_mask, _ = batch
+        return WhiteboxTransformerExecutor.fresh(self).execute((input_ids, attention_mask)).logits
+
+    def training_step(self, batch: StandardBatch) -> Loss:
+        input_ids, attention_mask, labels = batch
+        return WhiteboxTransformerExecutor.fresh(self).include_loss(labels).execute((input_ids, attention_mask)).loss
 
     def configure_optimizers(self):
         return optim.AdamW(

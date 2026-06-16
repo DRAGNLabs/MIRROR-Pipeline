@@ -1,14 +1,14 @@
-from typing import cast, Any
+from typing import cast, Any, Mapping
 from lightning import Fabric
 from torch.nn import Module
 from torch.optim import Optimizer
 from mirror.callbacks.callback import Callback
 from mirror.checkpoint_identifier import CheckpointIdentifier
-from mirror.models.mirror_model import MirrorModel
+from mirror.models.trainable_model import TrainableModel
 from mirror.dict_types import StateDict
 
-class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
-       Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+class CheckpointCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
+       Callback[RawT, FormattedT, BatchT]
 ):
     def __init__(self, every_n_training_steps: int | None = None) -> None:
         super().__init__(is_singleton=True)
@@ -18,7 +18,7 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             training_run_id: str,
             **kwargs,
@@ -36,7 +36,7 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             training_run_id: str,
     ):
@@ -53,7 +53,7 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
             self,
             *,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             training_run_id: str,
             epochs: int,
@@ -77,13 +77,13 @@ class CheckpointCallback[RawT, ProcessedT, BatchT, ModelOutputT](
     def _save_checkpoint(
             self,
             fabric: Fabric,
-            model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT],
+            model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
             checkpoint_identifier: CheckpointIdentifier,
             global_step: int | None,
             optimization_step: int | None,
     ):
-        state : StateDict[RawT, ProcessedT, BatchT, ModelOutputT] = {
+        state : StateDict[RawT, FormattedT, BatchT] = {
             'model': model,
             'optimizer': optimizer,
             'global_step': global_step,

@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, Mapping, TypedDict
 from torch.optim import Optimizer
 
 if TYPE_CHECKING:
-    from mirror.models.mirror_model import MirrorModel
+    from mirror.models.trainable_model import TrainableModel
 
 class TextRow(TypedDict):
   text: str
@@ -11,8 +11,8 @@ class TextRow(TypedDict):
 class TextLabelRow(TextRow):
   label: str
 
-class StateDict[RawT, ProcessedT, BatchT, ModelOutputT](TypedDict):
-  model: MirrorModel[RawT, ProcessedT, BatchT, ModelOutputT]
+class StateDict[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](TypedDict):
+  model: TrainableModel[RawT, FormattedT, BatchT]
   optimizer: Optimizer
   global_step: int | None
   optimization_step: int | None

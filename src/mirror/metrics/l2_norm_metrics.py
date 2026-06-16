@@ -3,12 +3,12 @@ from typing import cast
 import torch
 from lightning import Fabric
 
-from mirror.metrics.extra_metrics_getter import ExtraMetricsGetter
-from mirror.models.mirror_model import MirrorModel
+from mirror.metrics.mirror_metric import MirrorMetric
+from mirror.models.trainable_model import TrainableModel
 
 
-class L2NormMetrics(ExtraMetricsGetter):
-    def get_metrics(self, model: MirrorModel, fabric: Fabric) -> dict:
+class L2NormMetrics(MirrorMetric):
+    def get_metrics(self, model: TrainableModel, fabric: Fabric) -> dict:
         params = [p.detach() for p in model.parameters()]
         if not params:
             return {"l2_norm": 0.0}

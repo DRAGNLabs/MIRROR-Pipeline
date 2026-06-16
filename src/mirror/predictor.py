@@ -2,18 +2,18 @@ import torch.distributed.checkpoint as dcp
 from typing import cast
 from transformers import pipeline as hf_pipeline, PreTrainedTokenizerFast
 
-from mirror.models.inference_model import InferenceFriendlyModel
-from mirror.preprocessors.mirror_preprocessor import InferenceFriendlyPreprocessor
+from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
+from mirror.models.inference_model import InferenceModel
+from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhiteboxTransformer
 from mirror.util import get_device
 
 class Predictor:
     def predict(
             self,
-            model: InferenceFriendlyModel,
+            model: InferenceModel,  # type: ignore[type-arg]
             text: str,
             num_tokens: int,
             checkpoint_path: str | None = None,
-            preprocessor: InferenceFriendlyPreprocessor | None = None,
             temperature: float = 1.0,
             top_p: float | None = None,
             top_k: int | None = None,
@@ -32,12 +32,13 @@ class Predictor:
         model.to(device)
         model.eval()
 
-        tokenizer = preprocessor.tokenizer if preprocessor is not None else model.preprocessor.tokenizer
+        assert isinstance(model, HFWhiteboxTransformer), "Model must implement HFWhiteboxTransformer for inference"
+        assert isinstance(model.formatter, InferFriendlyFormatter), "Model formatter must implement InferFriendlyFormatter"
 
         pipe = hf_pipeline(
             'text-generation',
             model=model.hf_model,
-            tokenizer=cast(PreTrainedTokenizerFast, tokenizer),
+            tokenizer=cast(PreTrainedTokenizerFast, model.formatter.tokenizer),
             device=device,
         )
 

@@ -4,7 +4,7 @@ import sys
 import time
 from pathlib import Path
 from types import FrameType
-from typing import Literal, TypedDict, cast
+from typing import Any, Literal, Mapping, TypedDict, cast
 
 import torch
 from torch import Tensor
@@ -50,8 +50,8 @@ def benchmark_lock_path(lock_dir: Path, num_nodes: int, devices_per_node: int, b
     return lock_dir / f"{benchmark_run_key(num_nodes, devices_per_node, batch_size, param_count)}.lock"
 
 
-class TimerCallback[RawT, ProcessedT, BatchT, ModelOutputT](
-    Callback[RawT, ProcessedT, BatchT, ModelOutputT]
+class TimerCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
+    Callback[RawT, FormattedT, BatchT]
 ):
     def __init__(
         self,
