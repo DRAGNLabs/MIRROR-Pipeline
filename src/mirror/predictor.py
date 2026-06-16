@@ -1,3 +1,4 @@
+import os
 from typing import cast
 from lightning import Fabric
 from transformers import pipeline as hf_pipeline
@@ -20,7 +21,13 @@ class Predictor:
             repetition_penalty: float = 1.0,
     ) -> str:
         if checkpoint_path is not None:
-            fabric.load(checkpoint_path, {'model': model})
+            if os.path.isdir(checkpoint_path):
+                import torch.distributed.checkpoint as dcp
+                model_state = model.state_dict()
+                dcp.load(state_dict={'model': model_state}, checkpoint_id=str(checkpoint_path), no_dist=True)  # type: ignore[attr-defined]
+                model.load_state_dict(model_state)
+            else:
+                fabric.load(checkpoint_path, {'model': model})
 
         model.eval()
 
