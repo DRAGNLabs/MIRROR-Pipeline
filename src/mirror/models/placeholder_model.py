@@ -2,7 +2,6 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 
-from mirror.models.inference_model import InferenceModel
 from mirror.models.trainable_model import TrainableModel
 from mirror.formatters.placeholder_formatter import PlaceholderFormatter
 from mirror.types import LabeledTokens, Loss, StandardBatch, TextRow
@@ -11,7 +10,6 @@ from mirror.util import get_device
 
 class PlaceholderModel(
     TrainableModel[TextRow, LabeledTokens, StandardBatch],
-    InferenceModel[TextRow, LabeledTokens, StandardBatch, None],
 ):
     def __init__(self) -> None:
         super().__init__()

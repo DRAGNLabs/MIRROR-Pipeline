@@ -5,7 +5,6 @@ from typing import Literal, cast
 
 from transformers import GPT2LMHeadModel
 
-from mirror.models.whitebox_transformers.hf_whitebox_transformers import HFWhiteboxTransformer
 from mirror.models.whitebox_transformers.whitebox_transformers import WhiteboxTransformerExecutor
 from mirror.models.inference_model import InferenceModel
 from mirror.models.trainable_model import TrainableModel
@@ -20,7 +19,6 @@ hf_model_name = "openai-community/gpt2"
 class MirrorGPTModel(
     TrainableModel[TextRow, LabeledTokens, StandardBatch],
     InferenceModel[TextRow, LabeledTokens, StandardBatch, torch.Tensor],
-    HFWhiteboxTransformer,
 ):
     def __init__(self, weights: Literal["pretrained", "random"] = "pretrained") -> None:
         super().__init__()

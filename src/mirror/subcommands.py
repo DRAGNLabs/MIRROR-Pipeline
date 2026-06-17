@@ -6,6 +6,8 @@ from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.trainable_model import TrainableModel
+from mirror.models.inference_model import InferenceModel
+from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.slurm_util import SlurmConfig
 from mirror.trainer import Trainer
@@ -65,6 +67,34 @@ def evaluation(
 
     for label, result in results.items():
         print(f"{label}: {result}")
+
+def infer(
+        model: InferenceModel,  # type: ignore[type-arg]
+        fabric: Fabric,
+        text: str,
+        max_new_tokens: int,
+        checkpoint_path: str | None = None,
+        formatter: InferFriendlyFormatter | None = None,
+        temperature: float = 1.0,
+        top_p: float | None = None,
+        top_k: int | None = None,
+        repetition_penalty: float = 1.0,
+        slurm: SlurmConfig = SlurmConfig(),
+) -> None:
+    from mirror.predictor import Predictor
+    result = Predictor().predict(
+        model=model,
+        fabric=fabric,
+        checkpoint_path=checkpoint_path,
+        formatter=formatter,
+        text=text,
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
+        top_p=top_p,
+        top_k=top_k,
+        repetition_penalty=repetition_penalty,
+    )
+    print(result)
 
 def format(
         data: MirrorDataset,

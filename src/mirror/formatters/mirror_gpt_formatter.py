@@ -1,6 +1,6 @@
 from typing import cast
 
-from transformers import PreTrainedTokenizerBase
+from transformers import PreTrainedTokenizerFast
 from typed_datasets import TypedDataset
 
 from mirror.datasets.mirror_dataset import MirrorDataset
@@ -17,7 +17,7 @@ class MirrorGPTFormatter(
 ):
     def __init__(self, max_length: int | None = 2048) -> None:
         self._hf_model_name = "openai-community/gpt2"
-        self._tokenizer: PreTrainedTokenizerBase = load_hf_tokenizer(self._hf_model_name)
+        self._tokenizer: PreTrainedTokenizerFast = cast(PreTrainedTokenizerFast, load_hf_tokenizer(self._hf_model_name))
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
         self._max_length = max_length
@@ -46,7 +46,7 @@ class MirrorGPTFormatter(
         return collate_tokens(self._tokenizer, examples)
 
     @property
-    def tokenizer(self) -> PreTrainedTokenizerBase:
+    def tokenizer(self) -> PreTrainedTokenizerFast:
         return self._tokenizer
 
     @property
