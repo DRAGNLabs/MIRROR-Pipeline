@@ -1,4 +1,5 @@
 from mirror.datasets.csv_dataset import CsvDataset, CsvInstructDataset
+from mirror.datasets.echo_dataset import EchoDataset
 from mirror.datasets.fineweb_dataset import FinewebDataset
 from mirror.datasets.imdb_dataset import ImdbDataset
 from mirror.datasets.mixed_dataset import MixedDataset
