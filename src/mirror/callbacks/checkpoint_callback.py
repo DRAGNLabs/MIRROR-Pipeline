@@ -10,9 +10,10 @@ from mirror.dict_types import StateDict
 class CheckpointCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
        Callback[RawT, FormattedT, BatchT]
 ):
-    def __init__(self, every_n_training_steps: int | None = None) -> None:
+    def __init__(self, every_n_training_steps: int | None = None, every_n_epochs: int | None = None) -> None:
         super().__init__(is_singleton=True)
         self.every_n_training_steps = every_n_training_steps
+        self.every_n_epochs = every_n_epochs
 
     def on_fit_start(
             self,
@@ -72,6 +73,28 @@ class CheckpointCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any],
                 CheckpointIdentifier(training_run_id, f"{optimization_step:0{n_print_digits}d}"),
                 global_step,
                 optimization_step,
+            )
+
+    def on_epoch_end(
+            self,
+            *,
+            fabric: Fabric,
+            model: MirrorModel[RawT, FormattedT, BatchT, ModelOutputT],
+            optimizer: Optimizer,
+            training_run_id: str,
+            epoch: int,
+            epochs: int,
+            n_batches: int,
+            global_step: int,
+            optimization_step: int,
+            **kwargs,
+    ):
+        if self.every_n_epochs and (epoch + 1) % self.every_n_epochs == 0:
+            n_print_digits = len(str(epochs)) + 1
+            self._save_checkpoint(
+                fabric, model, optimizer,
+                CheckpointIdentifier(training_run_id, f"epoch_{epoch + 1:0{n_print_digits}d}"),
+                global_step, optimization_step,
             )
 
     def _save_checkpoint(

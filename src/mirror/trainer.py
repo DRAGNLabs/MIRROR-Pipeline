@@ -133,13 +133,11 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
             # models and optimizers are treated specially: they are populated via their load_state_dict
             # methods internally to fabric.load. Anything else in the state dict is just set in place.
 
-            self.fabric.load(checkpoint.path, cast(dict[str, torch.nn.Module | torch.optim.Optimizer | Any], state))
+            self.fabric.load(checkpoint.path, cast(dict[str, torch.nn.Module | torch.optim.Optimizer | Any], state), strict=False)
 
             if state['global_step'] is None:
-                raise RuntimeError(
-                    "checkpoint_global_step cannot be None. "
-                    f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
-                    )
+                state['global_step'] = 0
+                state['optimization_step'] = 0
 
         if self.config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
             self.requeue_monitor = RequeueMonitor[RawT, FormattedT, BatchT](self.fabric)
@@ -221,6 +219,10 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
                             state=state,
                             training_run_id=training_run_id,
                         )
+
+                self.fabric.call('on_epoch_end', fabric=self.fabric, model=model, optimizer=optimizer,
+                                 training_run_id=training_run_id, epoch=epoch_idx, epochs=epochs,
+                                 n_batches=n_batches, global_step=global_step, optimization_step=optimization_step)
 
                 if val_dataloader is not None and (epoch_idx + 1) % val_check_interval == 0:
                     val_loss = self._eval_loop(model, val_dataloader)
