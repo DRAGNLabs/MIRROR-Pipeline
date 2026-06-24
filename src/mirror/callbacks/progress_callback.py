@@ -39,7 +39,7 @@ class ProgressCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], B
             self,
             *,
             fabric: Fabric,
-            model: TrainableModel,
+            model: TrainableModel[RawT, FormattedT, BatchT],
             loss: float,
             **kwargs,
     ):

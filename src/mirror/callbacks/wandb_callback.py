@@ -68,7 +68,7 @@ class WandbCallback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], Batc
         self,
         *,
         fabric: Fabric,
-        model: TrainableModel,
+        model: TrainableModel[RawT, FormattedT, BatchT],
         loss: float,
         **kwargs,
     ):
