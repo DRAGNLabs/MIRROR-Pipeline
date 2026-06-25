@@ -143,7 +143,7 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
                 else:
                     raise RuntimeError(
                         "checkpoint_global_step cannot be None. "
-                        f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
+                        f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value. Pass in `just_checkpoint_weights: True` to byoass this error."
                     )
 
         if self.config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:
