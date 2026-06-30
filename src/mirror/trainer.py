@@ -38,6 +38,7 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
             num_nodes: int = 1,
             callbacks: List[Callback[RawT, FormattedT, BatchT]] = [],
             precision: _PRECISION_INPUT | None = None,
+            just_checkpoint_weights: bool = False,
     ) -> None:
         self.precision: _PRECISION_INPUT | None = precision
         if strategy is None:
@@ -60,6 +61,7 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
         if os.getenv("MIRROR_PRINT_STEP_LOSS", "").lower() == "true":
             default_callbacks.append(PrintStepCallback())
 
+        self.just_checkpoint_weights = just_checkpoint_weights
         self.requeue_monitor: RequeueMonitor[RawT, FormattedT, BatchT] | None = None
 
         default_singleton_cbs, default_non_singleton_cbs = separate_singletons(default_callbacks)
@@ -133,12 +135,15 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
             # models and optimizers are treated specially: they are populated via their load_state_dict
             # methods internally to fabric.load. Anything else in the state dict is just set in place.
 
-            self.fabric.load(checkpoint.path, cast(dict[str, torch.nn.Module | torch.optim.Optimizer | Any], state))
+            self.fabric.load(checkpoint.path, cast(dict[str, torch.nn.Module | torch.optim.Optimizer | Any], state), strict=False)
 
             if state['global_step'] is None:
-                raise RuntimeError(
-                    "checkpoint_global_step cannot be None. "
-                    f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value."
+                if self.just_checkpoint_weights:
+                    state['global_step'] = 0
+                else:
+                    raise RuntimeError(
+                        "checkpoint_global_step cannot be None. "
+                        f"checkpoint '{checkpoint.checkpoint_name}' gave an invalid global step value. Pass in `just_checkpoint_weights: True` to byoass this error."
                     )
 
         if self.config['environment'] == RuntimeEnvironment.SLURM_COMPUTE:

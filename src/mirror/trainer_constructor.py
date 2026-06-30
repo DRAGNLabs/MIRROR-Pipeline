@@ -14,12 +14,14 @@ class TrainerConstructor:
             num_nodes: int = 1,
             callbacks: list[Callback] = [],
             precision: _PRECISION_INPUT | None = None,
+            just_checkpoint_weights: bool = False,
     ) -> None:
         self.strategy = strategy
         self.devices = devices
         self.num_nodes = num_nodes
         self.callbacks = callbacks
         self.precision: _PRECISION_INPUT | None = precision
+        self.just_checkpoint_weights = just_checkpoint_weights
 
     def construct_trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](self) -> Trainer[RawT, FormattedT, BatchT]:
-        return Trainer(self.strategy, self.devices, self.num_nodes, self.callbacks, self.precision)
+        return Trainer(self.strategy, self.devices, self.num_nodes, self.callbacks, self.precision, self.just_checkpoint_weights)
