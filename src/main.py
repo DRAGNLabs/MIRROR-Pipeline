@@ -24,6 +24,7 @@ def _run(subcommand: Subcommand):
     from mirror.models.model_util import instantiate_model
     from mirror.subcommands import evaluation, fit, format, infer
     from mirror.trainer_constructor import TrainerConstructor
+    from mirror.type_safety import check_compatibility
     from mirror.util import is_login_node, resolve_config_args
 
     # These are required so that their items can be found easily by jsonargparse without
@@ -55,6 +56,7 @@ def _run(subcommand: Subcommand):
             parser.add_subclass_arguments(TrainerConstructor, "trainer", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+            check_compatibility(cfg)
 
             run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
 
@@ -84,6 +86,7 @@ def _run(subcommand: Subcommand):
             parser.add_argument("--config", action=ActionConfigFile)
             parser.add_function_arguments(format, as_positional=False)
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+            check_compatibility(cfg)
 
             if hasattr(cfg, 'config'):
                 del cfg.config  # pyright: ignore
@@ -99,6 +102,7 @@ def _run(subcommand: Subcommand):
             parser.add_argument("--strategy", type=Strategy)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+            check_compatibility(cfg)
 
             if hasattr(cfg, 'config'):
                 del cfg.config  # pyright: ignore
@@ -142,6 +146,7 @@ def _run(subcommand: Subcommand):
             parser.add_argument("--strategy", type=Strategy, default="fsdp")
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+            check_compatibility(cfg)
 
             if hasattr(cfg, 'config'):
                 del cfg.config  # pyright: ignore
