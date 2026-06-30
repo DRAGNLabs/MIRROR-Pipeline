@@ -46,6 +46,31 @@
       device: cpu
       ```
 
-5. Weights & Biases tracking is enabled by default through `Trainer`.
+5. Hyperparameter grid search: add a top-level `grid` section mapping config
+   options (dotted paths) to a list of values. At submission time a separate
+   SLURM job is launched for every combination (the Cartesian product) of the
+   listed values, each overriding the base config.
+   ```
+   grid:
+     epochs: [1, 2]
+     batch_size: [4, 8]
+     model.init_args.lr: [1e-3, 1e-4]
+     slurm.gpus_per_node: [p100:1, a100:1]
+   ```
+   The example above launches 2 × 2 × 2 × 2 = 16 jobs. A single value (e.g.
+   `epochs: [2]`) is allowed and simply contributes one point to the search.
+
+   A value may be a whole `class_path`/`init_args` block (or `null`), so you can
+   sweep over entire component definitions, e.g. comparing trainers or models:
+   ```
+   grid:
+     trainer:
+       - class_path: TrainerConstructor
+         init_args:
+           callbacks: [{class_path: WandbCallback}]
+       - null   # default trainer
+   ```
+
+6. Weights & Biases tracking is enabled by default through `Trainer`.
     - On SLURM compute nodes it defaults to offline mode and writes runs to `~/nobackup/autodelete/mirror_data/wandb`.
     - Sync cached runs later from a login node with `wandb sync ~/nobackup/autodelete/mirror_data/wandb/offline-run-*`.

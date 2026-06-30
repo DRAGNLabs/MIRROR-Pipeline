@@ -5,9 +5,8 @@ Subcommand = Literal['fit'] | Literal['test'] | Literal['format'] | Literal['eva
 
 
 def main(subcommand: Subcommand):
-    from mirror.slurm_launcher import submit_slurm_job
-    from mirror.slurm_util import parse_slurm_config
-    submit_slurm_job(parse_slurm_config(sys.argv[1:]), sys.argv[1:])
+    from mirror.slurm_launcher import submit_slurm_jobs
+    submit_slurm_jobs(sys.argv[1:])
 
     _run(subcommand)
 
@@ -54,6 +53,9 @@ def _run(subcommand: Subcommand):
             parser.add_subclass_arguments(TrainableModel, "model", required=True, instantiate=False)
             parser.add_subclass_arguments(TrainerConstructor, "trainer", required=False, instantiate=True)
             parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
+            # Grid search options are expanded into separate jobs at submission time;
+            # registered here only so the `grid` config key is accepted, then ignored.
+            parser.add_argument("--grid", type=dict, default=None)
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
             run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
@@ -76,6 +78,7 @@ def _run(subcommand: Subcommand):
 
             del init.model # pyright: ignore
             del init.device # pyright: ignore
+            del init.grid # pyright: ignore
 
             fit(**{**init, "model": model, "trainer": trainer, "run_config_yaml": run_config_yaml})
 
