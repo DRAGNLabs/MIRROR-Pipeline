@@ -427,6 +427,28 @@ Run the following command:
 
 Replace `fit` with `format` if you are just trying to do a formatting run. It's smart to make a separate config file for formatting, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your formatting config file for formatting runs.
 
+#### Running a hyperparameter grid search
+
+To try multiple values for one or more options, add a top-level `grid` section mapping each option (by its dotted config path) to a list of values. When you submit, a separate training run is launched for every combination of those values (the Cartesian product):
+
+```yaml
+grid:
+  epochs: [1, 2]                       # Top-level option
+  model.init_args.lr: [1e-3, 1e-4]     # Nested option, addressed by dotted path
+  slurm.gpus_per_node: [p100:1, a100:1] # Any option works, including SLURM settings
+```
+
+The example above launches 2 × 2 × 2 = 8 jobs. A value can also be a whole `class_path`/`init_args` block (or `null`), so you can sweep over entire components, e.g. comparing trainers or model architectures:
+
+```yaml
+grid:
+  trainer:
+    - class_path: TrainerConstructor
+      init_args:
+        callbacks: [{class_path: WandbCallback}]
+    - null # Default trainer
+```
+
 ### Pre-Pull Request Checklist
 
 Before starting a pull request, you'll want to run some checks on the changes you've made. 
