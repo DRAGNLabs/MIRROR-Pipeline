@@ -15,7 +15,7 @@ from mirror.types import LabeledTokens, StandardBatch, TextRow
 
 from mirror.util import _ds_cache_path_context, mirror_data_path
 
-_SPECIAL_TOKENS = ["<unk>", "<s>", "</s>", "<pad>", "<|user|>", "<|assistant|>"]
+_SPECIAL_TOKENS = ["<unk>", "<s>", "</s>", "<pad>"] # "<|user|>", "<|assistant|>"
 
 _CHAT_TEMPLATE = (
     "<s>"
@@ -63,7 +63,7 @@ class BPEFormatter(
             eos_token="</s>",
             unk_token="<unk>",
             pad_token="<pad>",
-            additional_special_tokens=["<|user|>", "<|assistant|>"],
+            # additional_special_tokens=["<|user|>", "<|assistant|>"],
         )
         self._tokenizer.chat_template = _CHAT_TEMPLATE
 
