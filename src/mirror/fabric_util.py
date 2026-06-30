@@ -10,6 +10,7 @@ from lightning.fabric.strategies.strategy import Strategy
 def cpu_safe_strategy(strategy: str | Strategy, device: str) -> str | Strategy:
     """FSDP is GPU-only, so fall back to single-device when running on CPU."""
     if device == "cpu" and (strategy == "fsdp" or isinstance(strategy, FSDPStrategy)):
+        print("FSDP is GPU-only; falling back to the single-device CPU strategy.", file=sys.stderr)
         return SingleDeviceStrategy(device="cpu")
     return strategy
 
