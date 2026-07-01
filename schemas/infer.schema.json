@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "config": {},
+    "text": {
+      "type": "string"
+    },
+    "max_new_tokens": {
+      "type": "integer"
+    },
+    "checkpoint_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "formatter": {},
+    "temperature": {
+      "type": "number"
+    },
+    "top_p": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "top_k": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "repetition_penalty": {
+      "type": "number"
+    },
+    "slurm": {
+      "type": "object",
+      "properties": {
+        "job_type": {
+          "enum": [
+            "compute",
+            "local",
+            "local-download"
+          ]
+        },
+        "time": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "ntasks_per_node": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "gpus_per_node": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mem_per_cpu": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "open_mode": {
+          "type": "string"
+        },
+        "signal": {
+          "type": "string"
+        },
+        "requeue": {
+          "type": "boolean"
+        },
+        "qos": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "model": {},
+    "strategy": {},
+    "device": {
+      "enum": [
+        "cpu",
+        "cuda",
+        null
+      ]
+    }
+  },
+  "additionalProperties": false
+}

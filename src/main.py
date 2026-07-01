@@ -15,28 +15,14 @@ def main(subcommand: Subcommand):
 def _run(subcommand: Subcommand):
     import warnings
 
-    from jsonargparse import ActionConfigFile, ArgumentParser
     from lightning.fabric.utilities.warnings import PossibleUserWarning
-    from lightning.fabric.strategies.strategy import Strategy
 
+    from mirror.cli_parsers import build_parser
     from mirror.config import init_config
-    from mirror.models.trainable_model import TrainableModel
     from mirror.models.model_util import instantiate_model
     from mirror.subcommands import evaluation, fit, format, infer
     from mirror.trainer_constructor import TrainerConstructor
     from mirror.util import is_login_node, resolve_config_args
-
-    # These are required so that their items can be found easily by jsonargparse without
-    # having to give the full classpath
-    import lightning.fabric.strategies  # noqa: F401
-    import mirror.callbacks  # noqa: F401
-    import mirror.datasets  # noqa: F401
-    import mirror.models  # noqa: F401
-    import mirror.optimization  # noqa: F401
-    import mirror.formatters  # noqa: F401
-    import mirror.schedulers  # noqa: F401
-    import mirror.interventions  # noqa: F401
-    import mirror.metrics  # noqa: F401
 
     # These warnings happen internal to Fabric, so there's not much we can do about them.
     warnings.filterwarnings('ignore', category=FutureWarning, message='.*Please use DTensor instead and we are deprecating ShardedTensor.*')
@@ -48,12 +34,7 @@ def _run(subcommand: Subcommand):
 
     match subcommand:
         case 'fit':
-            parser = ArgumentParser()
-            parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_function_arguments(fit, as_positional=False, skip={"model", "trainer", "run_config_yaml"})
-            parser.add_subclass_arguments(TrainableModel, "model", required=True, instantiate=False)
-            parser.add_subclass_arguments(TrainerConstructor, "trainer", required=False, instantiate=True)
-            parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
+            parser = build_parser('fit')
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
             run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
@@ -80,9 +61,7 @@ def _run(subcommand: Subcommand):
             fit(**{**init, "model": model, "trainer": trainer, "run_config_yaml": run_config_yaml})
 
         case 'format':
-            parser = ArgumentParser()
-            parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_function_arguments(format, as_positional=False)
+            parser = build_parser('format')
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
             if hasattr(cfg, 'config'):
@@ -92,12 +71,7 @@ def _run(subcommand: Subcommand):
             format(**init)
 
         case 'eval':
-            parser = ArgumentParser()
-            parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_function_arguments(evaluation, as_positional=False, skip={"model", "fabric"})
-            parser.add_subclass_arguments(TrainableModel, "model", required=True, instantiate=False)
-            parser.add_argument("--strategy", type=Strategy)
-            parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
+            parser = build_parser('eval')
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
             if hasattr(cfg, 'config'):
@@ -131,16 +105,10 @@ def _run(subcommand: Subcommand):
             evaluation(**{**init, "model": model, "fabric": fabric})
 
         case 'infer':
-            from mirror.models.inference_model import InferenceModel
             from mirror.config import get_config
             from mirror.fabric_util import make_fabric
 
-            parser = ArgumentParser()
-            parser.add_argument("--config", action=ActionConfigFile)
-            parser.add_function_arguments(infer, as_positional=False, skip={"model", "fabric"})
-            parser.add_subclass_arguments(InferenceModel, "model", required=True, instantiate=False)
-            parser.add_argument("--strategy", type=Strategy, default="fsdp")
-            parser.add_argument("--device", type=str, choices=["cpu", "cuda"], default=None)
+            parser = build_parser('infer')
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
 
             if hasattr(cfg, 'config'):

@@ -1,11 +1,12 @@
+# yaml-language-server: $schema=../../schemas/infer.schema.json
 model:
   class_path: MirrorGPTModel
   init_args:
     weights: pretrained
 
 checkpoint_path:
-text:
-num_tokens: 100
+text: "Once upon a time"
+max_new_tokens: 100
 temperature: 0.8
 top_p: 0.95
 repetition_penalty: 1.2
