@@ -92,24 +92,27 @@ main.py (CLI entry point)
       → Callbacks (handle checkpointing, logging, progress, etc.)
 ```
 
-On a login node, the pipeline downloads required assets (like tokenizers/models) and submits an SBATCH training job; on a compute node, it executes the actual training.
+On a login node, the pipeline submits an SBATCH training job and exits; on a compute node, it executes the actual training. Assets like tokenizers/models are cached ahead of time (compute nodes run offline) via the `local-download` job type, which downloads on a login node and then exits.
 
 ### main.py
 
 This is the entry point for the pipeline. It parses command-line arguments/YAML config files, then routes to the appropriate subcommand.
 
-A first parse determines which subcommand was invoked. `jsonargparse` is then used to load arguments from a YAML config file and instantiate the appropriate `MirrorModel`, `MirrorFormatter`, etc. On login nodes, the script downloads the model/tokenizer and submits the job to a compute node. On compute nodes, it calls `fit()` directly.
+`main()` first calls `slurm_launcher.submit_slurm_jobs()`. On a login node submitting a `compute` job, this renders the SBATCH template, submits the job, and exits. 
+
+`_run()` does the heavy lifting. A first parse determines which subcommand was invoked, then `jsonargparse` loads arguments from the YAML config/CLI and instantiates the appropriate `TrainableModel`, `MirrorFormatter`, dataset, `Trainer`, etc. Instantiating the model downloads/caches its weights and tokenizer (this what the `local-download` job type is for). Finally, it dispatches to the requested subcommand.
 
 An example YAML config can be found in [config-example.md](config-example.md).
 
 ### subcommands.py
 
-This module implements the pipeline's subcommands. The two main subcommands:
-- `fit()` — The main training subcommand. If running on a login node with `job_type=compute`, it submits a training job to the supercomputer; otherwise (i.e. either we're training locally/on a login node, or we're already on a compute node), it executes training directly via `trainer.fit()`.
+This module implements the pipeline's subcommands:
+- `fit()` — The main training subcommand. It executes training directly via `trainer.fit()`.
 - `format()` — Applies a formatter to a dataset and caches the result, without running training.
 - `eval` — Runs a set of `MirrorMetric`s against a model and prints the results. Accepts a model, a `metrics` dict (mapping string labels to `MirrorMetric` instances), an optional `checkpoint_path` to load weights before evaluating, and SLURM/device settings. Sets the model to eval mode, then calls `metric.get_metrics(model, fabric)` for each metric and prints each label/result pair.
+- `infer` — Generates text from a model (optionally loading a `checkpoint_path` first) via `Predictor`. Accepts `text`, `max_new_tokens`, and sampling controls (`temperature`, `top_p`, `top_k`, `repetition_penalty`), then prints the generated continuation.
 
-The `templates/` directory contains `slurm.jinja`, a Jinja2 SBATCH template. When submitting a job from a login node, `subcommands.py` fills in this template and passes the result to `sbatch` to submit a training job to the supercomputer.
+SLURM job submission itself lives in `slurm_launcher.py`, not here. The `slurm.jinja` Jinja2 SBATCH template (in `src/mirror/templates/`) is filled in by `slurm_launcher._submit_one`, which pipes the rendered script to `sbatch` to submit a training job to the supercomputer.
 
 ### trainer.py
 
@@ -123,11 +126,11 @@ The core loop iterates over epochs and batches: for each batch it zeroes gradien
 
 Datasets provide a unified interface for loading data, such as text rows, or other types of data (e.g., the [MCQA repository](https://github.com/DRAGNLabs/MIRROR-MCQA-Decisions) uses McqaRows). They all extend `MirrorDataset`, a generic typed class built on top of PyTorch's `Dataset`.
 
-Available datasets include the HuggingFace datasets `ImdbDataset` and `WikitextDataset`, which must be downloaded once using HuggingFace credentials, and thereafter will be automatically cached locally. `TxtDataset` allows plain text files, such as the Church Text Dataset, to be used as datasets as well. `OnDemandFormattedDataset` is a wrapper that supports "lazily" formatting a dataset on-the-fly rather than upfront (useful for memory efficiency).
+Available datasets include the HuggingFace datasets `ImdbDataset`, `WikitextDataset`, and `FinewebDataset`, which must be downloaded once using HuggingFace credentials, and thereafter will be automatically cached locally. `TxtDataset` and `CsvDataset` allow plain-text and CSV files (such as the Church Text Dataset) to be used as datasets as well, and `MixedDataset` combines several datasets into one according to per-dataset weights. 
 
 ### Formatters
 
-Formatters convert raw data into a format suitable for model training. They extend `MirrorFormatter`, which defines two methods: `format_example(example)` (usually converts a single raw example to token IDs) and `collate(examples)` (batches processed examples together into a single object).
+Formatters convert raw data into a format suitable for model training. They extend `MirrorFormatter`, which defines two methods: `format_data(dataset)` (converts a raw dataset into a tokenized dataset, typically by mapping a per-example tokenization step over the rows) and `collate(examples)` (batches processed examples together into a single object).
 
 Each model has its own formatter because each model architecture uses a distinct tokenizer and vocab size. For example, GPT-2 has `vocab_size = 50257` while Llama 3.2-1B has `vocab_size = 128256`, so they each have their own formatter with the correct vocab size. However, formatters can be mixed and matched as long as the vocab sizes match — for example, you could use a custom Llama config with `vocab_size = 50257` and pair it with `MirrorGPTFormatter` instead.
 
@@ -295,6 +298,10 @@ Vim is the default editor for commit message files (e.g. git merge).
     - Optionally accepts a `checkpoint_path` (a direct path to a `.ckpt` file or FSDP checkpoint directory) to load trained weights before evaluating
     - Also accepts a `device` (`cpu`/`cuda`) and a `strategy` (Lightning Fabric strategy) for device/distributed configuration
 
+- `python src/main.py infer --config <config-file>`: Generate text from a model
+    - Requires a `model` and `text` (the prompt) plus `max_new_tokens`; optionally loads a `checkpoint_path` first
+    - Accepts sampling controls: `temperature`, `top_p`, `top_k`, and `repetition_penalty`
+
 - `python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
     - Jupyter notebooks allow for significantly decreased startup time on repeat job runs
     - This command will output a URL, which is used to set the environment for `jupyter_template.ipynb` (or your copy(s) of it)
@@ -388,11 +395,7 @@ formatter:
     class_path: <class_path> # e.g. MirrorLlamaFormatter
 ```
 
-To format up front rather than on-the-fly:
-
-```yaml
-do_format: True # False by default
-``` 
+The formatter is applied automatically at the start of training, and its output is cached on disk so it only runs once per dataset/formatter pair. To pre-format a dataset ahead of time (e.g. to keep it out of the training job), run the `format` subcommand separately.
 
 #### Setting up SLURM job/training run settings
 
