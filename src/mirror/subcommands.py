@@ -71,8 +71,9 @@ def evaluation(
 def infer(
         model: InferenceModel,  # type: ignore[type-arg]
         fabric: Fabric,
-        text: str,
         max_new_tokens: int,
+        text: str | None = None,
+        interactive: bool = False,
         checkpoint_path: str | None = None,
         formatter: InferFriendlyFormatter | None = None,
         temperature: float = 1.0,
@@ -82,7 +83,26 @@ def infer(
         slurm: SlurmConfig = SlurmConfig(),
 ) -> None:
     from mirror.predictor import Predictor
-    result = Predictor().predict(
+    predictor = Predictor()
+
+    if interactive:
+        predictor.predict_interactive(
+            model=model,
+            fabric=fabric,
+            checkpoint_path=checkpoint_path,
+            formatter=formatter,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            repetition_penalty=repetition_penalty,
+        )
+        return
+
+    if text is None:
+        raise ValueError("`text` is required unless `--interactive` is set.")
+
+    result = predictor.predict(
         model=model,
         fabric=fabric,
         checkpoint_path=checkpoint_path,
