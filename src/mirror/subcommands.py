@@ -86,6 +86,15 @@ def infer(
     predictor = Predictor()
 
     if interactive:
+        import sys
+        if slurm.job_type == "compute":
+            raise ValueError(
+                "`--interactive` cannot be used with `--slurm.job_type=compute`; use `--slurm.job_type=local`."
+            )
+        if not sys.stdin.isatty():
+            raise ValueError(
+                "`--interactive` requires a TTY (run locally or within an interactive allocation)."
+            )
         predictor.predict_interactive(
             model=model,
             fabric=fabric,
