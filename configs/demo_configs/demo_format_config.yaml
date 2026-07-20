@@ -8,7 +8,7 @@ data:
 formatter: 
   class_path: MirrorLlamaFormatter
   init_args:
-    vocab_size: 128256
+    max_length: 1024
 
 # checkpoint:
 #   training_run_id: <training_run_id>
