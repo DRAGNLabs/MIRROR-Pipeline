@@ -102,5 +102,9 @@ slurm:
 epochs: 1         # Total training epochs
 batch_size: 1     # Examples per gradient-update step
 device: cpu       # Compute device: "cpu" | "cuda" (auto-detected on SLURM compute nodes)
+
+# grid:                              # Optional: launch one run per combination of values
+#   epochs: [1, 2]                   # Each key is an option's dotted config path
+#   model.init_args.lr: [1e-3, 1e-4] # The example below launches 2 x 2 = 4 jobs
 ```
 

@@ -1,3 +1,5 @@
+import itertools
+import json
 import os
 import re
 from dataclasses import dataclass
@@ -48,6 +50,43 @@ def parse_slurm_config(python_args: list[str]) -> SlurmConfig:
     slurm.ntasks_per_node = slurm.ntasks_per_node or trainer.get('devices') or 1
     slurm.gpus_per_node = slurm.gpus_per_node or str(trainer.get('devices') or 1)
     return slurm
+
+
+def parse_grid(python_args: list[str]) -> dict[str, list[Any]]:
+    """Extract the `grid` section: a mapping of dotted arg paths to value lists.
+
+    A scalar value is treated as a single-element list so it contributes one
+    point to the search.
+    """
+    section = _collect_sections(resolve_config_args(python_args), ('grid',))['grid']
+    return {path: value if isinstance(value, list) else [value] for path, value in section.items()}
+
+
+def expand_grid(grid: dict[str, list[Any]]) -> list[dict[str, Any]]:
+    """Cartesian product of the grid, yielding one override dict per combination.
+
+    An empty grid yields a single empty combination (i.e. one plain run).
+    """
+    paths = list(grid)
+    return [dict(zip(paths, values)) for values in itertools.product(*grid.values())]
+
+
+def grid_override_args(combo: dict[str, Any]) -> list[str]:
+    """Render a grid combination as `--path=value` CLI overrides."""
+    return [f"--{path}={_format_grid_value(value)}" for path, value in combo.items()]
+
+
+def _format_grid_value(value: Any) -> str:
+    # Collections (e.g. whole `class_path`/`init_args` configs) are emitted as
+    # JSON, which jsonargparse parses as flow YAML and round-trips faithfully.
+    # Scalars pass through so the parser applies the destination's own type.
+    if isinstance(value, (dict, list)):
+        return json.dumps(value)
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if value is None:
+        return "null"
+    return str(value)
 
 
 def _collect_sections(args: list[str], names: tuple[str, ...]) -> dict[str, dict[str, Any]]:
