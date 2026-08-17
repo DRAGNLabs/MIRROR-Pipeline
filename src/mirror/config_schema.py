@@ -7,10 +7,12 @@ edit them. Validation is intentionally top-level only: it catches unknown keys
 
 Regenerate with: python -m mirror.config_schema
 """
+import argparse
 import json
 import types
 import typing
 from pathlib import Path
+from typing import Any
 
 from jsonargparse import ArgumentParser
 
@@ -21,8 +23,13 @@ _SCHEMAS_DIR = Path(__file__).parent.parent.parent / "schemas"
 _SIMPLE = {int: "integer", float: "number", str: "string", bool: "boolean"}
 _LEAF = "__action__"
 
+# A JSON Schema fragment. Values stay Any: fragments nest arbitrarily.
+_Schema = dict[str, Any]
+# Nested dict of config keys; a leaf is {_LEAF: argparse.Action}.
+_Tree = dict[str, Any]
 
-def _nullable(schema: dict) -> dict:
+
+def _nullable(schema: _Schema) -> _Schema:
     if isinstance(schema.get("type"), str):
         schema["type"] = [schema["type"], "null"]
     elif "enum" in schema and None not in schema["enum"]:
@@ -30,7 +37,7 @@ def _nullable(schema: dict) -> dict:
     return schema
 
 
-def _type_schema(hint) -> dict:
+def _type_schema(hint: Any) -> _Schema:
     """Map a type hint to a JSON Schema fragment; unknown/complex types allow anything."""
     if typing.get_origin(hint) is typing.Literal:
         return {"enum": list(typing.get_args(hint))}
@@ -44,13 +51,13 @@ def _type_schema(hint) -> dict:
     return {"type": _SIMPLE[hint]} if hint in _SIMPLE else {}
 
 
-def _action_schema(action) -> dict:
+def _action_schema(action: argparse.Action) -> _Schema:
     if getattr(action, "choices", None):
         return {"enum": list(action.choices) + [None]}
     return _type_schema(getattr(action, "_typehint", None))
 
 
-def _insert(tree: dict, parts: list[str], action) -> None:
+def _insert(tree: _Tree, parts: list[str], action: argparse.Action) -> None:
     node = tree
     for part in parts[:-1]:
         if not isinstance(node.get(part), dict) or _LEAF in node[part]:
@@ -59,8 +66,8 @@ def _insert(tree: dict, parts: list[str], action) -> None:
     node.setdefault(parts[-1], {_LEAF: action})
 
 
-def _build_props(node: dict) -> dict:
-    props = {}
+def _build_props(node: _Tree) -> dict[str, _Schema]:
+    props: dict[str, _Schema] = {}
     for name, child in node.items():
         if _LEAF in child:
             props[name] = _action_schema(child[_LEAF])
@@ -69,8 +76,8 @@ def _build_props(node: dict) -> dict:
     return props
 
 
-def generate_schema(parser: ArgumentParser) -> dict:
-    tree: dict = {}
+def generate_schema(parser: ArgumentParser) -> _Schema:
+    tree: _Tree = {}
     for action in parser._actions:
         dest = action.dest
         if dest in ("help", "print_config") or dest.endswith(".help"):
