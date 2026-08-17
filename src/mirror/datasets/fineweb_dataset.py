@@ -5,7 +5,7 @@ from datasets import DatasetDict
 from typed_datasets import TypedDataset
 
 from mirror.datasets.dataset_util import load_hf_dataset, just_text_row, slice_by_fraction
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.types import TextRow
 from mirror.util import _ds_cache_path_context
 
@@ -26,7 +26,7 @@ class FinewebRow(TextRow):
     int_score: int
 
 
-class FinewebDataset(MirrorDataset[TextRow]):
+class FinewebDataset(DataSource[TextRow]):
     @property
     def ds(self) -> TypedDataset[TextRow]:
         return self._ds
@@ -57,9 +57,6 @@ class FinewebDataset(MirrorDataset[TextRow]):
         cumulative = np.cumsum(np.asarray(ds.unwrap()['token_count'], dtype=np.int64))
         cutoff = int(np.searchsorted(cumulative, target_token_count, side='right')) + 1
         return ds.take(cutoff)
-
-    def __len__(self) -> int:
-        return len(self.ds)
 
     def item(self, index) -> str:
         return self.ds[index]['text']

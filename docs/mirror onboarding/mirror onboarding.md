@@ -121,7 +121,7 @@ The core loop iterates over epochs and batches: for each batch it zeroes gradien
 
 ### Datasets
 
-Datasets provide a unified interface for loading data, such as text rows, or other types of data (e.g., the [MCQA repository](https://github.com/DRAGNLabs/MIRROR-MCQA-Decisions) uses McqaRows). They all extend `MirrorDataset`, a generic typed class built on top of PyTorch's `Dataset`.
+Datasets provide a unified interface for loading data, such as text rows, or other types of data (e.g., the [MCQA repository](https://github.com/DRAGNLabs/MIRROR-MCQA-Decisions) uses McqaRows). They all extend `DataSource`, a generic typed class that exposes the underlying data as a `TypedDataset` via its `ds` property.
 
 Available datasets include the HuggingFace datasets `ImdbDataset` and `WikitextDataset`, which must be downloaded once using HuggingFace credentials, and thereafter will be automatically cached locally. `TxtDataset` allows plain text files, such as the Church Text Dataset, to be used as datasets as well. `OnDemandFormattedDataset` is a wrapper that supports "lazily" formatting a dataset on-the-fly rather than upfront (useful for memory efficiency).
 

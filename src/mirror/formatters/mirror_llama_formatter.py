@@ -3,7 +3,7 @@ from typing import cast
 from transformers import PreTrainedTokenizerFast
 from typed_datasets import TypedDataset
 
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.formatters.formatter_util import collate_tokens, load_hf_tokenizer
@@ -21,7 +21,7 @@ class MirrorLlamaFormatter(
             self._tokenizer.pad_token = self._tokenizer.eos_token
         self._max_length = max_length
 
-    def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
+    def format_data(self, data_source: DataSource[TextRow]) -> TypedDataset[LabeledTokens]:
         tokenizer = self._tokenizer
         max_length = self._max_length
 

@@ -5,12 +5,12 @@ from datasets import Dataset, load_dataset
 from typed_datasets import TypedDataset
 
 from mirror.datasets.dataset_util import slice_by_fraction
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.types import TextRow
 from mirror.util import _ds_cache_path_context
 
 
-class TxtDataset(MirrorDataset[TextRow]):
+class TxtDataset(DataSource[TextRow]):
     @property
     def ds(self) -> TypedDataset[TextRow]:
         return self._ds
@@ -39,6 +39,3 @@ class TxtDataset(MirrorDataset[TextRow]):
             if head:
                 ds = ds.take(head)
             self._ds = ds
-
-    def __len__(self) -> int:
-        return len(self.ds)

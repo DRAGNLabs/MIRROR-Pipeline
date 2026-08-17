@@ -5,13 +5,13 @@ from typing import Any, Mapping, Sequence
 
 from typed_datasets import TypedDataset, concatenate
 
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 
 
-class MixedDataset[RawT: Mapping[str, Any]](MirrorDataset[RawT]):
+class MixedDataset[RawT: Mapping[str, Any]](DataSource[RawT]):
     def __init__(
         self,
-        weighted_datasets: Sequence[tuple[MirrorDataset, float]],
+        weighted_datasets: Sequence[tuple[DataSource, float]],
         start_fraction: float = 0.0,
         end_fraction: float = 1.0,
     ) -> None:
@@ -22,7 +22,7 @@ class MixedDataset[RawT: Mapping[str, Any]](MirrorDataset[RawT]):
 
         total_weight = sum(w for _, w in weighted_datasets)
         normalized_weights = [w / total_weight for _, w in weighted_datasets]
-        scale = max(len(ds) / w for (ds, _), w in zip(weighted_datasets, normalized_weights))
+        scale = max(len(ds.ds) / w for (ds, _), w in zip(weighted_datasets, normalized_weights))
 
         selected: list[TypedDataset[RawT]] = []
 
@@ -30,7 +30,7 @@ class MixedDataset[RawT: Mapping[str, Any]](MirrorDataset[RawT]):
             target_count = math.ceil(scale * w)
             start = int(start_fraction * target_count)
             end = int(end_fraction * target_count)
-            ds_len = len(ds)
+            ds_len = len(ds.ds)
             upsampled = [i % ds_len for i in range(start, end)]
             selected.append(ds.ds.select(upsampled))
 
@@ -39,6 +39,3 @@ class MixedDataset[RawT: Mapping[str, Any]](MirrorDataset[RawT]):
     @property
     def ds(self) -> TypedDataset[RawT]:
         return self._ds
-
-    def __len__(self) -> int:
-        return len(self.ds)

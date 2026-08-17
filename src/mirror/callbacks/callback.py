@@ -1,7 +1,7 @@
 from typing import Any, Mapping
 from lightning import Fabric
 from torch.optim import Optimizer
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.models.trainable_model import TrainableModel
 
 
@@ -24,7 +24,7 @@ class Callback[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
             fabric: Fabric,
             model: TrainableModel[RawT, FormattedT, BatchT],
             optimizer: Optimizer,
-            dataset: MirrorDataset[RawT],
+            dataset: DataSource[RawT],
             training_run_id: str,
             run_config_yaml: str,
             n_batches: int,
