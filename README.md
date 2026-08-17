@@ -59,6 +59,10 @@
    ```
    The example above launches 2 × 2 × 2 × 2 = 16 jobs. A single value (e.g.
    `epochs: [2]`) is allowed and simply contributes one point to the search.
+   Each submission prints its job id together with that combination's
+   overrides. A grid is only supported for `fit` with `slurm.job_type:
+   compute` (the default); any other use is an error rather than the grid
+   being silently ignored.
 
    A value may be a whole `class_path`/`init_args` block (or `null`), so you can
    sweep over entire component definitions, e.g. comparing trainers or models:

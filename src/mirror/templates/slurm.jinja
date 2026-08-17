@@ -17,6 +17,8 @@
 
 {{ activate_cmd }}
 
+echo "SLURM job $SLURM_JOB_ID:" {{ run_cmd }}
+
 nvidia-smi
 
 {{ run_cmd }}
