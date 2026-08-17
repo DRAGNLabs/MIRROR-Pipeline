@@ -2,7 +2,17 @@ import sys
 
 from lightning import Fabric
 from lightning.fabric.connector import _PRECISION_INPUT
+from lightning.fabric.strategies.fsdp import FSDPStrategy
+from lightning.fabric.strategies.single_device import SingleDeviceStrategy
 from lightning.fabric.strategies.strategy import Strategy
+
+
+def cpu_safe_strategy(strategy: str | Strategy, device: str) -> str | Strategy:
+    """FSDP is GPU-only, so fall back to single-device when running on CPU."""
+    if device == "cpu" and (strategy == "fsdp" or isinstance(strategy, FSDPStrategy)):
+        print("FSDP is GPU-only; falling back to the single-device CPU strategy.", file=sys.stderr)
+        return SingleDeviceStrategy(device="cpu")
+    return strategy
 
 
 def make_fabric(

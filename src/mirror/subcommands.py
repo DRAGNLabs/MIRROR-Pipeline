@@ -75,7 +75,7 @@ def infer(
         max_new_tokens: int,
         checkpoint_path: str | None = None,
         formatter: InferFriendlyFormatter | None = None,
-        temperature: float = 1.0,
+        temperature: float = 0.0,
         top_p: float | None = None,
         top_k: int | None = None,
         repetition_penalty: float = 1.0,

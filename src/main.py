@@ -81,11 +81,11 @@ def _run(subcommand: Subcommand):
             init = parser.instantiate_classes(cfg)
 
             from mirror.config import get_config
-            from mirror.fabric_util import make_fabric
+            from mirror.fabric_util import cpu_safe_strategy, make_fabric
 
             config = get_config()
             fabric = make_fabric(
-                init.strategy,
+                cpu_safe_strategy(init.strategy, config['device']),
                 config['device'],
                 devices=init.slurm.ntasks_per_node or 1,
                 num_nodes=init.slurm.nodes or 1,
@@ -106,7 +106,7 @@ def _run(subcommand: Subcommand):
 
         case 'infer':
             from mirror.config import get_config
-            from mirror.fabric_util import make_fabric
+            from mirror.fabric_util import cpu_safe_strategy, make_fabric
 
             parser = build_parser('infer')
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
@@ -120,7 +120,7 @@ def _run(subcommand: Subcommand):
 
             config = get_config()
             fabric = make_fabric(
-                init.strategy,
+                cpu_safe_strategy(init.strategy, config['device']),
                 config['device'],
                 devices=init.slurm.ntasks_per_node or 1,
                 num_nodes=init.slurm.nodes or 1,
