@@ -22,6 +22,7 @@ def _run(subcommand: Subcommand):
     from mirror.models.model_util import instantiate_model
     from mirror.subcommands import evaluation, fit, format, infer
     from mirror.trainer_constructor import TrainerConstructor
+    from mirror.type_safety import check_compatibility
     from mirror.util import is_login_node, resolve_config_args
 
     # These warnings happen internal to Fabric, so there's not much we can do about them.
@@ -36,6 +37,7 @@ def _run(subcommand: Subcommand):
         case 'fit':
             parser = build_parser('fit')
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+            check_compatibility(cfg)
 
             run_config_yaml = f"subcommand: fit\n{parser.dump(cfg)}"
 
@@ -63,6 +65,7 @@ def _run(subcommand: Subcommand):
         case 'format':
             parser = build_parser('format')
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+            check_compatibility(cfg)
 
             if hasattr(cfg, 'config'):
                 del cfg.config  # pyright: ignore
@@ -73,6 +76,7 @@ def _run(subcommand: Subcommand):
         case 'eval':
             parser = build_parser('eval')
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+            check_compatibility(cfg)
 
             if hasattr(cfg, 'config'):
                 del cfg.config  # pyright: ignore
@@ -110,6 +114,7 @@ def _run(subcommand: Subcommand):
 
             parser = build_parser('infer')
             cfg = parser.parse_args(resolve_config_args(sys.argv[2:]))
+            check_compatibility(cfg)
 
             if hasattr(cfg, 'config'):
                 del cfg.config  # pyright: ignore
