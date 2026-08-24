@@ -1,11 +1,12 @@
+# yaml-language-server: $schema=../../schemas/format.schema.json
 data:
-  class_path: 
+  class_path:
     WikitextDataset
   init_args:
     split: train
     head: 1000
 
-formatter: 
+formatter:
   class_path: MirrorLlamaFormatter
   init_args:
     max_length: 1024
@@ -24,5 +25,3 @@ slurm:
   open_mode: "append"
   signal: "SIGHUP@90"
   requeue: true
-
-device: cuda

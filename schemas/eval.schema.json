@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "config": {},
+    "metrics": {},
+    "checkpoint_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "slurm": {
+      "type": "object",
+      "properties": {
+        "job_type": {
+          "enum": [
+            "compute",
+            "local",
+            "local-download"
+          ]
+        },
+        "time": {
+          "type": "string"
+        },
+        "nodes": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "ntasks_per_node": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "gpus_per_node": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mem_per_cpu": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        },
+        "open_mode": {
+          "type": "string"
+        },
+        "signal": {
+          "type": "string"
+        },
+        "requeue": {
+          "type": "boolean"
+        },
+        "qos": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "model": {},
+    "strategy": {},
+    "device": {
+      "enum": [
+        "cpu",
+        "cuda",
+        null
+      ]
+    }
+  },
+  "additionalProperties": false
+}

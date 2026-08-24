@@ -99,5 +99,6 @@ def infer(
 def format(
         data: MirrorDataset,
         formatter: MirrorFormatter,
+        slurm: SlurmConfig = SlurmConfig(),
 ) -> None:
     formatter.format_data(data)
