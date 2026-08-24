@@ -5,7 +5,7 @@
 2. Activate the environment `mamba activate ./.env`
 3. (Optional) deactivate the environment `mamba deactivate`
 4. Run using `python src/main.py [subcommand] [arguments or config]`
-    - Example using arguments: `python src/main.py fit --dataset.class_path WikitextDataset --data.head 10 --model MirrorLlamaModel --model.id 3.2-1B-Instruct --slurm.gpus_per_node h200:1`
+    - Example using arguments: `python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel --model.init_args.initialization 3.2-1B-Instruct --slurm.gpus_per_node h200:1`
     - Example using config: `python src/main.py fit --config config.yaml`
       - Example config.yaml contents: 
       ```
@@ -32,7 +32,7 @@
             # num_key_value_heads: null # Default: null
 
       slurm:
-        submit: true
+        job_type: compute # "compute" | "local" | "local-download"
         time: "01:00:00"
         gpus_per_node: p100:1 # Use 1 P100 GPU. Options: A100, A200, P100, L40S, H200
         mem_per_cpu: "128G"

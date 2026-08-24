@@ -33,8 +33,6 @@ val_check_interval: 1.0         # Run validation every N epochs (1.0 = every epo
 #     file_path: data/my_corpus.txt  # Path to a plain-text file (one example per line)
 #     head: null
 
-do_format: true     # Format the whole dataset upfront (true) vs. on-the-fly (false)
-
 formatter:      # Tokenizer/formatter (optional; auto-selected from model if omitted)
   class_path: MirrorLlamaFormatter  # MirrorLlamaFormatter | MirrorGPTFormatter
 
