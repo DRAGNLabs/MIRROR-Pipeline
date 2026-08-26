@@ -3,7 +3,7 @@ from typing import cast
 import torch
 from typed_datasets import TypedDataset
 
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.util import _ds_cache_path_context, get_device
 from mirror.types import AttentionMaskBatch, LabeledTokens, LabelsBatch, StandardBatch, TextRow, TokenBatch
@@ -11,7 +11,7 @@ from mirror.types import AttentionMaskBatch, LabeledTokens, LabelsBatch, Standar
 class PlaceholderFormatter(
     MirrorFormatter[TextRow, LabeledTokens, StandardBatch]
 ):
-    def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
+    def format_data(self, data_source: DataSource[TextRow]) -> TypedDataset[LabeledTokens]:
         def to_tokens(row: TextRow) -> LabeledTokens:
             ids = [1, 2, 3, 4]
             return LabeledTokens(input_ids=ids, labels=list(ids))

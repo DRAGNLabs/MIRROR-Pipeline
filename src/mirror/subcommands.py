@@ -4,7 +4,7 @@ from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.models.trainable_model import TrainableModel
 from mirror.models.inference_model import InferenceModel
 from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
@@ -14,7 +14,7 @@ from mirror.trainer import Trainer
 
 
 def fit(
-        data: MirrorDataset,
+        data: DataSource,
         model: TrainableModel,
         trainer: Trainer,
         formatter: MirrorFormatter | None = None,
@@ -23,8 +23,8 @@ def fit(
         epochs: int = 1,
         batch_size: int = 1,
         run_config_yaml: str = '',
-        val_data: MirrorDataset | None = None,
-        test_data: MirrorDataset | None = None,
+        val_data: DataSource | None = None,
+        test_data: DataSource | None = None,
         val_check_interval: int = 1,
         configure_scheduler: ConfigureScheduler | None = None,
         shuffle: bool = True,
@@ -97,7 +97,7 @@ def infer(
     print(result)
 
 def format(
-        data: MirrorDataset,
+        data: DataSource,
         formatter: MirrorFormatter,
         slurm: SlurmConfig = SlurmConfig(),
 ) -> None:

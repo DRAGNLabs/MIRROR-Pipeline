@@ -4,7 +4,7 @@ from datasets import DatasetDict
 from typed_datasets import TypedDataset
 
 from mirror.datasets.dataset_util import load_hf_dataset, just_text_row
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.types import TextRow
 from mirror.util import _ds_cache_path_context
 
@@ -12,7 +12,7 @@ hf_dataset_path = 'Salesforce/wikitext'
 hf_dataset_name = 'wikitext-2-raw-v1'
 
 
-class WikitextDataset(MirrorDataset[TextRow]):
+class WikitextDataset(DataSource[TextRow]):
     @property
     def ds(self) -> TypedDataset[TextRow]:
         return self._ds
@@ -41,9 +41,6 @@ class WikitextDataset(MirrorDataset[TextRow]):
             if head:
                 ds = ds.take(head)
             self._ds = ds.map(just_text_row, remove_columns=list(ds.columns))
-
-    def __len__(self) -> int:
-        return len(self.ds)
 
     def item(self, index) -> str:
        return self.ds[index]['text']

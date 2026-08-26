@@ -4,7 +4,7 @@ from typing import cast
 import torch
 from lightning import Fabric
 
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.trainable_model import TrainableModel
 from mirror.formatters.mirror_formatter import MirrorFormatter
@@ -14,7 +14,7 @@ from mirror.types import TextRow
 class BitsPerByteMetric(MirrorMetric):
     def __init__(
             self,
-            data: MirrorDataset,
+            data: DataSource,
             formatter: MirrorFormatter | None = None,
     ) -> None:
         self.data = data
@@ -32,14 +32,14 @@ class BitsPerByteMetric(MirrorMetric):
         """
         formatter = self.formatter or model.formatter
         formatted = formatter.format_data(self.data)
-        local_indices = range(fabric.global_rank, len(self.data), fabric.world_size)
+        local_indices = range(fabric.global_rank, len(self.data.ds), fabric.world_size)
 
         total_bits = 0.0
         total_bytes = 0
 
         with torch.no_grad():
             for i in local_indices:
-                row: TextRow = self.data[i]
+                row: TextRow = self.data.ds[i]
                 token_row = formatted[i]
                 batch = formatter.collate([token_row])
 

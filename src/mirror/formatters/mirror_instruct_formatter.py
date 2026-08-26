@@ -3,7 +3,7 @@ from typing import cast
 from transformers import BatchEncoding
 from typed_datasets import TypedDataset
 
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.formatters.formatter_util import collate_tokens
@@ -63,7 +63,7 @@ class MirrorInstructFormatter(
             response_ids = [*response_ids, eos_id]
         return cast(TokenTensor, list(prompt_ids)), cast(TokenTensor, list(response_ids))
 
-    def format_data(self, data_source: MirrorDataset[PromptResponseRow]) -> TypedDataset[LabeledTokens]:
+    def format_data(self, data_source: DataSource[PromptResponseRow]) -> TypedDataset[LabeledTokens]:
         format_fn = self.format_example
         with _ds_cache_path_context():
             return data_source.ds.map(format_fn, remove_columns=list(data_source.ds.columns))

@@ -4,12 +4,12 @@ from typing import cast
 from datasets import Dataset, load_dataset
 from typed_datasets import TypedDataset
 
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.types import PromptResponseRow
 from mirror.util import _ds_cache_path_context
 
 
-class EchoDataset(MirrorDataset[PromptResponseRow]):
+class EchoDataset(DataSource[PromptResponseRow]):
     """
     Sanity-check dataset for instruction fine-tuning. Reads a single column
     from a CSV and sets response = prompt, so the model must learn to echo
@@ -47,6 +47,3 @@ class EchoDataset(MirrorDataset[PromptResponseRow]):
             if head:
                 ds = ds.take(head)
         self._ds = ds
-
-    def __len__(self) -> int:
-        return len(self.ds)
