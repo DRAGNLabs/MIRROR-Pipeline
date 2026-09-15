@@ -32,17 +32,13 @@ git clone https://github.com/DRAGNLabs/MIRROR-Pipeline
 cd MIRROR-Pipeline
 ```
 
-Now you'll need to create a [local mamba environment](https://rc.byu.edu/wiki/?id=Conda+Environments) to develop in.
+Now you'll need to create a local environment to develop in. This project uses [uv](https://docs.astral.sh/uv/); install it, then run:
 
 ```bash
-mamba create --yes -f environment.yml -p ./.env
+uv sync
 ```
 
-This environment can be activated at any time by running:
-
-```bash
-mamba activate ./.env
-```
+This creates `./.venv` and installs the project's dependencies from `uv.lock`. You don't need to activate the environment to run project code — prefix commands with `uv run` (e.g. `uv run python src/main.py ...`), and uv will keep the environment in sync automatically.
 
 3. **Logging in to Huggingface**
 
@@ -64,9 +60,9 @@ To use resources like Llama/GPT-2 model weights, you'll need to get access throu
 
     If you logged in to the supercomputer strictly by ssh'ing through the terminal, this will automatically have been done for you. Otherwise (e.g. using VSCode to log in to the supercomputer), run `source /etc/profile/` to load system-wide environment settings and paths. 
     
-3. Activate mamba environment
+3. Sync the environment
 
-    To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have [created the environment first](#initial-access-setup), of course.) 
+    Run `uv sync` to make sure `./.venv` matches `uv.lock`. (You'll have to have [uv installed](#initial-access-setup), of course.) You don't need to activate anything — run project commands with `uv run` (e.g. `uv run python src/main.py ...`).
     
 4. Ensure you're on the correct branch
 
@@ -194,11 +190,12 @@ trainer:
 ### On Startup
 
 - `source /etc/profile`: Load the system-wide environment settings and paths
-    - If you're logging in directly through ssh in the terminal, this will be done for you. Otherwise (e.g. using VSCode's UI), run this first every time you log in so that tools like `mamba` and other modules are available
+    - If you're logging in directly through ssh in the terminal, this will be done for you. Otherwise (e.g. using VSCode's UI), run this first every time you log in so that system tools and modules are available
 
-- `mamba activate ./.env`: Activate the project's conda environment
+- `uv sync`: Sync `./.venv` with `uv.lock`
     - This loads the Python version and dependencies needed for the MIRROR Pipeline
     - Must be run in the MIRROR Pipeline directory
+    - Run project commands with `uv run` (e.g. `uv run python src/main.py ...`); no manual activation needed
 
 ### Terminal
 
@@ -435,7 +432,7 @@ First, run `git merge main` to make sure your branch is up to date with main and
 
 Now it's time to directly test using the pipeline with the new changes. A simple training run (e.g. `fit` with a small Llama model config & the Wikitext dataset with `data.head: 10`) will cover lots of simple tickets, but you should expand your test suite as necessary to test tickets that change different parts of the pipeline. For example, if your ticket relates to SLURM jobs across multiple nodes, you'll want to test submitting jobs on a single node, multiple nodes, maybe multiple GPUs on a single node, etc. 
 
-You may also want to run type checks locally; the easiest way to do this is with Pyright. Once you've installed the project's dependencies (`pip install -e ".[dev]"`), just run `pyright` in your terminal, and it will print any errors it sees. There's also a script that runs when you make a pull request that will automatically check for any new Pyright errors on that branch. 
+You may also want to run type checks locally; the easiest way to do this is with Pyright. Once you've synced the project's dependencies (`uv sync`), just run `uv run pyright` in your terminal, and it will print any errors it sees. There's also a script that runs when you make a pull request that will automatically check for any new Pyright errors on that branch. 
 
 It's also a good idea to review the changes made on your branch to help catch any issues or unintended changes ahead of time. You have a few options:
 - You can run `git status` to see which files have been modified, added, or deleted, and use `git diff main...HEAD` to see the full set of changes your branch introduces compared to `main`.
