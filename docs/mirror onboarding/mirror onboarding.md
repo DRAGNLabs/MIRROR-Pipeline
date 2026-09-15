@@ -277,22 +277,22 @@ Vim is the default editor for commit message files (e.g. git merge).
 
 ### MIRROR Pipeline
 
-- `python src/main.py fit --config <config-file>`: Train a model using settings from a config file
+- `uv run python src/main.py fit --config <config-file>`: Train a model using settings from a config file
     - The config file specifies the dataset, model, formatter, training parameters, and SLURM settings
         - Config files for personal use should be placed in `configs/user_configs/`, where they will be gitignored and resolved automatically when passed to `--config` by filename
         - `configs/demo_configs/` holds shared demo configs, and `configs/test_configs/` holds configs used by GitHub Actions PR tests
-    - You can also pass arguments directly, e.g. `python src/main.py fit --data.class_path WikitextDataset --model.class_path MirrorLlamaModel --epochs 1 --batch_size 1`
+    - You can also pass arguments directly, e.g. `uv run python src/main.py fit --data.class_path WikitextDataset --model.class_path MirrorLlamaModel --epochs 1 --batch_size 1`
 
-- `python src/main.py format --config <config-file>`: Format a dataset without training
+- `uv run python src/main.py format --config <config-file>`: Format a dataset without training
     - Useful for preparing data separately before running a training job
     - Requires `--data` and `--formatter` to be specified (either in the config file or as command-line arguments)
 
-- `python src/main.py eval --config <config-file>`: Run evaluation metrics on a trained model
+- `uv run python src/main.py eval --config <config-file>`: Run evaluation metrics on a trained model
     - Requires a `model` and a `metrics` dict (mapping string labels to `MirrorMetric` instances) to be specified in the config file
     - Optionally accepts a `checkpoint_path` (a direct path to a `.ckpt` file or FSDP checkpoint directory) to load trained weights before evaluating
     - Also accepts a `device` (`cpu`/`cuda`) and a `strategy` (Lightning Fabric strategy) for device/distributed configuration
 
-- `python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
+- `uv run python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
     - Jupyter notebooks allow for significantly decreased startup time on repeat job runs
     - This command will output a URL, which is used to set the environment for `jupyter_template.ipynb` (or your copy(s) of it)
 
@@ -301,7 +301,7 @@ Vim is the default editor for commit message files (e.g. git merge).
 To test out submitting a training run, run this command: 
 
 ```
-python src/main.py fit --config configs/demo_configs/demo_fit_config.yaml
+uv run python src/main.py fit --config configs/demo_configs/demo_fit_config.yaml
 ```
 
 You should see the output `Submitted batch job <number>`. If this is your first time submitting a training run, you may be prompted to [log in to huggingface](#initial-access-setup) first to download required resources like the Llama model weights.
@@ -309,7 +309,7 @@ You should see the output `Submitted batch job <number>`. If this is your first 
 That command uses a demo config YAML file to specify the settings for the training run. To customize a training run, you can either use a config file or pass in each argument and its value through the command line, e.g.:
 
 ```
-python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel
+uv run python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel
 ```
 
 The `init_args` in each YAML section correspond to that class's constructor arguments. If you want to know what arguments that class accepts, you can look at its `__init__` method in the code. It's recommended to use config files rather than passing in all of the arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline by walking you through creating this config file, section by section.
@@ -420,7 +420,7 @@ device: cuda # `cuda` for GPU, `cpu` for CPU
 
 Run the following command:
 
-`python src/main.py fit --config <configfilename>.yaml`
+`uv run python src/main.py fit --config <configfilename>.yaml`
 
 Replace `fit` with `format` if you are just trying to do a formatting run. It's smart to make a separate config file for formatting, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your formatting config file for formatting runs.
 
