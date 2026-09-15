@@ -4,12 +4,12 @@ from typing import cast
 from datasets import Dataset, load_dataset
 from typed_datasets import TypedDataset
 
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.types import PromptResponseRow, TextRow
 from mirror.util import _ds_cache_path_context
 
 
-class CsvDataset(MirrorDataset[TextRow]):
+class CsvDataset(DataSource[TextRow]):
     """
     Loads a CSV and flattens each row to a single text string via a Python
     format-string template referencing column names. Example:
@@ -42,11 +42,8 @@ class CsvDataset(MirrorDataset[TextRow]):
                 ds = ds.take(head)
         self._ds = ds
 
-    def __len__(self) -> int:
-        return len(self.ds)
 
-
-class CsvInstructDataset(MirrorDataset[PromptResponseRow]):
+class CsvInstructDataset(DataSource[PromptResponseRow]):
     """
     Loads a CSV for supervised fine-tuning. Each row produces a
     PromptResponseRow by rendering separate prompt and response templates
@@ -94,6 +91,3 @@ class CsvInstructDataset(MirrorDataset[PromptResponseRow]):
             if head:
                 ds = ds.take(head)
         self._ds = ds
-
-    def __len__(self) -> int:
-        return len(self.ds)

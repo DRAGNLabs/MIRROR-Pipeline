@@ -23,7 +23,7 @@ from mirror.optimization.default_optimization_strategy import DefaultOptimizatio
 from mirror.optimization.optimization_strategy import OptimizationStrategy
 from mirror.schedulers.configure_scheduler import ConfigureScheduler
 from mirror.config import RuntimeEnvironment, get_config
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.fabric_util import make_fabric, rank_zero_log
 from mirror.models.trainable_model import TrainableModel
 from mirror.formatters.mirror_formatter import MirrorFormatter
@@ -91,14 +91,14 @@ class Trainer[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT]:
     def fit(
             self,
             model: TrainableModel[RawT, FormattedT, BatchT],
-            dataset: MirrorDataset[RawT],
+            dataset: DataSource[RawT],
             formatter: MirrorFormatter[RawT, FormattedT, BatchT] | None = None,
             checkpoint: CheckpointIdentifier | None = None,
             epochs: int = 1,
             batch_size: int = 1,
             run_config_yaml: str = "",
-            val_dataset: MirrorDataset[RawT] | None = None,
-            test_dataset: MirrorDataset[RawT] | None = None,
+            val_dataset: DataSource[RawT] | None = None,
+            test_dataset: DataSource[RawT] | None = None,
             val_check_interval: int = 1,
             configure_scheduler: ConfigureScheduler | None = None,
             shuffle: bool = True,
@@ -276,7 +276,7 @@ def separate_singletons[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], 
 
 
 def make_dataloader[RawT: Mapping[str, Any], FormattedT: Mapping[str, Any], BatchT](
-        dataset: MirrorDataset[RawT],
+        dataset: DataSource[RawT],
         formatter: MirrorFormatter[RawT, FormattedT, BatchT],
         batch_size: int,
         shuffle: bool,

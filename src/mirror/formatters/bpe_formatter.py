@@ -7,7 +7,7 @@ from tokenizers import ByteLevelBPETokenizer, Tokenizer
 from transformers import PreTrainedTokenizerFast
 from typed_datasets import TypedDataset
 
-from mirror.datasets.mirror_dataset import MirrorDataset
+from mirror.datasets.data_source import DataSource
 from mirror.formatters.infer_friendly_formatter import InferFriendlyFormatter
 from mirror.formatters.mirror_formatter import MirrorFormatter
 from mirror.formatters.formatter_util import collate_tokens
@@ -67,7 +67,7 @@ class BPEFormatter(
         )
         self._tokenizer.chat_template = _CHAT_TEMPLATE
 
-    def format_data(self, data_source: MirrorDataset[TextRow]) -> TypedDataset[LabeledTokens]:
+    def format_data(self, data_source: DataSource[TextRow]) -> TypedDataset[LabeledTokens]:
         raw_tokenizer = self._raw_tokenizer
         max_length = self._max_length
 
