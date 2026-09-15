@@ -1,5 +1,5 @@
 from typing import Any, Mapping
-from lightning import Fabric
+from lightning_fabric import Fabric
 from torch.optim import Optimizer
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.models.trainable_model import TrainableModel

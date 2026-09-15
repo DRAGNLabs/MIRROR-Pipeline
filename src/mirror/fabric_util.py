@@ -1,10 +1,10 @@
 import sys
 
-from lightning import Fabric
-from lightning.fabric.connector import _PRECISION_INPUT
-from lightning.fabric.strategies.fsdp import FSDPStrategy
-from lightning.fabric.strategies.single_device import SingleDeviceStrategy
-from lightning.fabric.strategies.strategy import Strategy
+from lightning_fabric import Fabric
+from lightning_fabric.connector import _PRECISION_INPUT
+from lightning_fabric.strategies.fsdp import FSDPStrategy
+from lightning_fabric.strategies.single_device import SingleDeviceStrategy
+from lightning_fabric.strategies.strategy import Strategy
 
 
 def cpu_safe_strategy(strategy: str | Strategy, device: str) -> str | Strategy:

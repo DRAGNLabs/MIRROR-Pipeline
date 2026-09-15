@@ -5,11 +5,11 @@ from itertools import islice
 from typing import Any, List, Mapping, cast
 
 import torch
-from lightning import Fabric
-from lightning.fabric.connector import _PRECISION_INPUT
-from lightning.fabric.strategies.fsdp import FSDPStrategy
-from lightning.fabric.strategies.single_device import SingleDeviceStrategy
-from lightning.fabric.strategies.strategy import Strategy
+from lightning_fabric import Fabric
+from lightning_fabric.connector import _PRECISION_INPUT
+from lightning_fabric.strategies.fsdp import FSDPStrategy
+from lightning_fabric.strategies.single_device import SingleDeviceStrategy
+from lightning_fabric.strategies.strategy import Strategy
 from torch.utils.data import DataLoader, Dataset
 
 from mirror.callbacks.callback import Callback

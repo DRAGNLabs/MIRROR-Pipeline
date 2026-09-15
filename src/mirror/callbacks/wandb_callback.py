@@ -3,7 +3,7 @@ import os
 
 import wandb
 
-from lightning import Fabric
+from lightning_fabric import Fabric
 
 from mirror.callbacks.callback import Callback
 from mirror.config import RuntimeEnvironment, get_config

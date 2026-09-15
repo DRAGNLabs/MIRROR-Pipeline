@@ -1,5 +1,5 @@
 import os
-from lightning import Fabric
+from lightning_fabric import Fabric
 from transformers import pipeline as hf_pipeline
 
 from mirror.fabric_util import rank_zero_log

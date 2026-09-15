@@ -1,4 +1,4 @@
-from lightning import Fabric
+from lightning_fabric import Fabric
 
 from mirror.checkpoint_identifier import CheckpointIdentifier
 from mirror.metrics.mirror_metric import MirrorMetric

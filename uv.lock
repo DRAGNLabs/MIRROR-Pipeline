@@ -1492,23 +1492,19 @@ wheels = [
 ]
 
 [[package]]
-name = "lightning"
-version = "2.5.5"
+name = "lightning-fabric"
+version = "2.6.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fsspec", extra = ["http"] },
     { name = "lightning-utilities" },
     { name = "packaging" },
-    { name = "pytorch-lightning" },
-    { name = "pyyaml" },
     { name = "torch" },
-    { name = "torchmetrics" },
-    { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0f/dd/86bb3bebadcdbc6e6e5a63657f0a03f74cd065b5ea965896679f76fec0b4/lightning-2.5.5.tar.gz", hash = "sha256:4d3d66c5b1481364a7e6a1ce8ddde1777a04fa740a3145ec218a9941aed7dd30", size = 640770, upload-time = "2025-09-05T16:01:21.026Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/e7/a64759f80e58b5be309c92550a1dd8e040313aabda9d64cf7b1eb50edc3f/lightning_fabric-2.6.6.tar.gz", hash = "sha256:c22b4b5149e1c4b837b610ced0bbc19ac85d7a0626f38307e3044497c45b3aeb", size = 202456, upload-time = "2026-09-10T09:41:09.314Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2e/d0/4b4fbafc3b18df91207a6e46782d9fd1905f9f45cb2c3b8dfbb239aef781/lightning-2.5.5-py3-none-any.whl", hash = "sha256:69eb248beadd7b600bf48eff00a0ec8af171ec7a678d23787c4aedf12e225e8f", size = 828490, upload-time = "2025-09-05T16:01:17.845Z" },
+    { url = "https://files.pythonhosted.org/packages/24/6c/8d7aa12604de485453924e56615bac019fcd78b401705e3c0cc4d5a68662/lightning_fabric-2.6.6-py3-none-any.whl", hash = "sha256:58244e08eddb4bbd2787fe91cc6e14499fee06ee0e22a43b45772204c75e2627", size = 257064, upload-time = "2026-09-10T09:41:07.517Z" },
 ]
 
 [[package]]
@@ -1686,7 +1682,7 @@ dependencies = [
     { name = "jaxtyping" },
     { name = "jsonargparse" },
     { name = "jupyterlab" },
-    { name = "lightning" },
+    { name = "lightning-fabric" },
     { name = "matplotlib" },
     { name = "torch" },
     { name = "tqdm" },
@@ -1709,7 +1705,7 @@ requires-dist = [
     { name = "jaxtyping", specifier = "==0.3.3" },
     { name = "jsonargparse", specifier = "==4.42.0" },
     { name = "jupyterlab", specifier = "==4.5.10" },
-    { name = "lightning", specifier = "==2.5.5" },
+    { name = "lightning-fabric", specifier = "==2.6.6" },
     { name = "matplotlib", specifier = "==3.10.9" },
     { name = "torch", specifier = "==2.10.0" },
     { name = "tqdm", specifier = "==4.67.1" },
@@ -2813,25 +2809,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pytorch-lightning"
-version = "2.6.6"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "fsspec", extra = ["http"] },
-    { name = "lightning-utilities" },
-    { name = "packaging" },
-    { name = "pyyaml" },
-    { name = "torch" },
-    { name = "torchmetrics" },
-    { name = "tqdm" },
-    { name = "typing-extensions" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/97/e4/5025cb42311b4f8cc6d1b12cd81399ca433159f8e3831ab229c5a6c5177e/pytorch_lightning-2.6.6.tar.gz", hash = "sha256:52c52b20522dd3d3feb3bb3aae2dbe3f291e8e836d4111a74cfd72e9df018834", size = 662507, upload-time = "2026-09-10T09:41:16.684Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4f/cf/ba8e4cc1b982ff6dc6f9fdef0e4074605438b82640f6270888a10e7e42c3/pytorch_lightning-2.6.6-py3-none-any.whl", hash = "sha256:71f95c7b22f25c4f91cc659e1734bcdc6c69c8b66543f2ed2d78dbe29ce2f167", size = 853045, upload-time = "2026-09-10T09:41:14.923Z" },
-]
-
-[[package]]
 name = "pywinpty"
 version = "3.0.5"
 source = { registry = "https://pypi.org/simple" }
@@ -3423,21 +3400,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e2/65/1a05346b418ea8ccd10360eef4b3e0ce688fba544e76edec26913a8d0ee0/torch-2.10.0-cp314-cp314t-manylinux_2_28_aarch64.whl", hash = "sha256:716b01a176c2a5659c98f6b01bf868244abdd896526f1c692712ab36dbaf9b63", size = 146006482, upload-time = "2026-01-21T16:22:18.42Z" },
     { url = "https://files.pythonhosted.org/packages/1d/b9/5f6f9d9e859fc3235f60578fa64f52c9c6e9b4327f0fe0defb6de5c0de31/torch-2.10.0-cp314-cp314t-manylinux_2_28_x86_64.whl", hash = "sha256:d8f5912ba938233f86361e891789595ff35ca4b4e2ac8fe3670895e5976731d6", size = 915613050, upload-time = "2026-01-21T16:20:49.035Z" },
     { url = "https://files.pythonhosted.org/packages/66/4d/35352043ee0eaffdeff154fad67cd4a31dbed7ff8e3be1cc4549717d6d51/torch-2.10.0-cp314-cp314t-win_amd64.whl", hash = "sha256:71283a373f0ee2c89e0f0d5f446039bdabe8dbc3c9ccf35f0f784908b0acd185", size = 113995816, upload-time = "2026-01-21T16:22:05.312Z" },
-]
-
-[[package]]
-name = "torchmetrics"
-version = "1.9.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "lightning-utilities" },
-    { name = "numpy" },
-    { name = "packaging" },
-    { name = "torch" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/81/34/39b8b749333db56c0585d7a11fa62a283c087bb1dfc897d69fb8cedbefb1/torchmetrics-1.9.0.tar.gz", hash = "sha256:a488609948600df52d3db4fcdab02e62aab2a85ef34da67037dc3e65b8512faa", size = 581765, upload-time = "2026-03-09T17:41:22.443Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/a2/c7f6ebf546f8f644edf0f999aa98ece106986a77a7b922316bf6414ff825/torchmetrics-1.9.0-py3-none-any.whl", hash = "sha256:bfdcbff3dd1d96b3374bb2496eb39f23c4b28b8a845b6a18c313688e0d2d9ca1", size = 983384, upload-time = "2026-03-09T17:41:19.756Z" },
 ]
 
 [[package]]

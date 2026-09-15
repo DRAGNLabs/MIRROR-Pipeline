@@ -1,5 +1,5 @@
 from typing import Any, Mapping
-from lightning import Fabric
+from lightning_fabric import Fabric
 from tqdm import tqdm
 from mirror.callbacks.callback import Callback
 from mirror.metrics.mirror_metric import MirrorMetric

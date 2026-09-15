@@ -1,7 +1,7 @@
 from typing import cast
 
 import torch
-from lightning import Fabric
+from lightning_fabric import Fabric
 
 from mirror.metrics.mirror_metric import MirrorMetric
 from mirror.models.trainable_model import TrainableModel

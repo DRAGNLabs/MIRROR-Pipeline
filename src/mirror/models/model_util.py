@@ -1,7 +1,7 @@
 import os
 import shutil
 from jsonargparse import ArgumentParser, Namespace
-from lightning import Fabric
+from lightning_fabric import Fabric
 from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, PreTrainedModel, PretrainedConfig
 from typing import Literal, Type
 

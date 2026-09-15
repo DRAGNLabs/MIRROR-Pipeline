@@ -6,7 +6,7 @@ from subprocess import call
 from types import FrameType
 from typing import cast, Dict, Literal, Any, Mapping
 
-from lightning import Fabric
+from lightning_fabric import Fabric
 from torch.nn import Module
 from torch.optim import Optimizer
 

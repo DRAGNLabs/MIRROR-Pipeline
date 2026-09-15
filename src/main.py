@@ -15,7 +15,7 @@ def main(subcommand: Subcommand):
 def _run(subcommand: Subcommand):
     import warnings
 
-    from lightning.fabric.utilities.warnings import PossibleUserWarning
+    from lightning_fabric.utilities.warnings import PossibleUserWarning
 
     from mirror.cli_parsers import build_parser
     from mirror.config import init_config

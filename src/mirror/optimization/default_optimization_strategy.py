@@ -1,4 +1,4 @@
-from lightning import Fabric
+from lightning_fabric import Fabric
 from torch import Tensor
 from torch.optim import Optimizer
 

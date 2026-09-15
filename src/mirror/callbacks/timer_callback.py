@@ -8,7 +8,7 @@ from typing import Any, Literal, Mapping, TypedDict, cast
 
 import torch
 from torch import Tensor
-from lightning import Fabric
+from lightning_fabric import Fabric
 
 from mirror.callbacks.callback import Callback
 from mirror.util import count_params, mirror_data_path
