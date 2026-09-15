@@ -1,7 +1,7 @@
 from typing import Any, Mapping
-from lightning.fabric.connector import _PRECISION_INPUT
-from lightning.fabric.strategies.strategy import Strategy
-from lightning.fabric.strategies.fsdp import FSDPStrategy
+from lightning_fabric.connector import _PRECISION_INPUT
+from lightning_fabric.strategies.strategy import Strategy
+from lightning_fabric.strategies.fsdp import FSDPStrategy
 from mirror.callbacks.callback import Callback
 from mirror.trainer import Trainer
 

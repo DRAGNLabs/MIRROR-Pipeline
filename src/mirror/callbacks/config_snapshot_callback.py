@@ -1,7 +1,7 @@
 from pathlib import Path
 import subprocess, json, datetime, socket, os
 from typing import Any, Mapping
-from lightning import Fabric
+from lightning_fabric import Fabric
 from mirror.callbacks.callback import Callback
 from mirror.util import safe_training_run_path
 

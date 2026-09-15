@@ -89,7 +89,7 @@ def _sbatch_script(
         #SBATCH --signal=SIGHUP@90
         #SBATCH --chdir={Path.cwd()}
 
-        mamba activate ./.env
+        source .venv/bin/activate
 
         {run_cmd}
     """)

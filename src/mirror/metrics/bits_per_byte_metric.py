@@ -2,7 +2,7 @@ import math
 from typing import cast
 
 import torch
-from lightning import Fabric
+from lightning_fabric import Fabric
 
 from mirror.datasets.mirror_dataset import MirrorDataset
 from mirror.metrics.mirror_metric import MirrorMetric

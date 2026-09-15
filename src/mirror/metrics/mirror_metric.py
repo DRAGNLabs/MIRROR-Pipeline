@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from lightning import Fabric
+from lightning_fabric import Fabric
 
 from mirror.models.trainable_model import TrainableModel
 

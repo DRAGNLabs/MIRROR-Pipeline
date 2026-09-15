@@ -1,5 +1,5 @@
 from typing import cast, Any, Mapping
-from lightning import Fabric
+from lightning_fabric import Fabric
 from torch.nn import Module
 from torch.optim import Optimizer
 from mirror.callbacks.callback import Callback

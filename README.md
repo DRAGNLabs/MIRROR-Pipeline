@@ -1,12 +1,10 @@
 ## Instructions
 
-1. Create a local mamba environment `mamba create --yes -f environment.yml -p ./.env`
-    - If at some point you need to update your local environment run `mamba env update --file environment.yml --prune -p ./.env` 
-2. Activate the environment `mamba activate ./.env`
-3. (Optional) deactivate the environment `mamba deactivate`
-4. Run using `python src/main.py [subcommand] [arguments or config]`
-    - Example using arguments: `python src/main.py fit --dataset.class_path WikitextDataset --data.head 10 --model MirrorLlamaModel --model.id 3.2-1B-Instruct --slurm.gpus_per_node h200:1`
-    - Example using config: `python src/main.py fit --config config.yaml`
+1. Install [uv](https://docs.astral.sh/uv/), then create the local environment `uv sync`
+    - This creates `./.venv` and installs the project's dependencies from `uv.lock`.
+2. Run using `uv run python src/main.py [subcommand] [arguments or config]`
+    - Example using arguments: `uv run python src/main.py fit --dataset.class_path WikitextDataset --data.head 10 --model MirrorLlamaModel --model.id 3.2-1B-Instruct --slurm.gpus_per_node h200:1`
+    - Example using config: `uv run python src/main.py fit --config config.yaml`
       - Example config.yaml contents: 
       ```
       data:

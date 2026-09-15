@@ -1,9 +1,0 @@
-name: ignore-name # intended to be installed as a local environment without a name
-channels:
-  - conda-forge
-dependencies:
-  - python=3.12.11
-  - pip
-  - pip:
-    - --extra-index-url https://download.pytorch.org/whl/cu126 # needed for compatibility with all supercomputer nodes
-    - -e . # install this package (the mirror package)

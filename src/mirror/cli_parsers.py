@@ -1,5 +1,5 @@
 from jsonargparse import ActionConfigFile, ArgumentParser
-from lightning.fabric.strategies.strategy import Strategy
+from lightning_fabric.strategies.strategy import Strategy
 
 from mirror.subcommands import evaluation, fit, format, infer
 from mirror.models.trainable_model import TrainableModel
@@ -8,7 +8,7 @@ from mirror.trainer_constructor import TrainerConstructor
 
 # These imports register the subclasses so jsonargparse can resolve them by
 # short name (e.g. `class_path: WikitextDataset`) in config files.
-import lightning.fabric.strategies  # noqa: F401
+import lightning_fabric.strategies  # noqa: F401
 import mirror.callbacks  # noqa: F401
 import mirror.datasets  # noqa: F401
 import mirror.models  # noqa: F401

@@ -32,17 +32,13 @@ git clone https://github.com/DRAGNLabs/MIRROR-Pipeline
 cd MIRROR-Pipeline
 ```
 
-Now you'll need to create a [local mamba environment](https://rc.byu.edu/wiki/?id=Conda+Environments) to develop in.
+Now you'll need to create a local environment to develop in. This project uses [uv](https://docs.astral.sh/uv/); install it, then run:
 
 ```bash
-mamba create --yes -f environment.yml -p ./.env
+uv sync
 ```
 
-This environment can be activated at any time by running:
-
-```bash
-mamba activate ./.env
-```
+This creates `./.venv` and installs the project's dependencies from `uv.lock`. You don't need to activate the environment to run project code — prefix commands with `uv run` (e.g. `uv run python src/main.py ...`), and uv will keep the environment in sync automatically.
 
 3. **Logging in to Huggingface**
 
@@ -64,9 +60,9 @@ To use resources like Llama/GPT-2 model weights, you'll need to get access throu
 
     If you logged in to the supercomputer strictly by ssh'ing through the terminal, this will automatically have been done for you. Otherwise (e.g. using VSCode to log in to the supercomputer), run `source /etc/profile/` to load system-wide environment settings and paths. 
     
-3. Activate mamba environment
+3. Sync the environment
 
-    To activate the project's conda environment, run `mamba activate ./.env`. (You'll have to have [created the environment first](#initial-access-setup), of course.) 
+    Run `uv sync` to make sure `./.venv` matches `uv.lock`. (You'll have to have [uv installed](#initial-access-setup), of course.) You don't need to activate anything — run project commands with `uv run` (e.g. `uv run python src/main.py ...`).
     
 4. Ensure you're on the correct branch
 
@@ -194,11 +190,12 @@ trainer:
 ### On Startup
 
 - `source /etc/profile`: Load the system-wide environment settings and paths
-    - If you're logging in directly through ssh in the terminal, this will be done for you. Otherwise (e.g. using VSCode's UI), run this first every time you log in so that tools like `mamba` and other modules are available
+    - If you're logging in directly through ssh in the terminal, this will be done for you. Otherwise (e.g. using VSCode's UI), run this first every time you log in so that system tools and modules are available
 
-- `mamba activate ./.env`: Activate the project's conda environment
+- `uv sync`: Sync `./.venv` with `uv.lock`
     - This loads the Python version and dependencies needed for the MIRROR Pipeline
     - Must be run in the MIRROR Pipeline directory
+    - Run project commands with `uv run` (e.g. `uv run python src/main.py ...`); no manual activation needed
 
 ### Terminal
 
@@ -280,22 +277,22 @@ Vim is the default editor for commit message files (e.g. git merge).
 
 ### MIRROR Pipeline
 
-- `python src/main.py fit --config <config-file>`: Train a model using settings from a config file
+- `uv run python src/main.py fit --config <config-file>`: Train a model using settings from a config file
     - The config file specifies the dataset, model, formatter, training parameters, and SLURM settings
         - Config files for personal use should be placed in `configs/user_configs/`, where they will be gitignored and resolved automatically when passed to `--config` by filename
         - `configs/demo_configs/` holds shared demo configs, and `configs/test_configs/` holds configs used by GitHub Actions PR tests
-    - You can also pass arguments directly, e.g. `python src/main.py fit --data.class_path WikitextDataset --model.class_path MirrorLlamaModel --epochs 1 --batch_size 1`
+    - You can also pass arguments directly, e.g. `uv run python src/main.py fit --data.class_path WikitextDataset --model.class_path MirrorLlamaModel --epochs 1 --batch_size 1`
 
-- `python src/main.py format --config <config-file>`: Format a dataset without training
+- `uv run python src/main.py format --config <config-file>`: Format a dataset without training
     - Useful for preparing data separately before running a training job
     - Requires `--data` and `--formatter` to be specified (either in the config file or as command-line arguments)
 
-- `python src/main.py eval --config <config-file>`: Run evaluation metrics on a trained model
+- `uv run python src/main.py eval --config <config-file>`: Run evaluation metrics on a trained model
     - Requires a `model` and a `metrics` dict (mapping string labels to `MirrorMetric` instances) to be specified in the config file
     - Optionally accepts a `checkpoint_path` (a direct path to a `.ckpt` file or FSDP checkpoint directory) to load trained weights before evaluating
     - Also accepts a `device` (`cpu`/`cuda`) and a `strategy` (Lightning Fabric strategy) for device/distributed configuration
 
-- `python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
+- `uv run python src/launch_jupyter.py`: Set up a Jupyter server on a compute node for running training jobs 
     - Jupyter notebooks allow for significantly decreased startup time on repeat job runs
     - This command will output a URL, which is used to set the environment for `jupyter_template.ipynb` (or your copy(s) of it)
 
@@ -304,7 +301,7 @@ Vim is the default editor for commit message files (e.g. git merge).
 To test out submitting a training run, run this command: 
 
 ```
-python src/main.py fit --config configs/demo_configs/demo_fit_config.yaml
+uv run python src/main.py fit --config configs/demo_configs/demo_fit_config.yaml
 ```
 
 You should see the output `Submitted batch job <number>`. If this is your first time submitting a training run, you may be prompted to [log in to huggingface](#initial-access-setup) first to download required resources like the Llama model weights.
@@ -312,7 +309,7 @@ You should see the output `Submitted batch job <number>`. If this is your first 
 That command uses a demo config YAML file to specify the settings for the training run. To customize a training run, you can either use a config file or pass in each argument and its value through the command line, e.g.:
 
 ```
-python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel
+uv run python src/main.py fit --data.class_path WikitextDataset --data.head 10 --model.class_path MirrorLlamaModel
 ```
 
 The `init_args` in each YAML section correspond to that class's constructor arguments. If you want to know what arguments that class accepts, you can look at its `__init__` method in the code. It's recommended to use config files rather than passing in all of the arguments through the command line. Thus, this section will outline how to use the MIRROR Pipeline by walking you through creating this config file, section by section.
@@ -423,7 +420,7 @@ device: cuda # `cuda` for GPU, `cpu` for CPU
 
 Run the following command:
 
-`python src/main.py fit --config <configfilename>.yaml`
+`uv run python src/main.py fit --config <configfilename>.yaml`
 
 Replace `fit` with `format` if you are just trying to do a formatting run. It's smart to make a separate config file for formatting, which won't need parameters like `model`, `val_data`, `test_data`, etc. That way, instead of constantly editing your main config file, you can just pass in your formatting config file for formatting runs.
 
@@ -435,7 +432,7 @@ First, run `git merge main` to make sure your branch is up to date with main and
 
 Now it's time to directly test using the pipeline with the new changes. A simple training run (e.g. `fit` with a small Llama model config & the Wikitext dataset with `data.head: 10`) will cover lots of simple tickets, but you should expand your test suite as necessary to test tickets that change different parts of the pipeline. For example, if your ticket relates to SLURM jobs across multiple nodes, you'll want to test submitting jobs on a single node, multiple nodes, maybe multiple GPUs on a single node, etc. 
 
-You may also want to run type checks locally; the easiest way to do this is with Pyright. Once you've installed the project's dependencies (`pip install -e ".[dev]"`), just run `pyright` in your terminal, and it will print any errors it sees. There's also a script that runs when you make a pull request that will automatically check for any new Pyright errors on that branch. 
+You may also want to run type checks locally; the easiest way to do this is with Pyright. Once you've synced the project's dependencies (`uv sync`), just run `uv run pyright` in your terminal, and it will print any errors it sees. There's also a script that runs when you make a pull request that will automatically check for any new Pyright errors on that branch. 
 
 It's also a good idea to review the changes made on your branch to help catch any issues or unintended changes ahead of time. You have a few options:
 - You can run `git status` to see which files have been modified, added, or deleted, and use `git diff main...HEAD` to see the full set of changes your branch introduces compared to `main`.
