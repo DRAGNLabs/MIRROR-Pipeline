@@ -18,13 +18,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
         with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install -e .
+          enable-cache: true
 
       - name: Run overfit check
         env:
@@ -34,4 +31,4 @@ jobs:
           MIRROR_DATA_PATH: ${{ github.workspace }}/.mirror_data
           MIRROR_PRINT_STEP_LOSS: "true"
         run: |
-          python scripts/check_overfit.py --config configs/test_configs/overfit_test_config.yaml
+          uv run python scripts/check_overfit.py --config configs/test_configs/overfit_test_config.yaml
