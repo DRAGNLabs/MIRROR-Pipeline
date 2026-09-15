@@ -12,7 +12,7 @@ def submit_slurm_job(slurm_args: str, port: int, env_name: str) -> tuple[str, Pa
     # Create a unique log file for this session
     log_file = LOG_DIR / f"jupyter_{int(time.time())}.log"
 
-    activate_cmd = f'source /etc/profile && mamba activate {env_name}'
+    activate_cmd = f'source /etc/profile && source {env_name}/bin/activate'
     
     # Simple sbatch script wrapper
     # We use --output to capture the token/url
@@ -88,10 +88,10 @@ def main():
     parser.add_argument("--qos", default=None, help="QOS name")
     parser.add_argument("--gpus", default="1", help="Number of GPUs")
     parser.add_argument("--mem", default="16G", help="Memory")
-    parser.add_argument("--env", default=None, help="The mamba environment to activate. Defaults to ./.env")
+    parser.add_argument("--env", default=None, help="The virtual environment to activate. Defaults to ./.venv")
     args = parser.parse_args()
 
-    env_name = args.env or str(Path.cwd() / '.env')
+    env_name = args.env or str(Path.cwd() / '.venv')
     
     LOG_DIR.mkdir(parents=True, exist_ok=True)
 

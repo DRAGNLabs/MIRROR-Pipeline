@@ -30,7 +30,7 @@ def submit_slurm_job(slurm: SlurmConfig, python_args: list[str]) -> None:
     script = env.get_template("slurm.jinja").render(
         **asdict(slurm),
         chdir=str(Path.cwd()),
-        activate_cmd="mamba activate ./.env",
+        activate_cmd="source .venv/bin/activate",
         run_cmd=f"srun python {sys.argv[0]} {shlex.join(python_args)}",
     )
 
