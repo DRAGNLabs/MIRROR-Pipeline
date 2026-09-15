@@ -9,6 +9,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiohttp==3.13.1",
+    "torch==2.10.0",
     "datasets==4.3.0",
     "dotenv==0.9.9",
     "jaxtyping==0.3.3",
@@ -23,7 +24,7 @@ dependencies = [
     "ipykernel==7.2.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = ["pyright"]
 
 [tool.setuptools.packages.find]
@@ -31,3 +32,11 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 mirror = ["templates/*.jinja"]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }

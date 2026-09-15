@@ -4,6 +4,7 @@ mirror_pipeline.egg-info/
 
 # Environments
 .env/
+.venv/
 .ENV
 
 # IDE / tools
